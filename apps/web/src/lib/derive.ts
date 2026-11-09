@@ -1,11 +1,11 @@
 // Small derivations from the model, shared by the pages.
-import type { Device, Home, Room } from '@maison/model';
-import { HEATING_MODE_LABEL, plural, relative, temp1 } from '@maison/ui';
+import type { Device, Home, Room } from '@control/model';
+import { HEATING_MODE_LABEL, plural, relative, temp1 } from '@control/ui';
 
 export const ROOM_ICON: Record<string, string> = { sofa: 'home', kitchen: 'home', door: 'door', desk: 'home', bed: 'home', crib: 'home', home: 'home' };
 export const ROOM_AMBIENCE: Record<string, string> = { salon: 'salon', cuisine: 'cuisine', entree: 'exterieur', bureau: 'bureau', chambre: 'chambre', bebe: 'chambre' };
 
-/** Product photo of a device: maison.yaml `image:` first, else a default per kind (served from media/devices). */
+/** Product photo of a device: control.yaml `image:` first, else a default per kind (served from media/devices). */
 const DEVICE_IMAGE: Partial<Record<Device['kind'], string>> = {
   light: 'bulb', light_group: 'bulb', cover: 'blind', plug: 'plug', opening: 'window', heating: 'heating', camera: 'camera', media: 'speaker', ac: 'ac',
 };
@@ -33,7 +33,7 @@ export function lightColor(d: Device): string | undefined {
   }
   return undefined;
 }
-/** Photo of a room from maison.yaml `image:` (undefined → drawn ambience). */
+/** Photo of a room from control.yaml `image:` (undefined → drawn ambience). */
 export function roomImage(room: Room | undefined): string | undefined {
   return room?.image || undefined;
 }

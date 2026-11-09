@@ -1,13 +1,13 @@
 // Package demo is a Home Assistant stand-in: it invents a plausible state
-// for every entity maison.yaml refers to and makes it drift a little, so
+// for every entity control.yaml refers to and makes it drift a little, so
 // the interface can be developed, screenshotted and tested without the
-// house (MAISON_DEMO=1).
+// house (CONTROL_DEMO=1).
 package demo
 
 import (
-	"ahomelab.io/maison/internal/agenda"
-	"ahomelab.io/maison/internal/air"
-	"ahomelab.io/maison/internal/model"
+	"ahomelab.io/control/internal/agenda"
+	"ahomelab.io/control/internal/air"
+	"ahomelab.io/control/internal/model"
 	"context"
 	"fmt"
 	"io"
@@ -15,8 +15,8 @@ import (
 	"math/rand"
 	"time"
 
-	"ahomelab.io/maison/internal/config"
-	"ahomelab.io/maison/internal/ha"
+	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/ha"
 )
 
 type Source struct {

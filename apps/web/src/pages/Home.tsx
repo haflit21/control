@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { setBell } from '../lib/bell';
-import type { Home } from '@maison/model';
-import { AgendaGlance, AirChip, AlertRow, Icon, Card, CardHead, Chip, ChipRow, Hero, Pair, Pict, Row, Status, TimeAgo, Toggle, Thumb, WhoPill, WxPill, Dots, Val, cx, dateLong, greeting, plural, temp1, relative, HEATING_MODE_LABEL } from '@maison/ui';
+import type { Home } from '@control/model';
+import { AgendaGlance, AirChip, AlertRow, Icon, Card, CardHead, Chip, ChipRow, Hero, Pair, Pict, Row, Status, TimeAgo, Toggle, Thumb, WhoPill, WxPill, Dots, Val, cx, dateLong, greeting, plural, temp1, relative, HEATING_MODE_LABEL } from '@control/ui';
 import { cameras, heatingSubtitle, lightsOn, openings, primaryHeating, ROOM_AMBIENCE, roomStatus, roomImage, deviceSub, deviceImage, lightColor } from '../lib/derive';
 import { snapshotURL, useTick } from '../lib/api';
 import { useActions, usePending } from '../lib/actions';

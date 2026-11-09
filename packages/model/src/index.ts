@@ -53,7 +53,7 @@ export interface Device {
   updatedAt: string;
   battery?: 'ok' | 'low';
   primary?: boolean;
-  /** URL path of a product photo (/media/...), set from maison.yaml; the UI has a default per kind */
+  /** URL path of a product photo (/media/...), set from control.yaml; the UI has a default per kind */
   image?: string;
   /** For lights: photo when off (image is then the "on" photo) */
   imageOff?: string;

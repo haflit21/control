@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"ahomelab.io/maison/internal/config"
-	"ahomelab.io/maison/internal/demo"
+	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/demo"
 )
 
 func loadCfg(t *testing.T) *config.Config {
 	t.Helper()
-	cfg, err := config.Load("../../../maison.yaml")
+	cfg, err := config.Load("../../../control.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}

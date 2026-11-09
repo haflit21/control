@@ -1,6 +1,6 @@
 // Package model is the house as the interface sees it: rooms and devices
 // with normalised states. Nothing here knows Home Assistant entity ids;
-// the mapping lives in internal/build from maison.yaml.
+// the mapping lives in internal/build from control.yaml.
 //
 // packages/model/src/index.ts mirrors these types by hand; model_test.go
 // checks that the JSON field names match.

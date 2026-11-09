@@ -1,12 +1,12 @@
 {
-  "name": "maison",
+  "name": "control",
   "private": true,
   "version": "0.1.0",
-  "description": "Maison — l'interface du quotidien de la maison, au-dessus de Home Assistant",
+  "description": "Control — l'interface du quotidien de la maison, au-dessus de Home Assistant",
   "packageManager": "pnpm@10.28.0",
   "scripts": {
-    "dev": "pnpm --filter @maison/web dev",
-    "build": "pnpm --filter @maison/web build",
+    "dev": "pnpm --filter @control/web dev",
+    "build": "pnpm --filter @control/web build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test"
   },

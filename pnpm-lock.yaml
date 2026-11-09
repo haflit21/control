@@ -20,10 +20,10 @@ importers:
       '@fontsource/outfit':
         specifier: ^5.1.0
         version: 5.3.0
-      '@maison/model':
+      '@control/model':
         specifier: workspace:*
         version: link:../../packages/model
-      '@maison/ui':
+      '@control/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       '@tanstack/react-query':
@@ -62,7 +62,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@maison/model':
+      '@control/model':
         specifier: workspace:*
         version: link:../model
     devDependencies:

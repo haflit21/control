@@ -1,6 +1,6 @@
-// Maison — catalogue behaviour: theme toggle, phone toggle, swatches + contrast audit, icon grid, markup details, toc spy.
+// Control — catalogue behaviour: theme toggle, phone toggle, swatches + contrast audit, icon grid, markup details, toc spy.
 (() => {
-  const THEME_KEY = 'maison.ds.theme';
+  const THEME_KEY = 'control.ds.theme';
   const root = document.documentElement;
   const themeBtn = document.getElementById('theme'), themeL = document.getElementById('theme-l');
   const $ = id => document.getElementById(id);

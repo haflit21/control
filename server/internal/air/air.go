@@ -11,7 +11,7 @@ import (
 	"net/url"
 	"time"
 
-	"ahomelab.io/maison/internal/model"
+	"ahomelab.io/control/internal/model"
 )
 
 // Fetcher returns the current air quality for a place.

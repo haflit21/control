@@ -20,7 +20,7 @@ import (
 	"strings"
 	"time"
 
-	"ahomelab.io/maison/internal/agenda"
+	"ahomelab.io/control/internal/agenda"
 )
 
 // Draft is what a sentence was understood as. Same fields as agenda.Event.

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import type { CalEvent, Home } from '@maison/model';
-import { AgendaNav, CalLegend, DayList, Icon, Pict, WeekView, addDays, startOfWeek, weekLabel } from '@maison/ui';
+import type { CalEvent, Home } from '@control/model';
+import { AgendaNav, CalLegend, DayList, Icon, Pict, WeekView, addDays, startOfWeek, weekLabel } from '@control/ui';
 import { useMedia } from '../lib/api';
 import { pushToast } from '../lib/actions';
 import { micSupported, record } from '../lib/agenda';

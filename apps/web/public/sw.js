@@ -1,6 +1,6 @@
-// Maison service worker: caches the app shell (HTML + hashed assets) so the
+// Control service worker: caches the app shell (HTML + hashed assets) so the
 // PWA opens instantly; never caches /api (no house data stored offline).
-const SHELL = 'maison-shell-v2';
+const SHELL = 'control-shell-v2';
 self.addEventListener('install', (e) => { self.skipWaiting(); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== SHELL).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
@@ -21,7 +21,7 @@ self.addEventListener('fetch', (e) => {
 
 // Notifications push (le serveur chiffre un JSON {title, body, tag, url, level}).
 self.addEventListener('push', (e) => {
-  let m = { title: 'Maison', body: '' };
+  let m = { title: 'Control', body: '' };
   try { m = { ...m, ...e.data.json() }; } catch { m.body = e.data ? e.data.text() : ''; }
   e.waitUntil(self.registration.showNotification(m.title, {
     body: m.body, tag: m.tag || undefined, renotify: !!m.tag, icon: '/icons/icon-192.png', badge: '/icons/badge.png',

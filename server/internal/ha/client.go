@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"ahomelab.io/maison/internal/httpx"
+	"ahomelab.io/control/internal/httpx"
 )
 
 type Client struct {
@@ -175,7 +175,7 @@ func (c *Client) session(ctx context.Context) error {
 		}
 	}()
 
-	// initial states, filtered to what maison.yaml knows
+	// initial states, filtered to what control.yaml knows
 	raw, err := c.request(ctx, map[string]any{"type": "get_states"})
 	if err != nil {
 		return fmt.Errorf("get_states : %w", err)
@@ -389,7 +389,7 @@ func (c *Client) CameraStream(ctx context.Context, entity string, w io.Writer, s
 	return err
 }
 
-// EntityIDs lists every entity HA knows (REST /api/states), for `maison check`.
+// EntityIDs lists every entity HA knows (REST /api/states), for `control check`.
 func (c *Client) EntityIDs(ctx context.Context) (map[string]string, error) {
 	resp, err := c.rest(ctx, "/api/states")
 	if err != nil {
@@ -414,7 +414,7 @@ func (c *Client) EntityIDs(ctx context.Context) (map[string]string, error) {
 	return out, nil
 }
 
-// Services lists "domain.service" known to HA (REST /api/services), for `maison check`.
+// Services lists "domain.service" known to HA (REST /api/services), for `control check`.
 func (c *Client) Services(ctx context.Context) (map[string]bool, error) {
 	resp, err := c.rest(ctx, "/api/services")
 	if err != nil {

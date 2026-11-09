@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { Home } from '@maison/model';
-import { AgendaGlance, AlertRow, Card, CardHead, Chip, Hero, Icon, Pair, Pict, Row, Status, Thumb, Toggle, WhoPill, WxPill, cx, plural, relative, HEATING_MODE_LABEL } from '@maison/ui';
+import type { Home } from '@control/model';
+import { AgendaGlance, AlertRow, Card, CardHead, Chip, Hero, Icon, Pair, Pict, Row, Status, Thumb, Toggle, WhoPill, WxPill, cx, plural, relative, HEATING_MODE_LABEL } from '@control/ui';
 import { cameras, deviceImage, heatingSubtitle, lightColor, lightsOn, openings, primaryHeating, ROOM_AMBIENCE, roomImage, roomStatus } from '../lib/derive';
 import { snapshotURL, useTick } from '../lib/api';
 import { useActions, usePending } from '../lib/actions';
@@ -49,7 +49,7 @@ export function WallPage({ home, now, stale }: { home: Home; now: Date; stale: b
 
   return (
     <div className={cx('wall', night && 'is-night')}>
-      <h1 className="sr-only">Maison · tableau mural</h1>
+      <h1 className="sr-only">Control · tableau mural</h1>
       <header className="wall-top">
         <div>
           <div className="wall-clock" aria-label={`${hh} h ${mm}`}>{hh}<small>:</small>{mm}</div>

@@ -1,14 +1,14 @@
-// Package server is Maison's HTTP side: the JSON API, the SSE stream and
+// Package server is Control's HTTP side: the JSON API, the SSE stream and
 // the static interface (apps/web/dist, embedded at build time).
 //
 // Security model (same as Sentinel): reachable only from the house network
 // and the VPN (AllowFrom), a login token printed at startup exchanged once
-// for an HttpOnly SameSite=Strict cookie, and the X-Maison header on every
+// for an HttpOnly SameSite=Strict cookie, and the X-Control header on every
 // mutating call. The HA token never leaves the process.
 package server
 
 import (
-	"ahomelab.io/maison/internal/air"
+	"ahomelab.io/control/internal/air"
 	"context"
 	"crypto/subtle"
 	"embed"
@@ -27,20 +27,20 @@ import (
 	"sync"
 	"time"
 
-	"ahomelab.io/maison/internal/agenda"
-	"ahomelab.io/maison/internal/build"
-	"ahomelab.io/maison/internal/config"
-	"ahomelab.io/maison/internal/ha"
-	"ahomelab.io/maison/internal/journal"
-	"ahomelab.io/maison/internal/model"
-	"ahomelab.io/maison/internal/push"
-	"ahomelab.io/maison/internal/voice"
+	"ahomelab.io/control/internal/agenda"
+	"ahomelab.io/control/internal/build"
+	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/ha"
+	"ahomelab.io/control/internal/journal"
+	"ahomelab.io/control/internal/model"
+	"ahomelab.io/control/internal/push"
+	"ahomelab.io/control/internal/voice"
 )
 
 //go:embed all:ui/dist
 var uiFS embed.FS
 
-const cookieName = "maison_session"
+const cookieName = "control_session"
 
 type Server struct {
 	Cfg   *config.Config
@@ -115,7 +115,7 @@ func (s *Server) Run(ctx context.Context) {
 }
 
 // pollAir refreshes the air quality every 30 min (every minute while it fails).
-// Coordinates come from maison.yaml or HA's zone.home.
+// Coordinates come from control.yaml or HA's zone.home.
 func (s *Server) pollAir(ctx context.Context) {
 	if s.Air == nil || !s.Cfg.Globals.AirEnabled() {
 		return
@@ -276,7 +276,7 @@ func (s *Server) Handler() http.Handler {
 func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	token := strings.TrimSpace(r.URL.Query().Get("token"))
 	if subtle.ConstantTimeCompare([]byte(token), []byte(s.Token)) != 1 {
-		http.Error(w, "Maison : lien de connexion invalide (jeton incomplet ou ancien). Reprends la ligne « maison : …/login?token=… » des journaux du conteneur.", http.StatusUnauthorized)
+		http.Error(w, "Control : lien de connexion invalide (jeton incomplet ou ancien). Reprends la ligne « control : …/login?token=… » des journaux du conteneur.", http.StatusUnauthorized)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: s.Token, Path: "/", HttpOnly: true, SameSite: http.SameSiteStrictMode, MaxAge: 30 * 24 * 3600})
@@ -284,8 +284,8 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Referrer-Policy", "no-referrer")
 	// the page navigates itself: a redirect from another app would not carry a SameSite=Strict cookie (Safari)
-	_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="refresh" content="1;url=/"><title>Maison</title>` +
-		`<body style="font:16px system-ui;background:#0d1017;color:#f3f0ea;display:grid;place-items:center;height:90vh"><p>Connecté. <a href="/" style="color:#ec9b74">Ouvrir Maison</a></p><script>location.replace("/")</script>`))
+	_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><meta http-equiv="refresh" content="1;url=/"><title>Control</title>` +
+		`<body style="font:16px system-ui;background:#0d1017;color:#f3f0ea;display:grid;place-items:center;height:90vh"><p>Connecté. <a href="/" style="color:#ec9b74">Ouvrir Control</a></p><script>location.replace("/")</script>`))
 }
 
 func (s *Server) authed(r *http.Request) bool {
@@ -296,7 +296,7 @@ func (s *Server) authed(r *http.Request) bool {
 func (s *Server) auth(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !s.authed(r) {
-			fail(w, http.StatusUnauthorized, "Non connecté", "ouvre le lien de connexion affiché au démarrage de maison")
+			fail(w, http.StatusUnauthorized, "Non connecté", "ouvre le lien de connexion affiché au démarrage de control")
 			return
 		}
 		h(w, r)
@@ -305,8 +305,8 @@ func (s *Server) auth(h http.HandlerFunc) http.HandlerFunc {
 
 func (s *Server) mutating(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("X-Maison") != "1" {
-			fail(w, http.StatusForbidden, "En-tête X-Maison manquant", "")
+		if r.Header.Get("X-Control") != "1" {
+			fail(w, http.StatusForbidden, "En-tête X-Control manquant", "")
 			return
 		}
 		if site := r.Header.Get("Sec-Fetch-Site"); site != "" && site != "same-origin" {
@@ -459,8 +459,8 @@ func (s *Server) cameraStream(w http.ResponseWriter, r *http.Request) {
 }
 
 // static serves the embedded interface; unknown paths fall back to
-// media serves the photos of rooms and devices from MediaDir (maison.yaml
-// media_dir, MAISON_MEDIA). Only plain image files, no directory listing;
+// media serves the photos of rooms and devices from MediaDir (control.yaml
+// media_dir, CONTROL_MEDIA). Only plain image files, no directory listing;
 // the session is required like for the rest of the UI.
 func (s *Server) media(w http.ResponseWriter, r *http.Request) {
 	rel := strings.TrimPrefix(path.Clean("/"+r.PathValue("path")), "/")
@@ -497,7 +497,7 @@ func (s *Server) media(w http.ResponseWriter, r *http.Request) {
 // unauthenticated visitor gets a short page explaining how to log in.
 func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 	if s.ui == nil {
-		http.Error(w, "Maison : interface non construite (pnpm build)", http.StatusServiceUnavailable)
+		http.Error(w, "Control : interface non construite (pnpm build)", http.StatusServiceUnavailable)
 		return
 	}
 	p := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
@@ -509,7 +509,7 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 	if !public && !s.authed(r) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusUnauthorized)
-		_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Maison</title><body style="font:16px system-ui;background:#0d1017;color:#f3f0ea;display:grid;place-items:center;height:90vh;text-align:center"><p>Maison<br><small style="color:#b0b4bf">Ouvre le lien de connexion affiché au démarrage du serveur (…/login?token=…).</small></p>`))
+		_, _ = w.Write([]byte(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Control</title><body style="font:16px system-ui;background:#0d1017;color:#f3f0ea;display:grid;place-items:center;height:90vh;text-align:center"><p>Control<br><small style="color:#b0b4bf">Ouvre le lien de connexion affiché au démarrage du serveur (…/login?token=…).</small></p>`))
 		return
 	}
 	f, err := s.ui.Open(p)
@@ -521,7 +521,7 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 		p = "index.html"
 		f, err = s.ui.Open(p)
 		if err != nil {
-			http.Error(w, "Maison : interface non construite (pnpm build)", http.StatusServiceUnavailable)
+			http.Error(w, "Control : interface non construite (pnpm build)", http.StatusServiceUnavailable)
 			return
 		}
 	}
@@ -587,7 +587,7 @@ func AllowFrom(h http.Handler, cidrs []string) (http.Handler, error) {
 			}
 		}
 		log.Printf("accès refusé à %s (hors de serve.allow_from)", host)
-		http.Error(w, "Maison : cet appareil n'est pas autorisé (serve.allow_from). Adresse vue : "+host, http.StatusForbidden)
+		http.Error(w, "Control : cet appareil n'est pas autorisé (serve.allow_from). Adresse vue : "+host, http.StatusForbidden)
 	}), nil
 }
 

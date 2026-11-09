@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"ahomelab.io/maison/internal/agenda"
-	"ahomelab.io/maison/internal/journal"
-	"ahomelab.io/maison/internal/model"
-	"ahomelab.io/maison/internal/voice"
+	"ahomelab.io/control/internal/agenda"
+	"ahomelab.io/control/internal/journal"
+	"ahomelab.io/control/internal/model"
+	"ahomelab.io/control/internal/voice"
 )
 
 // The family calendar: kept by the app (agenda.Store), published to every
@@ -229,7 +229,7 @@ func (s *Server) understand(ctx context.Context, text string) (voice.Draft, erro
 // agendaParse: POST /api/agenda/parse {text} → {draft}. Nothing is saved.
 func (s *Server) agendaParse(w http.ResponseWriter, r *http.Request) {
 	if s.Understander == nil {
-		fail(w, http.StatusNotImplemented, "Saisie rapide non configurée", "agenda.voice.understand dans maison.yaml")
+		fail(w, http.StatusNotImplemented, "Saisie rapide non configurée", "agenda.voice.understand dans control.yaml")
 		return
 	}
 	var q struct {
@@ -256,7 +256,7 @@ const maxAudio = 8 << 20 // ~ 1 min of compressed speech, far more than a senten
 // → {draft}. The audio is only held in memory for the request, never stored.
 func (s *Server) agendaVoice(w http.ResponseWriter, r *http.Request) {
 	if s.Transcriber == nil || s.Understander == nil {
-		fail(w, http.StatusNotImplemented, "Saisie vocale non configurée", "agenda.voice.transcribe et understand dans maison.yaml")
+		fail(w, http.StatusNotImplemented, "Saisie vocale non configurée", "agenda.voice.transcribe et understand dans control.yaml")
 		return
 	}
 	ct := r.Header.Get("Content-Type")

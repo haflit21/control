@@ -1,0 +1,33 @@
+# Stack Portainer « control » sur le NAS, créée par Sentinel au premier
+# déploiement de la CI (TAG remplacé par l'image construite, stack ouverte à forge-ci,
+# nom control.home.arpa dans Pi-hole) ; les push suivants la redéploient. Ne pas la
+# créer à la main.
+#
+# Aucun secret ici ni dans les variables de la stack : ils sont dans
+# .cloud/secrets/secrets.enc.yaml (chiffré, dans l'image), déchiffré au démarrage avec la
+# clé age du service : /volume1/docker/secrets/control/age.key (propriétaire 65532, 0400).
+# L'image tourne en utilisateur non-root (distroless) : port 8080, pas de port < 1024.
+# Jamais publiée via NPM : réseau de la maison et VPN uniquement.
+services:
+  control:
+    image: localhost:5011/control:TAG
+    container_name: control
+    restart: unless-stopped
+    cap_drop: [NET_RAW]        # pas de paquets bruts : ne peut pas usurper d'adresses sur le LAN
+    volumes:
+      - /volume1/docker/secrets/control/age.key:/run/secrets/age.key:ro
+      - control_state:/data/state
+      # tes propres photos à la place de celles de l'image : décommenter et déposer rooms/*.jpg, devices/*.jpg
+      # - /volume1/docker/control/media:/media:ro
+    networks:
+      lan_macvlan:
+        ipv4_address: 192.168.10.6
+    dns:
+      - 192.168.10.3           # Pi-hole : claude.home.arpa, whisper.home.arpa
+
+volumes:
+  control_state:
+
+networks:
+  lan_macvlan:
+    external: true

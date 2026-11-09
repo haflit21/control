@@ -16,19 +16,19 @@ import (
 	"testing"
 	"time"
 
-	"ahomelab.io/maison/internal/agenda"
-	"ahomelab.io/maison/internal/config"
-	"ahomelab.io/maison/internal/demo"
-	"ahomelab.io/maison/internal/ha"
-	"ahomelab.io/maison/internal/journal"
-	"ahomelab.io/maison/internal/model"
-	"ahomelab.io/maison/internal/push"
-	"ahomelab.io/maison/internal/voice"
+	"ahomelab.io/control/internal/agenda"
+	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/demo"
+	"ahomelab.io/control/internal/ha"
+	"ahomelab.io/control/internal/journal"
+	"ahomelab.io/control/internal/model"
+	"ahomelab.io/control/internal/push"
+	"ahomelab.io/control/internal/voice"
 )
 
 func newTestServer(t *testing.T) (*Server, *demo.Source) {
 	t.Helper()
-	cfg, err := config.Load("../../../maison.yaml")
+	cfg, err := config.Load("../../../control.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,9 +80,9 @@ func TestLoginAndAuth(t *testing.T) {
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusForbidden {
-		t.Fatalf("sans X-Maison : %d", w.Code)
+		t.Fatalf("sans X-Control : %d", w.Code)
 	}
-	req.Header.Set("X-Maison", "1")
+	req.Header.Set("X-Control", "1")
 	w = httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 	if w.Code != http.StatusAccepted {
@@ -99,7 +99,7 @@ func TestActions(t *testing.T) {
 	post := func(path, body string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest("POST", path, strings.NewReader(body))
 		req.AddCookie(c)
-		req.Header.Set("X-Maison", "1")
+		req.Header.Set("X-Control", "1")
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, req)
 		return w
@@ -317,7 +317,7 @@ func TestPush(t *testing.T) {
 	call := func(method, path, body string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(method, path, strings.NewReader(body))
 		req.AddCookie(&http.Cookie{Name: cookieName, Value: s.Token})
-		req.Header.Set("X-Maison", "1")
+		req.Header.Set("X-Control", "1")
 		req.Header.Set("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Version/17.0 Mobile/15E148 Safari/604.1")
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, req)
@@ -326,7 +326,7 @@ func TestPush(t *testing.T) {
 	if w := call("GET", "/api/push/key", ""); w.Code != 404 {
 		t.Fatalf("sans store : %d", w.Code)
 	}
-	st, err := push.Open(t.TempDir(), "mailto:test@maison")
+	st, err := push.Open(t.TempDir(), "mailto:test@control")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -435,7 +435,7 @@ func TestAgendaAPI(t *testing.T) {
 	call := func(method, path string, body io.Reader, ct string) *httptest.ResponseRecorder {
 		req := httptest.NewRequest(method, path, body)
 		req.AddCookie(&http.Cookie{Name: cookieName, Value: s.Token})
-		req.Header.Set("X-Maison", "1")
+		req.Header.Set("X-Control", "1")
 		if ct != "" {
 			req.Header.Set("Content-Type", ct)
 		}

@@ -1,7 +1,7 @@
 // Data layer: one query for /api/home, kept fresh by the SSE stream.
 import { useEffect, useState } from 'react';
 import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
-import { applyEvent, type Home, type Event, type ApiError, type JournalEntry } from '@maison/model';
+import { applyEvent, type Home, type Event, type ApiError, type JournalEntry } from '@control/model';
 import { confirmPending } from './actions';
 
 export const queryClient = new QueryClient({
@@ -15,7 +15,7 @@ export class HttpError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(path, { ...init, headers: { 'X-Maison': '1', 'Content-Type': 'application/json', ...(init?.headers ?? {}) } });
+  const res = await fetch(path, { ...init, headers: { 'X-Control': '1', 'Content-Type': 'application/json', ...(init?.headers ?? {}) } });
   if (!res.ok) {
     let body: ApiError = { error: `HTTP ${res.status}` };
     try { body = await res.json(); } catch { /* not JSON */ }

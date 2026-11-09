@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"ahomelab.io/maison/internal/journal"
-	"ahomelab.io/maison/internal/model"
-	"ahomelab.io/maison/internal/push"
+	"ahomelab.io/control/internal/journal"
+	"ahomelab.io/control/internal/model"
+	"ahomelab.io/control/internal/push"
 )
 
 // Push notifications: the browser subscribes (service worker), the server
@@ -81,7 +81,7 @@ func (s *Server) pushTest(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
-	n := s.Push.Broadcast(ctx, push.Message{Title: "Maison", Body: "Les notifications fonctionnent sur cet appareil.", Tag: "test", URL: "/", Level: "info"})
+	n := s.Push.Broadcast(ctx, push.Message{Title: "Control", Body: "Les notifications fonctionnent sur cet appareil.", Tag: "test", URL: "/", Level: "info"})
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "sent": n})
 }
 
@@ -139,7 +139,7 @@ func (s *Server) notifyAlerts(prev, cur model.Home) {
 			}
 			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 			defer cancel()
-			n := s.Push.Broadcast(ctx, push.Message{Title: "Home Assistant injoignable", Body: fmt.Sprintf("Maison n’a plus de nouvelles de la maison depuis %s.", HALostAfter.Round(time.Second)), Tag: "ha", Level: "warn", URL: "/"})
+			n := s.Push.Broadcast(ctx, push.Message{Title: "Home Assistant injoignable", Body: fmt.Sprintf("Control n’a plus de nouvelles de la maison depuis %s.", HALostAfter.Round(time.Second)), Tag: "ha", Level: "warn", URL: "/"})
 			log.Printf("push : « Home Assistant injoignable » envoyé à %d appareil(s)", n)
 		})
 	}

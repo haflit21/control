@@ -2,7 +2,7 @@
 // pending state until HA confirms, rollback + toast when it does not.
 import { useCallback, useSyncExternalStore } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import type { Device, DeviceAction, Home, State } from '@maison/model';
+import type { Device, DeviceAction, Home, State } from '@control/model';
 import { HOME_KEY, JOURNAL_KEY, HttpError, api } from './api';
 
 /* ---------- toasts ---------- */

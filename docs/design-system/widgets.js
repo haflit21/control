@@ -1,6 +1,6 @@
-// Maison — widget behaviour that plain CSS cannot do: dots meters, arc gauges, weather glyphs, sparklines,
-// all drawn from data attributes. Call MaisonWidgets.enhance(root) after inserting markup; runs once on load.
-window.MaisonWidgets = (() => {
+// Control — widget behaviour that plain CSS cannot do: dots meters, arc gauges, weather glyphs, sparklines,
+// all drawn from data attributes. Call ControlWidgets.enhance(root) after inserting markup; runs once on load.
+window.ControlWidgets = (() => {
   const NS = 'http://www.w3.org/2000/svg';
   const svgEl = (tag, attrs = {}) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
 

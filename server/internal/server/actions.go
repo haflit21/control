@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"ahomelab.io/maison/internal/config"
-	"ahomelab.io/maison/internal/journal"
-	"ahomelab.io/maison/internal/model"
+	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/journal"
+	"ahomelab.io/control/internal/model"
 )
 
-// Actions (étape 2). Every mutation is a POST with the X-Maison header and the
+// Actions (étape 2). Every mutation is a POST with the X-Control header and the
 // session cookie, translated into one or more Home Assistant service calls.
 // The interface updates itself from the state_changed events that follow; the
 // response only says whether HA accepted the call.
@@ -66,12 +66,12 @@ func (s *Server) record(r *http.Request, je journal.Entry) {
 	s.Journal.Add(je)
 }
 
-// userOf names the session's user. One user in v1: the first person configured, else « Maison ».
+// userOf names the session's user. One user in v1: the first person configured, else « Control ».
 func (s *Server) userOf(_ *http.Request) string {
 	if len(s.Cfg.Globals.Presence) > 0 && s.Cfg.Globals.Presence[0].Name != "" {
 		return s.Cfg.Globals.Presence[0].Name
 	}
-	return "Maison"
+	return "Control"
 }
 
 func (s *Server) findDevice(id string) (config.Room, config.Device, bool) {

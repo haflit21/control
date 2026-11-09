@@ -1,6 +1,6 @@
 {
-  "name": "Maison",
-  "short_name": "Maison",
+  "name": "Control",
+  "short_name": "Control",
   "description": "L'interface du quotidien de la maison",
   "start_url": "/",
   "scope": "/",

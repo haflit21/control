@@ -1,5 +1,5 @@
 import { useCallback, useState, type ReactNode } from 'react';
-import { Sheet } from '@maison/ui';
+import { Sheet } from '@control/ui';
 
 export type ConfirmSpec = { icon: string; tone?: 'warn' | 'crit' | 'heat' | 'off'; title: string; detail?: string; confirmLabel: string; danger?: boolean; run: () => Promise<unknown> | void };
 

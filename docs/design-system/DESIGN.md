@@ -1,4 +1,4 @@
-# Design system de Maison — v2 « ambiance »
+# Design system de Control — v2 « ambiance »
 
 Quatre pages, un menu commun en haut (System · Mobile · Dashboard · Météo) :
 - `index.html` — **System** : les fondations, chaque widget dans tous ses états, la table données → widget (`?theme=dark|light`, `?phone=1`).
@@ -176,7 +176,7 @@ Règles transversales inchangées : valeur absente = « — » + raison dans `ti
 
 - **2026-11-09 · v2.7** — agenda (`agenda.css`, section Agenda), qualité de l'air sur la page Météo de l'app, accueil / pièces / sécurité réorganisés, images produit par lampe (allumé / éteint) et teinte couleur.
 
-- **2026-11-08 · v2.6** — photos : `media/` (6 pièces, 9 appareils), `/media/` côté serveur, `image:` dans `maison.yaml`, `has-img` + `.thumb` dans `widgets.css`, catalogue et app passés sur les photos.
+- **2026-11-08 · v2.6** — photos : `media/` (6 pièces, 9 appareils), `/media/` côté serveur, `image:` dans `control.yaml`, `has-img` + `.thumb` dans `widgets.css`, catalogue et app passés sur les photos.
 
 - **2026-11-08 · app étape 1** — portage React (`packages/ui`, `apps/web`) et serveur Go (`server/`) : accueil, pièces, sécurité, météo en lecture temps réel (SSE), mode démo, PWA. Captures vérifiées à 390 et 1440 px sans débordement ni erreur console. Section 6c ci-dessus ; le point 5 du « à faire » est fait (sans Storybook, le catalogue reste la doc vivante).
 

@@ -1,17 +1,19 @@
-// Command maison serves the house interface: Home Assistant behind, the
+// Command control serves the house interface: Home Assistant behind, the
 // React app in front.
 //
-//	maison serve            start the server (default)
-//	maison check            load maison.yaml, connect to HA, print what is missing
+//	control serve            start the server (default)
+//	control check            load control.yaml, connect to HA, print what is missing
 //
-// Environment (.env is read if present): HA_URL, HA_TOKEN, MAISON_CONFIG
-// (maison.yaml), MAISON_DEMO=1, MAISON_LISTEN, MAISON_MEDIA, MAISON_ALLOW_FROM (comma
-// separated, added to serve.allow_from), MAISON_TOKEN (login token;
-// generated otherwise), MAISON_STATE_DIR.
+// Environment (decrypted from .cloud/secrets/secrets.enc.yaml next to
+// control.yaml, or a .env in development): HA_URL, HA_TOKEN,
+// CLAUDE_GATEWAY_TOKEN, STT_API_KEY, CONTROL_CONFIG
+// (control.yaml), CONTROL_DEMO=1, CONTROL_LISTEN, CONTROL_MEDIA, CONTROL_ALLOW_FROM (comma
+// separated, added to serve.allow_from), CONTROL_TOKEN (login token;
+// generated otherwise), CONTROL_STATE_DIR.
 package main
 
 import (
-	"ahomelab.io/maison/internal/air"
+	"ahomelab.io/control/internal/air"
 	"bufio"
 	"context"
 	"crypto/rand"
@@ -28,34 +30,42 @@ import (
 	"syscall"
 	"time"
 
-	"ahomelab.io/maison/internal/agenda"
-	"ahomelab.io/maison/internal/config"
-	"ahomelab.io/maison/internal/demo"
-	"ahomelab.io/maison/internal/ha"
-	"ahomelab.io/maison/internal/journal"
-	"ahomelab.io/maison/internal/push"
-	"ahomelab.io/maison/internal/server"
-	"ahomelab.io/maison/internal/voice"
+	"ahomelab.io/control/internal/agenda"
+	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/demo"
+	"ahomelab.io/control/internal/ha"
+	"ahomelab.io/control/internal/journal"
+	"ahomelab.io/control/internal/push"
+	"ahomelab.io/control/internal/secrets"
+	"ahomelab.io/control/internal/server"
+	"ahomelab.io/control/internal/voice"
 )
 
 func main() {
 	log.SetFlags(log.Ltime)
+	for _, kv := range os.Environ() { // set by the caller (Makefile, stack): never replaced
+		k, _, _ := strings.Cut(kv, "=")
+		callerEnv[k] = true
+	}
 	loadDotEnv(".env")
 	cmd := "serve"
 	if len(os.Args) > 1 {
 		cmd = os.Args[1]
 	}
-	// maison.yaml : MAISON_CONFIG, sinon ./maison.yaml, sinon ../maison.yaml (lancé depuis server/)
-	cfgPath := os.Getenv("MAISON_CONFIG")
+	// control.yaml : CONTROL_CONFIG, sinon ./control.yaml, sinon ../control.yaml (lancé depuis server/)
+	cfgPath := os.Getenv("CONTROL_CONFIG")
 	if cfgPath == "" {
-		cfgPath = "maison.yaml"
+		cfgPath = "control.yaml"
 		if _, err := os.Stat(cfgPath); err != nil {
-			if _, err := os.Stat(filepath.Join("..", "maison.yaml")); err == nil {
-				cfgPath = filepath.Join("..", "maison.yaml")
+			if _, err := os.Stat(filepath.Join("..", "control.yaml")); err == nil {
+				cfgPath = filepath.Join("..", "control.yaml")
 			}
 		}
 	}
-	// .env à côté de maison.yaml aussi (sans écraser ce qui est déjà défini)
+	// secrets chiffrés (SOPS) à côté de control.yaml : .cloud/secrets/secrets.enc.yaml,
+	// ou CONTROL_SECRETS ; ils priment sur un .env de développement
+	loadSecrets(cfgPath)
+	// .env à côté de control.yaml aussi (sans écraser ce qui est déjà défini)
 	loadDotEnv(filepath.Join(filepath.Dir(cfgPath), ".env"))
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
@@ -67,7 +77,7 @@ func main() {
 	case "check":
 		check(cfg)
 	default:
-		fmt.Fprintf(os.Stderr, "usage : maison [serve|check]\n")
+		fmt.Fprintf(os.Stderr, "usage : control [serve|check]\n")
 		os.Exit(2)
 	}
 }
@@ -75,7 +85,7 @@ func main() {
 func serve(cfg *config.Config, cfgPath string) {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-	demoMode := os.Getenv("MAISON_DEMO") == "1"
+	demoMode := os.Getenv("CONTROL_DEMO") == "1"
 	var src ha.Source
 	if demoMode {
 		d := demo.New(cfg)
@@ -85,14 +95,14 @@ func serve(cfg *config.Config, cfgPath string) {
 	} else {
 		url, token := os.Getenv("HA_URL"), os.Getenv("HA_TOKEN")
 		if url == "" || token == "" {
-			log.Fatalf("HA_URL et HA_TOKEN sont requis (ou MAISON_DEMO=1)")
+			log.Fatalf("HA_URL et HA_TOKEN sont requis (ou CONTROL_DEMO=1)")
 		}
 		c := ha.NewClient(url, token, cfg.Entities(), cfg.Globals.Weather)
 		c.Insecure = os.Getenv("HA_INSECURE") == "1"
 		go c.Run(ctx)
 		src = c
 	}
-	token := os.Getenv("MAISON_TOKEN")
+	token := os.Getenv("CONTROL_TOKEN")
 	if token == "" {
 		b := make([]byte, 24)
 		_, _ = rand.Read(b)
@@ -104,9 +114,9 @@ func serve(cfg *config.Config, cfgPath string) {
 	} else {
 		srv.Air = &air.OpenMeteo{}
 	}
-	// media_dir from maison.yaml is relative to the config file (so `go run` from server/ works);
-	// MAISON_MEDIA is relative to the current directory like any path given on the command line.
-	srv.MediaDir = os.Getenv("MAISON_MEDIA")
+	// media_dir from control.yaml is relative to the config file (so `go run` from server/ works);
+	// CONTROL_MEDIA is relative to the current directory like any path given on the command line.
+	srv.MediaDir = os.Getenv("CONTROL_MEDIA")
 	if srv.MediaDir == "" {
 		rel := cfg.Serve.MediaDir
 		if rel == "" {
@@ -124,12 +134,12 @@ func serve(cfg *config.Config, cfgPath string) {
 	} else {
 		log.Printf("photos : %s", srv.MediaDir)
 	}
-	// notifications push : clés VAPID + abonnements dans state_dir (relatif à maison.yaml)
-	stateDir := env("MAISON_STATE_DIR", cfg.Serve.StateDir)
-	if !filepath.IsAbs(stateDir) && os.Getenv("MAISON_STATE_DIR") == "" {
+	// notifications push : clés VAPID + abonnements dans state_dir (relatif à control.yaml)
+	stateDir := env("CONTROL_STATE_DIR", cfg.Serve.StateDir)
+	if !filepath.IsAbs(stateDir) && os.Getenv("CONTROL_STATE_DIR") == "" {
 		stateDir = filepath.Join(filepath.Dir(cfgPath), stateDir)
 	}
-	if ps, err := push.Open(filepath.Join(stateDir, "push"), "mailto:maison@localhost"); err != nil {
+	if ps, err := push.Open(filepath.Join(stateDir, "push"), "mailto:control@localhost"); err != nil {
 		log.Printf("notifications : désactivées (%v)", err)
 	} else {
 		srv.Push = ps
@@ -157,9 +167,9 @@ func serve(cfg *config.Config, cfgPath string) {
 	}
 	go srv.Run(ctx)
 
-	listen := env("MAISON_LISTEN", cfg.Serve.Listen)
+	listen := env("CONTROL_LISTEN", cfg.Serve.Listen)
 	allow := append([]string{}, cfg.Serve.AllowFrom...)
-	if v := os.Getenv("MAISON_ALLOW_FROM"); v != "" {
+	if v := os.Getenv("CONTROL_ALLOW_FROM"); v != "" {
 		allow = append(allow, strings.Split(v, ",")...)
 	}
 	h, err := server.AllowFrom(srv.Handler(), allow)
@@ -175,7 +185,7 @@ func serve(cfg *config.Config, cfgPath string) {
 	if host == "" || host == "::" || host == "0.0.0.0" {
 		host = "localhost"
 	}
-	log.Printf("maison : http://%s/login?token=%s", net.JoinHostPort(host, port), token)
+	log.Printf("control : http://%s/login?token=%s", net.JoinHostPort(host, port), token)
 	go func() {
 		<-ctx.Done()
 		sctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -221,7 +231,7 @@ func check(cfg *config.Config) {
 	}
 	fmt.Printf("%d entités configurées, %d connues de Home Assistant\n", len(cfg.Entities()), len(st))
 	if len(missing) > 0 {
-		fmt.Printf("\nInconnues de HA (à corriger dans maison.yaml) :\n")
+		fmt.Printf("\nInconnues de HA (à corriger dans control.yaml) :\n")
 		for _, e := range missing {
 			fmt.Printf("  - %s\n", e)
 		}
@@ -236,7 +246,7 @@ func check(cfg *config.Config) {
 		fmt.Println("\nToutes les entités sont câblées.")
 	}
 
-	// what HA has that maison.yaml could use, and the services the app calls
+	// what HA has that control.yaml could use, and the services the app calls
 	rctx, rcancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer rcancel()
 	checkVoice(rctx, cfg)
@@ -308,13 +318,41 @@ func loadDotEnv(path string) {
 	}
 }
 
-// voiceFrom builds the quick-entry chain from maison.yaml (agenda.voice) and .env.
+// loadSecrets decrypts the SOPS file of the configuration into the
+// environment (names logged, never values). It replaces what a .env set,
+// never what the caller set (CONTROL_TOKEN=dev in the Makefile). Without the file nothing
+// happens; a file that cannot be decrypted is reported, not fatal (demo
+// mode needs no secret).
+var callerEnv = map[string]bool{}
+
+func loadSecrets(cfgPath string) {
+	p := os.Getenv("CONTROL_SECRETS")
+	if p == "" {
+		p = filepath.Join(filepath.Dir(cfgPath), ".cloud", "secrets", "secrets.enc.yaml")
+	}
+	names, err := secrets.Load(p, os.Getenv("SOPS_BIN"), func(k string) bool { return callerEnv[k] })
+	switch {
+	case err != nil:
+		log.Printf("attention : secrets non déchiffrés (%v)", err)
+	case names != nil:
+		log.Printf("secrets déchiffrés depuis %s : %s", p, strings.Join(names, ", "))
+	}
+}
+
+// voiceFrom builds the quick-entry chain from control.yaml (agenda.voice) and .env.
 // Swapping Claude for a local model = provider: openai + url + model, nothing else.
 func voiceFrom(cfg *config.Config) (voice.Transcriber, voice.Understander) {
 	v := cfg.Agenda.Voice
 	var tr voice.Transcriber
 	var un voice.Understander
 	switch v.Understand.Provider {
+	case "gateway":
+		if os.Getenv("CLAUDE_GATEWAY_TOKEN") == "" {
+			log.Printf("agenda : saisie rapide désactivée, CLAUDE_GATEWAY_TOKEN absent des secrets")
+		} else {
+			un = &voice.Gateway{URL: v.Understand.URL, Token: os.Getenv("CLAUDE_GATEWAY_TOKEN"), Profile: v.Understand.Profile}
+			log.Printf("agenda : phrases comprises par Claude via %s (profil %s)", v.Understand.URL, v.Understand.Profile)
+		}
 	case "anthropic":
 		if os.Getenv("ANTHROPIC_API_KEY") == "" {
 			log.Printf("agenda : saisie rapide désactivée, ANTHROPIC_API_KEY absente de .env")
@@ -348,6 +386,12 @@ func checkVoice(ctx context.Context, cfg *config.Config) {
 	switch v.Understand.Provider {
 	case "":
 		fmt.Println("  saisie rapide : non configurée (agenda.voice.understand)")
+	case "gateway":
+		if os.Getenv("CLAUDE_GATEWAY_TOKEN") == "" {
+			fmt.Println("  saisie rapide : claude-gateway, mais CLAUDE_GATEWAY_TOKEN manque dans les secrets")
+		} else {
+			fmt.Printf("  saisie rapide : claude-gateway %s, profil %s, jeton présent\n", v.Understand.URL, v.Understand.Profile)
+		}
 	case "anthropic":
 		if os.Getenv("ANTHROPIC_API_KEY") == "" {
 			fmt.Println("  saisie rapide : Claude, mais ANTHROPIC_API_KEY manque dans .env")

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { CSSProperties, ReactNode } from 'react';
-import type { Alert, Person } from '@maison/model';
+import type { Alert, Person } from '@control/model';
 import { Icon, Pict, Tag, Dot, Pwr, cx } from './primitives';
 import type { IconName } from './sprite';
 

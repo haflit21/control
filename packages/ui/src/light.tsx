@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { CSSProperties } from 'react';
-import type { Device, HS } from '@maison/model';
+import type { Device, HS } from '@control/model';
 import { Pwr, Slider, cx } from './primitives';
 
 /* ---------- Light panel: brightness, white temperature, hue / saturation, presets ---------- */

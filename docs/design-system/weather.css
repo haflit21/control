@@ -1,5 +1,5 @@
-/* Maison — weather widgets (Météo-France through Home Assistant). Depends on tokens.css + widgets.css + widgets.js.
-   Glyphs are drawn by MaisonWidgets.weatherGlyph from data-cond / data-night; everything else is CSS. */
+/* Control — weather widgets (Météo-France through Home Assistant). Depends on tokens.css + widgets.css + widgets.js.
+   Glyphs are drawn by ControlWidgets.weatherGlyph from data-cond / data-night; everything else is CSS. */
 
 :root {
   --wx-cloud: #f1f2f6; --wx-cloud-2: #c3c8d3; --wx-cloud-dark: #8b93a6; --wx-cloud-night: #8d94a8; --wx-cloud-night-2: #5e6577;

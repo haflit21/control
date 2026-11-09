@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import type { Home } from '@maison/model';
-import { Pict, Pictv, RoomTile, plural, relative } from '@maison/ui';
+import type { Home } from '@control/model';
+import { Pict, Pictv, RoomTile, plural, relative } from '@control/ui';
 import { primaryHeating, ROOM_AMBIENCE, roomImage } from '../lib/derive';
 
 /** /pieces — every room as a photo tile; the room page opens from here (and from the rail / bottom nav). */

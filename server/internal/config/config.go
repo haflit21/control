@@ -1,6 +1,7 @@
-// Package config reads maison.yaml: the rooms, the devices and the Home
+// Package config reads control.yaml: the rooms, the devices and the Home
 // Assistant entities behind each of them. The file never holds a secret;
-// HA_URL and HA_TOKEN come from the environment (.env).
+// HA_URL, HA_TOKEN… come from the environment, filled from the SOPS file
+// .cloud/secrets/secrets.enc.yaml (or a .env in development).
 package config
 
 import (
@@ -10,7 +11,7 @@ import (
 
 	"github.com/goccy/go-yaml"
 
-	"ahomelab.io/maison/internal/model"
+	"ahomelab.io/control/internal/model"
 )
 
 type Config struct {
@@ -48,11 +49,14 @@ type Voice struct {
 		Language string `yaml:"language"` // default "fr"
 	} `yaml:"transcribe"`
 	Understand struct {
-		// Provider: "anthropic" (Messages API, key in ANTHROPIC_API_KEY) or "openai"
-		// (any OpenAI-compatible chat endpoint: Ollama, llama.cpp, vLLM… key in LLM_API_KEY if needed).
+		// Provider: "gateway" (claude-gateway, the homelab's Claude service: the
+		// owner's subscription, token in CLAUDE_GATEWAY_TOKEN), "anthropic"
+		// (Messages API, key in ANTHROPIC_API_KEY) or "openai" (any
+		// OpenAI-compatible chat endpoint: Ollama, llama.cpp, vLLM… key in LLM_API_KEY if needed).
 		Provider string `yaml:"provider"`
-		URL      string `yaml:"url"`   // openai: base URL ending in /v1 ; anthropic: optional
-		Model    string `yaml:"model"` // e.g. claude-haiku-5-5, qwen2.5:3b
+		URL      string `yaml:"url"`     // gateway: http://claude.home.arpa ; openai: base URL ending in /v1 ; anthropic: optional
+		Model    string `yaml:"model"`   // anthropic, openai: e.g. claude-haiku-5-5, qwen2.5:3b (gateway: chosen by its profile)
+		Profile  string `yaml:"profile"` // gateway: default calendar
 	} `yaml:"understand"`
 }
 
@@ -67,9 +71,9 @@ func (a Agenda) CalendarIDs() []string {
 
 type Serve struct {
 	Listen    string   `yaml:"listen"`     // ":8080"
-	AllowFrom []string `yaml:"allow_from"` // CIDRs, added to MAISON_ALLOW_FROM
+	AllowFrom []string `yaml:"allow_from"` // CIDRs, added to CONTROL_ALLOW_FROM
 	StateDir  string   `yaml:"state_dir"`  // journal, default "state"
-	MediaDir  string   `yaml:"media_dir"`  // photos served under /media/, default "media" (MAISON_MEDIA overrides)
+	MediaDir  string   `yaml:"media_dir"`  // photos served under /media/, default "media" (CONTROL_MEDIA overrides)
 }
 
 type Room struct {
@@ -172,7 +176,7 @@ var kinds = map[model.DeviceKind]string{
 // Validate checks ids, kinds and the required entity role of each device.
 func (c *Config) Validate() error {
 	if c.Name == "" {
-		c.Name = "Maison"
+		c.Name = "Control"
 	}
 	if c.Serve.Listen == "" {
 		c.Serve.Listen = ":8080"
@@ -203,8 +207,15 @@ func (c *Config) Validate() error {
 	}
 	switch v.Understand.Provider {
 	case "", "anthropic", "openai":
+	case "gateway":
+		if v.Understand.URL == "" {
+			v.Understand.URL = "http://claude.home.arpa"
+		}
+		if v.Understand.Profile == "" {
+			v.Understand.Profile = "calendar"
+		}
 	default:
-		return fmt.Errorf("agenda.voice.understand.provider : %q inconnu (anthropic ou openai)", v.Understand.Provider)
+		return fmt.Errorf("agenda.voice.understand.provider : %q inconnu (gateway, anthropic ou openai)", v.Understand.Provider)
 	}
 	if v.Understand.Provider == "openai" && v.Understand.URL == "" {
 		return fmt.Errorf("agenda.voice.understand.url est requis avec le fournisseur openai")

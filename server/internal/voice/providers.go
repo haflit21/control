@@ -246,3 +246,60 @@ func client(c *http.Client) *http.Client {
 	}
 	return &http.Client{Timeout: 60 * time.Second}
 }
+
+// ---------- text → draft : claude-gateway ----------
+
+// Gateway calls claude-gateway, the homelab's Claude service (the owner's
+// subscription, no API key): POST /v1/run with a profile (calendar: Haiku,
+// little reasoning), the shared system prompt and the schema; the answer
+// is the structured JSON of the schema. The gateway, not this app, chooses
+// the model.
+type Gateway struct {
+	URL     string // http://claude.home.arpa
+	Token   string // CLAUDE_GATEWAY_TOKEN: control's client token at the gateway
+	Profile string // default calendar
+	HTTP    *http.Client
+}
+
+func (g *Gateway) Understand(ctx context.Context, text string, c Context) (Draft, error) {
+	if g.Token == "" {
+		return Draft{}, errors.New("CLAUDE_GATEWAY_TOKEN manquant")
+	}
+	profile := g.Profile
+	if profile == "" {
+		profile = "calendar"
+	}
+	b, _ := json.Marshal(map[string]any{"profile": profile, "system": SystemPrompt(c), "input": text, "schema": Schema})
+	req, err := http.NewRequestWithContext(ctx, "POST", strings.TrimRight(g.URL, "/")+"/v1/run", bytes.NewReader(b))
+	if err != nil {
+		return Draft{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+g.Token)
+	resp, err := client(g.HTTP).Do(req)
+	if err != nil {
+		return Draft{}, fmt.Errorf("Claude (gateway) : %w", err)
+	}
+	defer resp.Body.Close()
+	rb, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	var out struct {
+		Result     string          `json:"result"`
+		Structured json.RawMessage `json:"structured"`
+		Error      string          `json:"error"`
+	}
+	_ = json.Unmarshal(rb, &out)
+	if resp.StatusCode != 200 {
+		if out.Error != "" {
+			return Draft{}, fmt.Errorf("Claude (gateway) : HTTP %d : %s", resp.StatusCode, out.Error)
+		}
+		return Draft{}, fmt.Errorf("Claude (gateway) : HTTP %d %s", resp.StatusCode, clip(rb))
+	}
+	if len(out.Structured) > 0 && string(out.Structured) != "null" {
+		var d Draft
+		if err := json.Unmarshal(out.Structured, &d); err != nil {
+			return Draft{}, fmt.Errorf("Claude (gateway) : événement illisible : %w", err)
+		}
+		return d, nil
+	}
+	return decodeDraft(out.Result)
+}

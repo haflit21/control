@@ -9,7 +9,7 @@ import '@fontsource/outfit/600.css';
 import '@fontsource/inter/400.css';
 import '@fontsource/inter/500.css';
 import '@fontsource/inter/600.css';
-import '@maison/ui/styles.css';
+import '@control/ui/styles.css';
 import './app.css';
 import { queryClient } from './lib/api';
 import { applyTheme } from './lib/theme';

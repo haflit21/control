@@ -4,6 +4,7 @@ server/internal/server/ui/dist/*
 !server/internal/server/ui/dist/.gitkeep
 server/bin/
 state/
+tmp/
 .env
 *.log
 .DS_Store

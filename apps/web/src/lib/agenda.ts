@@ -1,7 +1,7 @@
 // Agenda: API calls and the voice recorder.
 // The server owns the events; every screen gets the new agenda through SSE
 // after a write, so nothing here patches the cache by hand.
-import type { AgendaEvent, EventDraft } from '@maison/model';
+import type { AgendaEvent, EventDraft } from '@control/model';
 import { api } from './api';
 
 export type Saved = { ok: boolean; message?: string; event?: AgendaEvent };

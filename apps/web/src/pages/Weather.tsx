@@ -1,9 +1,9 @@
-import type { Home } from '@maison/model';
-import { AirIndex, AirPollens, AirPollutants, Card, CardHead, Compass, InOut, Pict, Pressure, Section, Spark, SunArc, UV, WxDays, WxHero, WxHours, WxStat, cardinal, int, relative, temp0 } from '@maison/ui';
+import type { Home } from '@control/model';
+import { AirIndex, AirPollens, AirPollutants, Card, CardHead, Compass, InOut, Pict, Pressure, Section, Spark, SunArc, UV, WxDays, WxHero, WxHours, WxStat, cardinal, int, relative, temp0 } from '@control/ui';
 
 export function WeatherPage({ home, now }: { home: Home; now: Date }) {
   const w = home.weather;
-  if (!w) return <div className="state"><Pict icon="cloud" size="xl" /><h2>Pas de météo configurée</h2><p>Ajoute une entité <code>weather</code> dans maison.yaml.</p></div>;
+  if (!w) return <div className="state"><Pict icon="cloud" size="xl" /><h2>Pas de météo configurée</h2><p>Ajoute une entité <code>weather</code> dans control.yaml.</p></div>;
   const hours = w.hourly.slice(0, 12);
   const air = home.air;
   return (

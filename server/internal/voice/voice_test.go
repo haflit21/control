@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"ahomelab.io/maison/internal/agenda"
+	"ahomelab.io/control/internal/agenda"
 )
 
 var paris, _ = time.LoadLocation("Europe/Paris")
@@ -147,5 +147,34 @@ func TestOpenAIChat(t *testing.T) {
 	d, err := o.Understand(context.Background(), "la poubelle jaune tous les mardis", ctxNow())
 	if err != nil || d.Calendar != "poubelles" || d.Repeat == nil || d.Repeat.Freq != "weekly" || !d.AllDay {
 		t.Fatalf("%+v %v", d, err)
+	}
+}
+
+func TestGateway(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/run" || r.Header.Get("Authorization") != "Bearer tok" {
+			w.WriteHeader(401)
+			_, _ = w.Write([]byte(`{"error":"jeton absent ou inconnu, ou adresse non autorisée pour ce client"}`))
+			return
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["profile"] != "calendar" || body["input"] != "dentiste de Marion jeudi à 10h" || body["schema"] == nil ||
+			!strings.Contains(body["system"].(string), "agenda familial") || body["model"] != nil {
+			t.Errorf("demande %v", body)
+		}
+		_, _ = w.Write([]byte(`{"result":"","structured":{"title":"Dentiste · Marion","calendar":"famille","allDay":false,"date":"2026-11-12","start":"10:00","end":"10:30"},"model":"claude-haiku-5-5","usage":{"input_tokens":900,"output_tokens":40}}`))
+	}))
+	defer srv.Close()
+	g := &Gateway{URL: srv.URL + "/", Token: "tok"}
+	d, err := g.Understand(context.Background(), "dentiste de Marion jeudi à 10h", ctxNow())
+	if err != nil || d.Title != "Dentiste · Marion" || d.Date != "2026-11-12" || d.End != "10:30" {
+		t.Fatalf("%+v %v", d, err)
+	}
+	if _, err := (&Gateway{URL: srv.URL, Token: "faux"}).Understand(context.Background(), "x", ctxNow()); err == nil || !strings.Contains(err.Error(), "HTTP 401") {
+		t.Fatalf("mauvais jeton : %v", err)
+	}
+	if _, err := (&Gateway{URL: srv.URL}).Understand(context.Background(), "x", ctxNow()); err == nil || !strings.Contains(err.Error(), "CLAUDE_GATEWAY_TOKEN") {
+		t.Fatalf("sans jeton : %v", err)
 	}
 }

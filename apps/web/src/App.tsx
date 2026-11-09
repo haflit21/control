@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { IconSprite, Icon, BottomNav, Dot, Pict, Toasts, Popover, AlertRow, Row, Seg, Toggle, relative } from '@maison/ui';
+import { IconSprite, Icon, BottomNav, Dot, Pict, Toasts, Popover, AlertRow, Row, Seg, Toggle, relative } from '@control/ui';
 import { usePush, sendTest } from './lib/push';
 import { setBell, useBell } from './lib/bell';
 import { setTheme, useTheme, type ThemeChoice } from './lib/theme';
@@ -159,7 +159,7 @@ function ErrorState({ status, message, detail }: { status: number; message: stri
     <div className="state" role="alert">
       <Pict icon={status === 401 ? 'lock' : 'wifi-off'} size="xl" state={status === 401 ? 'night' : 'warn'} />
       <h2>{status === 401 ? 'Non connecté' : 'Impossible de joindre le serveur'}</h2>
-      <p>{status === 401 ? 'Ouvre le lien de connexion affiché au démarrage du serveur Maison (…/login?token=…).' : `${message}${detail ? ` — ${detail}` : ''}`}</p>
+      <p>{status === 401 ? 'Ouvre le lien de connexion affiché au démarrage du serveur Control (…/login?token=…).' : `${message}${detail ? ` — ${detail}` : ''}`}</p>
     </div>
   );
 }

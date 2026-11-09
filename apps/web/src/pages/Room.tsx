@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import type { Device, Home, Room } from '@maison/model';
-import { Card, CardHead, Chip, ChipRow, DevCard, Dots, Hero, LightPanel, Pair, Pict, Player, Popover, Row, Section, Seg, Slider, Status, Stepper, Tag, Thumb, TimeAgo, Toggle, Val, AC_MODE_LABEL, plural } from '@maison/ui';
+import type { Device, Home, Room } from '@control/model';
+import { Card, CardHead, Chip, ChipRow, DevCard, Dots, Hero, LightPanel, Pair, Pict, Player, Popover, Row, Section, Seg, Slider, Status, Stepper, Tag, Thumb, TimeAgo, Toggle, Val, AC_MODE_LABEL, plural } from '@control/ui';
 import { byKind, deviceImage, deviceSub, heatingModeLabel, lightColor, ROOM_AMBIENCE, roomImage, roomStatus } from '../lib/derive';
-import { cx } from '@maison/ui';
+import { cx } from '@control/ui';
 import { snapshotURL, useTick } from '../lib/api';
 import { useActions, usePending } from '../lib/actions';
 import { useConfirm } from '../lib/confirm';

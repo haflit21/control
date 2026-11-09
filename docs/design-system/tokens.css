@@ -1,4 +1,4 @@
-/* Maison — design tokens v2 « ambiance » (source of truth).
+/* Control — design tokens v2 « ambiance » (source of truth).
    Dark first: the app is a night canvas (deep night blue) on which warm light glows (terracotta).
    Surfaces are frosted glass laid over ambient photos; light theme is a secondary, derived palette.
    Rules: never a literal color in a component rule; every color goes through a token.

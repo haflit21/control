@@ -1,4 +1,4 @@
-/* Maison — wide layout (iPad landscape, Mac). Depends on tokens.css + widgets.css.
+/* Control — wide layout (iPad landscape, Mac). Depends on tokens.css + widgets.css.
    Layout only: every visible thing is a widget from widgets.css. */
 
 .desk { position: relative; isolation: isolate; min-height: calc(100dvh - 60px); }

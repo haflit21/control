@@ -1,8 +1,8 @@
-# Maison — pièces, appareils et entités Home Assistant derrière chacun.
-# Aucun secret ici : HA_URL et HA_TOKEN sont dans .env.
+# Control — pièces, appareils et entités Home Assistant derrière chacun.
+# Aucun secret ici : HA_URL, HA_TOKEN… sont dans .cloud/secrets/secrets.enc.yaml (SOPS).
 # Rôles d'entités par type : voir server/internal/config/config.go.
 
-name: Maison
+name: Control
 
 serve:
   listen: ":8080"
@@ -310,16 +310,15 @@ agenda:
     - { id: poubelles, name: Poubelles, color: "#6fcf9a", hint: "poubelles, tri, verre, encombrants, déchetterie" }
   # Saisie rapide : une phrase (tapée ou dictée) devient un formulaire pré-rempli.
   voice:
-    # parole → texte : Whisper sur le NAS (deploy/whisper-stack.yml), API compatible OpenAI
-    transcribe:
-      url: http://192.168.10.10:8000
-      model: Systran/faster-whisper-small
-      language: fr
-    # texte → événement : Claude (clé ANTHROPIC_API_KEY dans .env).
-    # Pour un modèle local plus tard (Ollama, llama.cpp…), remplacer par :
-    #   provider: openai
-    #   url: http://192.168.10.11:11434/v1
-    #   model: qwen2.5:3b
+    # parole → texte : service whisper du homelab (dépôt ahomelab/whisper, modèle français),
+    # API compatible OpenAI, jeton STT_API_KEY dans les secrets. À décommenter quand il tourne.
+    # transcribe:
+    #   url: http://whisper.home.arpa
+    #   language: fr
+    # texte → événement : claude-gateway (abonnement Claude, profil calendar : Haiku),
+    # jeton CLAUDE_GATEWAY_TOKEN dans les secrets. Autres fournisseurs : anthropic (clé
+    # ANTHROPIC_API_KEY), openai (modèle local : url …/v1 + model).
     understand:
-      provider: anthropic
-      model: claude-haiku-5-5
+      provider: gateway
+      url: http://claude.home.arpa
+      profile: calendar

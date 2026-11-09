@@ -3,8 +3,8 @@
 // « Enregistrer ».
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import type { Agenda, AgendaEvent, EventDraft, RepeatFreq } from '@maison/model';
-import { Icon, Pict, Toggle, cx } from '@maison/ui';
+import type { Agenda, AgendaEvent, EventDraft, RepeatFreq } from '@control/model';
+import { Icon, Pict, Toggle, cx } from '@control/ui';
 import { HttpError } from '../lib/api';
 import { pushToast } from '../lib/actions';
 import { createEvent, deleteEvent, getEvent, isoDay, micSupported, parseText, record, sendVoice, updateEvent, type Recording } from '../lib/agenda';

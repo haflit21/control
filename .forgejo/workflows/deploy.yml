@@ -1,0 +1,38 @@
+# control : à chaque push sur master, tests → image → déploiement sur le NAS.
+# Forgejo ne lit les workflows qu'ici ; toute la logique est dans .cloud/forgejo/
+# (constantes du projet : .cloud/forgejo/app.env). Plan : homelab/forge.md.
+# Variables et secret de l'organisation ahomelab : REGISTRY, PORTAINER_URL,
+# PORTAINER_API_KEY, SENTINEL_URL et SENTINEL_CI_TOKEN (création du service par
+# Sentinel au premier déploiement).
+name: deploy
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+env:
+  # API Docker de dind (réseau interne ci), joignable depuis les conteneurs de job
+  DOCKER_HOST: tcp://172.30.0.2:2375
+  REGISTRY: ${{ vars.REGISTRY }}
+
+jobs:
+  deploy:
+    runs-on: nas-amd64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+      - name: Tests
+        run: .cloud/forgejo/test.sh
+      - name: Client Docker
+        run: .cloud/forgejo/docker-cli.sh
+      - name: Image
+        run: .cloud/forgejo/image.sh
+      - name: Déploiement
+        env:
+          PORTAINER_URL: ${{ vars.PORTAINER_URL }}
+          PORTAINER_API_KEY: ${{ secrets.PORTAINER_API_KEY }}
+          SENTINEL_URL: ${{ vars.SENTINEL_URL }}
+          SENTINEL_CI_TOKEN: ${{ secrets.SENTINEL_CI_TOKEN }}
+        run: .cloud/forgejo/deploy.sh

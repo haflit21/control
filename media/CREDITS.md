@@ -1,6 +1,6 @@
 # Photos
 
-Les photos de ce dossier sont des images libres de droits de **Pexels** (licence Pexels : usage libre, modification permise, attribution non requise), choisies en attendant les photos de la maison. Elles sont servies par le serveur sous `/media/` (`serve.media_dir` dans `maison.yaml`, ou `MAISON_MEDIA`).
+Les photos de ce dossier sont des images libres de droits de **Pexels** (licence Pexels : usage libre, modification permise, attribution non requise), choisies en attendant les photos de la maison. Elles sont servies par le serveur sous `/media/` (`serve.media_dir` dans `control.yaml`, ou `CONTROL_MEDIA`).
 
 Pour les remplacer : déposer tes propres photos sous le même nom (JPEG, paysage ≈ 3:2, 1200 px de large suffit pour les pièces ; carré 640 px pour les appareils). Aucun redémarrage nécessaire.
 
@@ -17,7 +17,7 @@ Pour les remplacer : déposer tes propres photos sous le même nom (JPEG, paysag
 
 ## Appareils (`devices/`)
 
-L'interface choisit l'image par type d'appareil (`image:` sur un appareil de `maison.yaml` la remplace).
+L'interface choisit l'image par type d'appareil (`image:` sur un appareil de `control.yaml` la remplace).
 
 | Fichier | Type | Pexels |
 | --- | --- | --- |
@@ -36,4 +36,4 @@ L'interface choisit l'image par type d'appareil (`image:` sur un appareil de `ma
 | spots-on/off.jpg | lampadaire à spots | https://www.pexels.com/photo/11919044/ (éteint : retouche) |
 | spotlight-on/off.jpg | spot orientable | https://www.pexels.com/photo/30315596/ (éteint : retouche) |
 
-Les variantes « éteint » des lampes sont dérivées de la photo allumée (couleur drainée, lumière écrasée) : une vraie photo de l'appareil éteint, sous le même nom, fera mieux. Dans `maison.yaml`, un appareil prend `image:` (allumé) et `image_off:` (éteint).
+Les variantes « éteint » des lampes sont dérivées de la photo allumée (couleur drainée, lumière écrasée) : une vraie photo de l'appareil éteint, sous le même nom, fera mieux. Dans `control.yaml`, un appareil prend `image:` (allumé) et `image_off:` (éteint).

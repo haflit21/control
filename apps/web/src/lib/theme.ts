@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react';
 
 export type ThemeChoice = 'auto' | 'dark' | 'light';
-const KEY = 'maison.theme';
+const KEY = 'control.theme';
 const BG: Record<'dark' | 'light', string> = { dark: '#0d1017', light: '#f1eee8' };
 
 function read(): ThemeChoice {

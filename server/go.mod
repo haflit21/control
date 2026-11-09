@@ -1,4 +1,4 @@
-module ahomelab.io/maison
+module ahomelab.io/control
 
 go 1.24
 

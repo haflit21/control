@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import type { Agenda, CalEvent, Calendar } from '@maison/model';
+import type { Agenda, CalEvent, Calendar } from '@control/model';
 import { Icon, cx } from './primitives';
 
 /* ---------- Agenda : semaine partagée ---------- */

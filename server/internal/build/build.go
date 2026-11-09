@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"ahomelab.io/maison/internal/config"
-	"ahomelab.io/maison/internal/ha"
-	"ahomelab.io/maison/internal/model"
+	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/ha"
+	"ahomelab.io/control/internal/model"
 )
 
 // Input is everything Build needs.

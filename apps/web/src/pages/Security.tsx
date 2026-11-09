@@ -1,10 +1,10 @@
-import type { Home } from '@maison/model';
-import { Card, CardHead, Chip, Hero, Pict, Row, Status, Tag, Toggle, Who, plural, relative } from '@maison/ui';
-import type { IconName } from '@maison/ui';
+import type { Home } from '@control/model';
+import { Card, CardHead, Chip, Hero, Pict, Row, Status, Tag, Toggle, Who, plural, relative } from '@control/ui';
+import type { IconName } from '@control/ui';
 import { cameras, openings, ROOM_AMBIENCE, roomImage } from '../lib/derive';
 import { snapshotURL, useJournal, useTick } from '../lib/api';
 import { useState } from 'react';
-import type { JournalEntry } from '@maison/model';
+import type { JournalEntry } from '@control/model';
 import { useActions, usePending } from '../lib/actions';
 import { useConfirm } from '../lib/confirm';
 

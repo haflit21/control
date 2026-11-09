@@ -72,11 +72,11 @@ func newSub(t *testing.T, endpoint string) (Subscription, *ecdh.PrivateKey, []by
 
 func TestEncryptRoundTrip(t *testing.T) {
 	sub, ua, auth := newSub(t, "https://push.example/x")
-	body, err := Encrypt(sub, []byte(`{"title":"Maison"}`))
+	body, err := Encrypt(sub, []byte(`{"title":"Control"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := string(decrypt(t, ua, auth, body)); got != `{"title":"Maison"}` {
+	if got := string(decrypt(t, ua, auth, body)); got != `{"title":"Control"}` {
 		t.Fatalf("got %q", got)
 	}
 }
@@ -145,7 +145,7 @@ func TestStoreBroadcast(t *testing.T) {
 	defer srv.Close()
 
 	dir := t.TempDir()
-	st, err := Open(dir, "mailto:maison@example.test")
+	st, err := Open(dir, "mailto:control@example.test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -154,7 +154,7 @@ func TestStoreBroadcast(t *testing.T) {
 		t.Fatalf("clé publique : %d caractères", len(pub))
 	}
 	// the key survives a restart
-	st2, _ := Open(dir, "mailto:maison@example.test")
+	st2, _ := Open(dir, "mailto:control@example.test")
 	if st2.PublicKey() != pub {
 		t.Fatal("clé VAPID non persistée")
 	}

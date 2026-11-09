@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Air, ForecastDay, ForecastHour, PollenKey, PollutantKey, Weather } from '@maison/model';
+import type { Air, ForecastDay, ForecastHour, PollenKey, PollutantKey, Weather } from '@control/model';
 import { Icon, Val, cx } from './primitives';
 import { conditionLabel, temp0, int, dayShort, hourShort, cardinal, uvLevel, relative, absoluteTime } from './format';
 
