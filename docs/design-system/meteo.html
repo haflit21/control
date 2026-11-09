@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1017">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1eee8">
+<title>Maison — design system · Météo</title>
+<!-- Catalogue only: in the app the two faces are self-hosted (OFL), never fetched from Google. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="widgets.css">
+<link rel="stylesheet" href="weather.css">
+<link rel="stylesheet" href="catalogue.css">
+<style>
+/* météo page only */
+.ggrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: var(--sp-3); }
+.ggrid.-sizes { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); align-items: end; }
+.gcell { display: grid; justify-items: center; gap: 8px; padding: var(--sp-4) var(--sp-2); border-radius: var(--radius-s); background: var(--surface-2); text-align: center; font-size: var(--fs-s); color: var(--fg); }
+.gcell code { font-family: ui-monospace, Menlo, monospace; font-size: 11px; color: var(--fg-faint); background: none; padding: 0; }
+.gcell .wx-glyph { margin: 4px 0; }
+.ggrid.-sizes .gcell { min-height: 220px; align-content: end; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></symbol>
+  <symbol id="i-rooms" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-lamp" viewBox="0 0 24 24"><path d="M9 3h6l3 9H6z"/><path d="M12 12v6M8 21h8"/></symbol>
+  <symbol id="i-window" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M12 3v18M4 12h16"/></symbol>
+  <symbol id="i-window-open" viewBox="0 0 24 24"><path d="M4 3h16v18H4z"/><path d="M4 12h8M12 3v18"/><path d="M12 7l7-3v14l-7 3"/></symbol>
+  <symbol id="i-blind" viewBox="0 0 24 24"><path d="M4 4h16M5 4v6h14V4M8 10v2M16 10v2M6 15h12M6 19h12"/></symbol>
+  <symbol id="i-door" viewBox="0 0 24 24"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/><path d="M3 21h18M15 12v.5"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M12 10v6"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L5 14h6l-1 8 9-13h-6l1-7z"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v4a6 6 0 0 1-12 0zM12 18v3"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 10v4M6 10v4M9 10v4M12 10v4"/></symbol>
+  <symbol id="i-battery-low" viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 10v4M6 10v4"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="14" r="3"/><circle cx="12" cy="7.5" r="1"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+  <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol>
+  <symbol id="i-cloud-sun" viewBox="0 0 24 24"><path d="M8 19a3.5 3.5 0 0 1-.4-7 5 5 0 0 1 9.4 1.3A3 3 0 0 1 16.5 19z"/><path d="M14 4v1.5M19.5 6.5l-1 1M21 12h-1.5M16.5 6a3.5 3.5 0 0 1 3.3 3"/></symbol>
+  <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 15a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 15z"/><path d="M8 18v2M12 18v3M16 18v2"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7a2 2 0 1 1-2 2"/></symbol>
+  <symbol id="i-fan" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-5 4-7 6-5s0 6-6 5zM12 14c0 5-4 7-6 5s0-6 6-5zM10 12c-5 0-7-4-5-6s6 0 5 6zM14 12c5 0 7 4 5 6s-6 0-5-6z"/></symbol>
+  <symbol id="i-smoke" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12a3 3 0 0 1 6 0"/><path d="M12 12v.5"/></symbol>
+  <symbol id="i-motion" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8 8a6 6 0 0 0 0 8M16 8a6 6 0 0 1 0 8M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 5.5-1M5 12a10 10 0 0 1 3-2M19 12a10 10 0 0 0-8-2.9M12 20h.01"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.5 10.6a2 2 0 0 0 2.9 2.9M7 7.5C4.5 9 3 12 3 12s3.5 6 9 6c1.4 0 2.6-.3 3.7-.8M10 6.2A9 9 0 0 1 12 6c5.5 0 9 6 9 6s-.8 1.5-2.3 3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.5"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8M6.3 7.3a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 4v16M17 4v16"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18A9 9 0 0 0 12 3z" fill="currentColor"/></symbol>
+  <symbol id="i-cloud-moon" viewBox="0 0 24 24"><path d="M8 19a3.5 3.5 0 0 1-.4-7 5 5 0 0 1 9.4 1.3A3 3 0 0 1 16.5 19z"/><path d="M19.5 10.5A4 4 0 0 1 15 5a4 4 0 1 0 4.5 5.5z"/></symbol>
+  <symbol id="i-pouring" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M7 16l-1 3M11 16l-1 3M15 16l-1 3M19 16l-1 3M9 20l-1 3M13 20l-1 3"/></symbol>
+  <symbol id="i-lightning" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M13 13l-3 5h4l-2 5"/></symbol>
+  <symbol id="i-lightning-rainy" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M12 13l-2.5 4h3.5l-2 5M7 17l-1 3M18 17l-1 3"/></symbol>
+  <symbol id="i-hail" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M8 17v.5M12 19v.5M16 17v.5M10 22v.5M14 22v.5"/></symbol>
+  <symbol id="i-sleet" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M8 16l-1 3M16 16l-1 3M12 16v5M10.3 17.5l3.4 2M13.7 17.5l-3.4 2"/></symbol>
+  <symbol id="i-fog" viewBox="0 0 24 24"><path d="M7 12a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 12z"/><path d="M4 16h16M6 19h12M8 22h8"/></symbol>
+  <symbol id="i-exceptional" viewBox="0 0 24 24"><path d="M7 14a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 14z"/><path d="M12 16v4M12 22v.5"/></symbol>
+  <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0-10 0M12 9V3M9 6l3-3 3 3M2 18h2M20 18h2M3 22h18"/></symbol>
+  <symbol id="i-sunset" viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0-10 0M12 3v6M9 6l3 3 3-3M2 18h2M20 18h2M3 22h18"/></symbol>
+  <symbol id="i-uv" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/><path d="M10 10.5v2a2 2 0 0 0 4 0v-2" stroke-width="1.5"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M5 19a9 9 0 1 1 14 0"/><path d="M12 13l4-4"/><path d="M12 13v.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+  <symbol id="i-umbrella" viewBox="0 0 24 24"><path d="M3 13a9 9 0 0 1 18 0z"/><path d="M12 13v6a2 2 0 0 0 4 0M12 4V2"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+  <symbol id="i-thermo-sun" viewBox="0 0 24 24"><path d="M8 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M10 10v6"/><circle cx="18" cy="6" r="2"/><path d="M18 2v1M18 9v1M14 6h1M21 6h1"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19C5 9 11 4 21 4c0 10-5 16-16 15z"/><path d="M5 19l8-8"/></symbol>
+  <symbol id="i-waves" viewBox="0 0 24 24"><path d="M3 8c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2M3 14c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2M3 20c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2"/></symbol>
+  <symbol id="i-mountain" viewBox="0 0 24 24"><path d="M3 20l6-11 4 6 3-4 5 9z"/></symbol>
+  <symbol id="i-flower" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M12 9.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM12 20.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM9.5 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20.5 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></symbol>
+  <symbol id="i-air" viewBox="0 0 24 24"><path d="M3 8h9a3 3 0 1 0-3-3M3 12h13a3 3 0 1 1-3 3M3 16h6a2 2 0 1 1-2 2"/><circle cx="19" cy="7" r="1.5"/><circle cx="20" cy="18" r="1"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></symbol>
+</svg>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><span class="brand-mark"><svg class="ico"><use href="#i-home"/></svg></span>Maison <small>· design system</small></a>
+  <nav class="seg menu" aria-label="Menu">
+    <a href="index.html" data-page="system">System</a>
+    <a href="mobile.html" data-page="mobile">Mobile</a>
+    <a href="dashboard.html" data-page="dashboard">Dashboard</a>
+    <a href="meteo.html" data-page="meteo" class="is-active">Météo</a>
+  </nav>
+  <div class="tools">
+    <button class="btn" type="button" id="theme" title="Thème : système"><svg class="ico -s"><use href="#i-contrast"/></svg><span id="theme-l">Système</span></button>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Sections">
+  <span class="toc-g">Icônes</span>
+  <a href="#glyphes">Glyphes</a><a href="#trait">Icônes trait</a>
+  <span class="toc-g">Widgets</span>
+  <a href="#entete">En-tête</a><a href="#pilules">Pilules</a><a href="#details">Grille de détails</a><a href="#vent">Vent</a><a href="#uv">UV et pression</a><a href="#pluie">Pluie dans l'heure</a><a href="#horaire">Horaire</a><a href="#journalier">Journalier</a><a href="#soleil">Soleil</a><a href="#vigilance">Vigilance</a><a href="#air">Qualité de l'air</a><a href="#dedans">Dedans / dehors, tuiles</a><a href="#etats">États</a>
+  <span class="toc-g">Référence</span>
+  <a href="#donnees">Données HA → widget</a>
+</nav>
+<main id="main">
+
+<section class="ds" id="glyphes">
+  <h2>Glyphes météo</h2>
+  <p>Les quinze conditions que Home Assistant expose pour <code>weather.venissieux</code> (Météo-France), dessinées en CSS et SVG par <code>widgets.js</code> à partir de <code>data-cond</code> : un disque lumineux (soleil ou lune), un ou deux nuages, et un effet sous le nuage (pluie, neige, grêle, éclair, brouillard, vent). <code>data-night</code> bascule le disque en lune et assombrit les nuages. Pas de bitmap : les glyphes prennent la lueur du thème et se redimensionnent avec la police.</p>
+  <div class="ex"><div class="ex-l">Jour</div><div class="ggrid"><div class="gcell"><div class="wx-glyph " data-cond="sunny"></div><span>Ensoleillé</span><code>sunny</code></div><div class="gcell"><div class="wx-glyph " data-cond="partlycloudy"></div><span>Éclaircies</span><code>partlycloudy</code></div><div class="gcell"><div class="wx-glyph " data-cond="cloudy"></div><span>Couvert</span><code>cloudy</code></div><div class="gcell"><div class="wx-glyph " data-cond="fog"></div><span>Brouillard</span><code>fog</code></div><div class="gcell"><div class="wx-glyph " data-cond="rainy"></div><span>Pluie</span><code>rainy</code></div><div class="gcell"><div class="wx-glyph " data-cond="pouring"></div><span>Fortes pluies</span><code>pouring</code></div><div class="gcell"><div class="wx-glyph " data-cond="lightning"></div><span>Orages</span><code>lightning</code></div><div class="gcell"><div class="wx-glyph " data-cond="lightning-rainy"></div><span>Orages et pluie</span><code>lightning-rainy</code></div><div class="gcell"><div class="wx-glyph " data-cond="snowy"></div><span>Neige</span><code>snowy</code></div><div class="gcell"><div class="wx-glyph " data-cond="snowy-rainy"></div><span>Neige et pluie</span><code>snowy-rainy</code></div><div class="gcell"><div class="wx-glyph " data-cond="hail"></div><span>Grêle</span><code>hail</code></div><div class="gcell"><div class="wx-glyph " data-cond="windy"></div><span>Venteux</span><code>windy</code></div><div class="gcell"><div class="wx-glyph " data-cond="windy-variant"></div><span>Vent et nuages</span><code>windy-variant</code></div><div class="gcell"><div class="wx-glyph " data-cond="exceptional"></div><span>Exceptionnel</span><code>exceptional</code></div></div></div>
+  <div class="ex"><div class="ex-l">Nuit (data-night)</div><div class="ggrid"><div class="gcell"><div class="wx-glyph " data-cond="sunny" data-night></div><span>Nuit claire</span><code>sunny · nuit</code></div><div class="gcell"><div class="wx-glyph " data-cond="partlycloudy" data-night></div><span>Nuit nuageuse</span><code>partlycloudy · nuit</code></div><div class="gcell"><div class="wx-glyph " data-cond="cloudy" data-night></div><span>Couvert</span><code>cloudy · nuit</code></div><div class="gcell"><div class="wx-glyph " data-cond="rainy" data-night></div><span>Pluie</span><code>rainy · nuit</code></div><div class="gcell"><div class="wx-glyph " data-cond="lightning-rainy" data-night></div><span>Orages et pluie</span><code>lightning-rainy · nuit</code></div><div class="gcell"><div class="wx-glyph " data-cond="snowy" data-night></div><span>Neige</span><code>snowy · nuit</code></div><div class="gcell"><div class="wx-glyph " data-cond="fog" data-night></div><span>Brouillard</span><code>fog · nuit</code></div><div class="gcell"><div class="wx-glyph " data-cond="windy-variant" data-night></div><span>Vent et nuages</span><code>windy-variant · nuit</code></div></div></div>
+  <div class="ex"><div class="ex-l">Tailles</div><div class="ggrid -sizes"><div class="gcell"><div class="wx-glyph -xl" data-cond="partlycloudy"></div><span>xl · 140</span></div><div class="gcell"><div class="wx-glyph " data-cond="partlycloudy"></div><span>96</span></div><div class="gcell"><div class="wx-glyph -m" data-cond="partlycloudy"></div><span>m · 72</span></div><div class="gcell"><div class="wx-glyph -s" data-cond="partlycloudy"></div><span>s · 56</span></div><div class="gcell"><div class="wx-glyph -xs" data-cond="partlycloudy"></div><span>xs · 32</span></div></div></div>
+  <ul class="rule">
+    <li>Le glyphe porte <code>role="img"</code> et le libellé français de la condition, sauf s'il est marqué <code>aria-hidden</code> parce que le texte est à côté.</li>
+    <li>Fortes pluies, orages, grêle et phénomène exceptionnel assombrissent le nuage : la gravité se lit à la forme, pas seulement à l'effet.</li>
+    <li>Le soleil et la lune ne glowent qu'en tant que glyphes météo ; ils ne sont jamais réutilisés comme icônes d'interface.</li>
+  </ul>
+</section>
+
+<section class="ds" id="trait">
+  <h2>Icônes trait</h2>
+  <p>Les mêmes conditions en trait de 1,75 px pour les endroits trop petits ou trop denses pour un glyphe (lignes de liste, étiquettes, pilules de 28 px), plus les icônes des grandeurs : lever et coucher, UV, pression, visibilité, précipitations, boussole.</p>
+  <div class="ex"><div class="icon-grid"><div class="icon-cell"><svg class="ico -l"><use href="#i-sun"/></svg><span>sun</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-cloud-sun"/></svg><span>cloud-sun</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-cloud"/></svg><span>cloud</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-fog"/></svg><span>fog</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-rain"/></svg><span>rain</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-pouring"/></svg><span>pouring</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-lightning"/></svg><span>lightning</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-lightning-rainy"/></svg><span>lightning-rainy</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-snow"/></svg><span>snow</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-sleet"/></svg><span>sleet</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-hail"/></svg><span>hail</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-wind"/></svg><span>wind</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-wind"/></svg><span>wind</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-exceptional"/></svg><span>exceptional</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-moon"/></svg><span>moon</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-cloud-moon"/></svg><span>cloud-moon</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-sunrise"/></svg><span>sunrise</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-sunset"/></svg><span>sunset</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-uv"/></svg><span>uv</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-gauge"/></svg><span>gauge</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-eye"/></svg><span>eye</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-umbrella"/></svg><span>umbrella</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-compass"/></svg><span>compass</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-thermo-sun"/></svg><span>thermo-sun</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-drop"/></svg><span>drop</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-thermo"/></svg><span>thermo</span></div><div class="icon-cell"><svg class="ico -l"><use href="#i-wind"/></svg><span>wind</span></div></div></div>
+</section>
+
+<section class="ds" id="entete">
+  <h2>En-tête</h2>
+  <p>La météo en tête de l'accueil : grande température fine, condition, min et max, ressenti, lieu et fraîcheur. Le glyphe suit la condition et l'heure. Variante compacte pour la barre haute du dashboard et pour la tuile « Extérieur ».</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="wx -hero"><div class="wx-main"><span class="val -hero"><span class="val-n">9</span><span class="val-u">°</span></span><span class="wx-cond">Couvert</span><span class="wx-feel">Ressenti 6° · vent 22 km/h</span><span class="wx-range"><span><svg class="ico"><use href="#i-arrow-down"/></svg> 5°</span><span><svg class="ico"><use href="#i-arrow-up"/></svg> 12°</span></span><span class="wx-place">Vénissieux · Météo-France</span></div><div class="wx-glyph" data-cond="cloudy" data-night aria-hidden="true"></div></div>
+      <div class="wx -hero"><div class="wx-main"><span class="val -hero"><span class="val-n">24</span><span class="val-u">°</span></span><span class="wx-cond">Éclaircies</span><span class="wx-feel">Ressenti 25° · UV 6, élevé</span><span class="wx-range"><span><svg class="ico"><use href="#i-arrow-down"/></svg> 14°</span><span><svg class="ico"><use href="#i-arrow-up"/></svg> 27°</span></span><span class="wx-place">Vénissieux · Météo-France</span></div><div class="wx-glyph" data-cond="partlycloudy" aria-hidden="true"></div></div>
+      <div class="wx -hero"><div class="wx-main"><span class="val -hero"><span class="val-n">−2</span><span class="val-u">°</span></span><span class="wx-cond">Neige</span><span class="wx-feel">Ressenti −6° · vent 30 km/h</span><span class="wx-range"><span><svg class="ico"><use href="#i-arrow-down"/></svg> −4°</span><span><svg class="ico"><use href="#i-arrow-up"/></svg> 1°</span></span><span class="wx-place">Vénissieux · Météo-France</span></div><div class="wx-glyph" data-cond="snowy" aria-hidden="true"></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Compacte (barre du dashboard, carte réduite) · périmée · absente</div>
+    <div class="ex-cols">
+      <div class="wx -compact"><div class="wx-glyph -s" data-cond="rainy" data-night aria-hidden="true"></div><div class="wx-main"><span class="val -std"><span class="val-n">8</span><span class="val-u">°</span></span><span class="wx-cond">Pluie</span><span class="wx-updated">il y a 4 min</span></div></div>
+      <div class="wx -compact"><div class="wx-glyph -s" data-cond="cloudy" data-night aria-hidden="true" style="opacity:.5"></div><div class="wx-main"><span class="val -std is-stale"><span class="val-n">9</span><span class="val-u">°</span></span><span class="wx-cond" style="color:var(--fg-muted)">Couvert</span><span class="wx-updated is-old"><svg class="ico -s"><use href="#i-clock"/></svg> données de 15:02</span></div></div>
+      <div class="wx -compact"><span class="pict -l is-unknown"><svg class="ico"><use href="#i-wifi-off"/></svg></span><div class="wx-main"><span class="val -std is-none"><span class="val-n">—</span><span class="val-u">°</span></span><span class="wx-cond" style="color:var(--fg-muted)">Météo-France injoignable</span><span class="wx-updated">dernière mesure à 15:02</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="pilules">
+  <h2>Pilules</h2>
+  <p>Chaque grandeur a sa pilule : la température avec un glyphe miniature pour la barre haute, puis humidité, vent avec sa direction, pression, UV, précipitations, visibilité. Posées sur une photo elles prennent la variante <code>-on-photo</code>.</p>
+  <div class="ex">
+    <div class="ex-row">
+      <span class="chip"><div class="wx-glyph -xs" data-cond="cloudy" data-night aria-hidden="true"></div>9° · Vénissieux</span>
+      <span class="chip"><div class="wx-glyph -xs" data-cond="sunny" aria-hidden="true"></div>24° · Éclaircies</span>
+      <span class="chip"><svg class="ico"><use href="#i-drop"/></svg>82 %</span>
+      <span class="chip"><svg class="ico" style="transform:rotate(225deg)"><use href="#i-arrow-up"/></svg>22 km/h · SO</span>
+      <span class="chip"><svg class="ico"><use href="#i-gauge"/></svg>1 008 hPa</span>
+      <span class="chip"><svg class="ico"><use href="#i-uv"/></svg>UV 1</span>
+      <span class="chip"><svg class="ico"><use href="#i-umbrella"/></svg>2,4 mm</span>
+      <span class="chip"><svg class="ico"><use href="#i-eye"/></svg>8 km</span>
+      <span class="chip is-cool"><svg class="ico"><use href="#i-thermo"/></svg>Ressenti 6°</span>
+      <span class="chip is-warn"><svg class="ico"><use href="#i-wind"/></svg>Rafales 55 km/h</span>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Ligne compacte (sous un titre, dans une carte de pièce « Extérieur »)</div>
+    <div class="wx-line"><b>9°</b><span class="sep">·</span>Couvert<span class="sep">·</span>82 %<span class="sep">·</span>22 km/h SO<span class="sep">·</span><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>60 % à 20 h</span></div>
+  </div>
+</section>
+
+<section class="ds" id="details">
+  <h2>Grille de détails</h2>
+  <p>Tout ce que l'entité météo expose en attributs, en tuiles homogènes : libellé en capitales, valeur, précision dessous. Les tuiles se réordonnent par pertinence du moment (le vent d'abord quand il souffle, l'UV d'abord l'été à midi).</p>
+  <div class="ex">
+    <div class="wx-grid">
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-thermo"/></svg>Ressenti</div><span class="val -s"><span class="val-n">6</span><span class="val-u">°</span></span><span class="wx-stat-s">Le vent refroidit de 3°</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-drop"/></svg>Humidité</div><span class="val -s"><span class="val-n">82</span><span class="val-u">%</span></span><span class="wx-stat-s">Point de rosée 6°</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-wind"/></svg>Vent</div><span class="val -s"><span class="val-n">22</span><span class="val-u">km/h</span></span><span class="wx-stat-s">Sud-ouest · rafales 38</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-gauge"/></svg>Pression</div><span class="val -s"><span class="val-n">1 008</span><span class="val-u">hPa</span></span><span class="wx-stat-s">En baisse depuis 3 h</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-uv"/></svg>Indice UV</div><span class="val -s"><span class="val-n">1</span></span><span class="wx-stat-s">Faible</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-eye"/></svg>Visibilité</div><span class="val -s"><span class="val-n">8</span><span class="val-u">km</span></span><span class="wx-stat-s">Bonne</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-cloud"/></svg>Nuages</div><span class="val -s"><span class="val-n">90</span><span class="val-u">%</span></span><span class="wx-stat-s">Couvert</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-umbrella"/></svg>Pluie aujourd'hui</div><span class="val -s"><span class="val-n">2,4</span><span class="val-u">mm</span></span><span class="wx-stat-s">4 mm attendus demain</span></div>
+      <div class="wx-stat is-none"><div class="wx-stat-h"><svg class="ico"><use href="#i-uv"/></svg>Indice UV</div><span class="val -s"><span class="val-n">—</span></span><span class="wx-stat-s">Pas la nuit</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="vent">
+  <h2>Vent</h2>
+  <p>Une boussole : la flèche indique d'où vient le vent (convention météo), la vitesse au centre, les rafales et la direction en toutes lettres à côté, une échelle de force en dessous (rafales en ambre quand elles dépassent la vitesse de 50 %).</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="wind"><div class="compass" style="--deg:225deg" role="img" aria-label="Vent de sud-ouest, 22 km/h"><b>N</b><b>E</b><b>S</b><b>O</b><div class="compass-arrow"></div><div class="compass-c"><span class="val -s"><span class="val-n">22</span></span><small>km/h</small></div></div>
+        <div class="wind-facts"><div class="wind-fact"><span>Direction</span><b>Sud-ouest · 225°</b></div><div class="wind-fact"><span>Rafales</span><b>38 km/h</b></div><div class="wind-fact"><span>Force</span><b>Modéré</b></div><div class="wind-scale" aria-hidden="true"><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class="is-on -gust"></i><i></i><i></i><i></i><i></i></div></div></div>
+      <div class="wind"><div class="compass -l" style="--deg:0deg" role="img" aria-label="Vent du nord, 55 km/h"><b>N</b><b>E</b><b>S</b><b>O</b><div class="compass-arrow"></div><div class="compass-c"><span class="val -s"><span class="val-n">55</span></span><small>km/h</small></div></div>
+        <div class="wind-facts"><div class="wind-fact"><span>Direction</span><b>Nord · 0°</b></div><div class="wind-fact"><span>Rafales</span><b style="color:var(--warn-fg)">90 km/h</b></div><div class="wind-fact"><span>Force</span><b>Fort</b></div><div class="wind-scale" aria-hidden="true"><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class="is-on -gust"></i><i class="is-on -gust"></i></div></div></div>
+      <div class="wind"><div class="compass" role="img" aria-label="Vent calme"><b>N</b><b>E</b><b>S</b><b>O</b><div class="compass-c"><span class="val -s is-none"><span class="val-n">—</span></span><small>calme</small></div></div>
+        <div class="wind-facts"><div class="wind-fact"><span>Direction</span><b style="color:var(--fg-faint)">—</b></div><div class="wind-fact"><span>Rafales</span><b style="color:var(--fg-faint)">—</b></div><div class="wind-scale" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="uv">
+  <h2>UV et pression</h2>
+  <p>L'indice UV sur l'échelle officielle en cinq niveaux (faible, modéré, élevé, très élevé, extrême) avec un curseur ; la pression avec sa tendance et sa position entre 980 et 1 040 hPa.</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="uv"><div class="uv-head"><span>Indice UV</span><b>1 · <span class="uv-lvl lv1">faible</span></b></div><div class="uv-bar" style="--v:1" role="meter" aria-valuenow="1" aria-valuemin="0" aria-valuemax="11"></div><div class="uv-ends"><span>0</span><span>11+</span></div></div>
+      <div class="uv"><div class="uv-head"><span>Indice UV</span><b>6 · <span class="uv-lvl lv3">élevé</span></b></div><div class="uv-bar" style="--v:6" role="meter" aria-valuenow="6" aria-valuemin="0" aria-valuemax="11"></div><div class="uv-ends"><span>0</span><span>11+</span></div></div>
+      <div class="uv"><div class="uv-head"><span>Indice UV</span><b>9 · <span class="uv-lvl lv4">très élevé</span></b></div><div class="uv-bar" style="--v:9" role="meter" aria-valuenow="9" aria-valuemin="0" aria-valuemax="11"></div><div class="uv-ends"><span>0</span><span>11+</span></div></div>
+      <div class="uv is-none"><div class="uv-head"><span>Indice UV</span><b style="color:var(--fg-faint)">—</b></div><div class="uv-bar" aria-hidden="true"></div><div class="uv-ends"><span>Nuit</span><span></span></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="press"><div class="press-head"><span class="val -s"><span class="val-n">1 008</span><span class="val-u">hPa</span></span><span class="press-trend -down"><svg class="ico"><use href="#i-arrow-down"/></svg>en baisse</span></div><div class="press-bar" style="--v:1008" role="meter" aria-valuenow="1008" aria-valuemin="980" aria-valuemax="1040"></div><div class="press-ends"><span>980</span><span>Dépression · anticyclone</span><span>1 040</span></div></div>
+      <div class="press"><div class="press-head"><span class="val -s"><span class="val-n">1 026</span><span class="val-u">hPa</span></span><span class="press-trend -up"><svg class="ico"><use href="#i-arrow-up"/></svg>en hausse</span></div><div class="press-bar" style="--v:1026" role="meter" aria-valuenow="1026" aria-valuemin="980" aria-valuemax="1040"></div><div class="press-ends"><span>980</span><span></span><span>1 040</span></div></div>
+      <div class="press"><div class="press-head"><span class="val -s"><span class="val-n">1 013</span><span class="val-u">hPa</span></span><span class="press-trend"><svg class="ico"><use href="#i-minus"/></svg>stable</span></div><div class="press-bar" style="--v:1013" role="meter" aria-valuenow="1013" aria-valuemin="980" aria-valuemax="1040"></div><div class="press-ends"><span>980</span><span></span><span>1 040</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="pluie">
+  <h2>Pluie dans l'heure</h2>
+  <p>Le produit propre à Météo-France : six tranches de dix minutes avec l'intensité attendue (rien, faible, modérée, forte). C'est la phrase qui compte (« Pluie faible dans 20 min »), la barre la justifie. Exposée dans HA par <code>sensor.venissieux_next_rain</code>.</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="rain-hour"><div class="rain-hour-h"><span>Pas de pluie dans l'heure</span><small>Météo-France</small></div><div class="rain-seg" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div><div class="rain-ends"><span>Maint.</span><span></span><span></span><span>+30 min</span><span></span><span>+1 h</span></div></div>
+      <div class="rain-hour"><div class="rain-hour-h"><span>Pluie faible dans 20 min</span><small>pendant 30 min</small></div><div class="rain-seg" role="img" aria-label="Pluie faible de 20 à 50 minutes"><i></i><i></i><i class="lv1"></i><i class="lv1"></i><i class="lv2"></i><i></i></div><div class="rain-ends"><span>Maint.</span><span></span><span></span><span>+30 min</span><span></span><span>+1 h</span></div></div>
+      <div class="rain-hour"><div class="rain-hour-h"><span>Forte pluie en cours</span><small>jusqu'à 18:20</small></div><div class="rain-seg" role="img" aria-label="Forte pluie pendant 40 minutes puis modérée"><i class="lv3"></i><i class="lv3"></i><i class="lv3"></i><i class="lv2"></i><i class="lv2"></i><i class="lv1"></i></div><div class="rain-ends"><span>Maint.</span><span></span><span></span><span>+30 min</span><span></span><span>+1 h</span></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Variante haute (carte dédiée) et légende</div>
+    <div class="rain-hour"><div class="rain-hour-h"><span>Pluie modérée dans 10 min</span><small>s'arrête vers 18:30</small></div><div class="rain-seg -tall" role="img" aria-label="Pluie modérée de 10 à 40 minutes"><i></i><i class="lv2"></i><i class="lv2"></i><i class="lv3"></i><i class="lv1"></i><i></i></div><div class="rain-ends"><span>Maint.</span><span>+10</span><span>+20</span><span>+30</span><span>+40</span><span>+1 h</span></div><div class="rain-legend"><span><i></i>Rien</span><span><i class="lv1"></i>Faible</span><span><i class="lv2"></i>Modérée</span><span><i class="lv3"></i>Forte</span></div></div>
+  </div>
+</section>
+
+<section class="ds" id="horaire">
+  <h2>Horaire</h2>
+  <p>Douze heures qui défilent : heure, glyphe, température, probabilité de pluie (muette à 0 %). La courbe de température court derrière la rangée pour donner la tendance sans lire chaque chiffre.</p>
+  <div class="ex">
+    <div class="wx-strip"><svg class="spark -muted" data-v="9,8,8,7,7,6,6,5,5,4,4,4" aria-hidden="true"></svg><div class="wx-hours -full"><div class="wx-h is-now"><span>Maint.</span><div class="wx-glyph -xs" data-cond="cloudy" data-night aria-hidden="true"></div><b>9°</b><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>10 %</span></div><div class="wx-h"><span>19 h</span><div class="wx-glyph -xs" data-cond="cloudy" data-night aria-hidden="true"></div><b>8°</b><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>20 %</span></div><div class="wx-h"><span>20 h</span><div class="wx-glyph -xs" data-cond="rainy" data-night aria-hidden="true"></div><b>8°</b><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>60 %</span></div><div class="wx-h"><span>21 h</span><div class="wx-glyph -xs" data-cond="rainy" data-night aria-hidden="true"></div><b>7°</b><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>70 %</span></div><div class="wx-h"><span>22 h</span><div class="wx-glyph -xs" data-cond="partlycloudy" data-night aria-hidden="true"></div><b>7°</b><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>20 %</span></div><div class="wx-h"><span>23 h</span><div class="wx-glyph -xs" data-cond="clear-night" data-night aria-hidden="true"></div><b>6°</b><span class="wx-pop is-zero"><svg class="ico"><use href="#i-drop"/></svg>0 %</span></div><div class="wx-h"><span>0 h</span><div class="wx-glyph -xs" data-cond="clear-night" data-night aria-hidden="true"></div><b>6°</b><span class="wx-pop is-zero"><svg class="ico"><use href="#i-drop"/></svg>0 %</span></div><div class="wx-h"><span>1 h</span><div class="wx-glyph -xs" data-cond="fog" data-night aria-hidden="true"></div><b>5°</b><span class="wx-pop is-zero"><svg class="ico"><use href="#i-drop"/></svg>0 %</span></div><div class="wx-h"><span>2 h</span><div class="wx-glyph -xs" data-cond="fog" data-night aria-hidden="true"></div><b>5°</b><span class="wx-pop is-zero"><svg class="ico"><use href="#i-drop"/></svg>0 %</span></div><div class="wx-h"><span>3 h</span><div class="wx-glyph -xs" data-cond="clear-night" data-night aria-hidden="true"></div><b>4°</b><span class="wx-pop is-zero"><svg class="ico"><use href="#i-drop"/></svg>0 %</span></div><div class="wx-h"><span>4 h</span><div class="wx-glyph -xs" data-cond="clear-night" data-night aria-hidden="true"></div><b>4°</b><span class="wx-pop is-zero"><svg class="ico"><use href="#i-drop"/></svg>0 %</span></div><div class="wx-h"><span>5 h</span><div class="wx-glyph -xs" data-cond="partlycloudy" data-night aria-hidden="true"></div><b>4°</b><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>10 %</span></div></div></div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Courbes seules : température (accent), probabilité de pluie (eau)</div>
+    <div class="ex-cols"><svg class="spark" data-v="9,8,8,7,7,6,6,5,5,4,4,4" data-min="0" data-max="15"></svg><svg class="spark -cool" data-v="10,20,60,70,20,0,0,0,0,0,0,10" data-min="0" data-max="100"></svg></div>
+  </div>
+</section>
+
+<section class="ds" id="journalier">
+  <h2>Journalier</h2>
+  <p>Sept jours : jour, glyphe, probabilité de pluie, minimum, barre froid → chaud placée sur l'échelle de la semaine, maximum. Toucher un jour l'ouvre sur ses détails (vent, UV, précipitations, humidité).</p>
+  <div class="ex">
+    <div class="wx-days -full"><div class="wx-d is-today"><span>Auj.</span><div class="wx-glyph -xs" data-cond="partlycloudy" aria-hidden="true"></div><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>20 %</span><span class="wx-min">5°</span><span class="wx-bar" style="--a:22%;--b:40%"></span><span class="wx-max">12°</span></div><div class="wx-d"><span>lun.</span><div class="wx-glyph -xs" data-cond="rainy" aria-hidden="true"></div><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>80 %</span><span class="wx-min">7°</span><span class="wx-bar" style="--a:30%;--b:45%"></span><span class="wx-max">11°</span></div><div class="wx-d"><span>mar.</span><div class="wx-glyph -xs" data-cond="cloudy" aria-hidden="true"></div><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>30 %</span><span class="wx-min">5°</span><span class="wx-bar" style="--a:22%;--b:40%"></span><span class="wx-max">12°</span></div><div class="wx-d"><span>mer.</span><div class="wx-glyph -xs" data-cond="sunny" aria-hidden="true"></div><span class="wx-pop is-zero"><svg class="ico"><use href="#i-drop"/></svg>0 %</span><span class="wx-min">3°</span><span class="wx-bar" style="--a:12%;--b:25%"></span><span class="wx-max">15°</span></div><div class="wx-d"><span>jeu.</span><div class="wx-glyph -xs" data-cond="snowy" aria-hidden="true"></div><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>60 %</span><span class="wx-min">-1°</span><span class="wx-bar" style="--a:0%;--b:70%"></span><span class="wx-max">4°</span></div><div class="wx-d"><span>ven.</span><div class="wx-glyph -xs" data-cond="partlycloudy" aria-hidden="true"></div><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>10 %</span><span class="wx-min">2°</span><span class="wx-bar" style="--a:15%;--b:50%"></span><span class="wx-max">9°</span></div><div class="wx-d"><span>sam.</span><div class="wx-glyph -xs" data-cond="sunny" aria-hidden="true"></div><span class="wx-pop is-zero"><svg class="ico"><use href="#i-drop"/></svg>0 %</span><span class="wx-min">1°</span><span class="wx-bar" style="--a:10%;--b:40%"></span><span class="wx-max">11°</span></div></div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Jour ouvert</div>
+    <div class="wx-days -full"><div class="wx-d"><span>lun.</span><div class="wx-glyph -xs" data-cond="rainy" aria-hidden="true"></div><span class="wx-pop"><svg class="ico"><use href="#i-drop"/></svg>80 %</span><span class="wx-min">7°</span><span class="wx-bar" style="--a:30%;--b:45%"></span><span class="wx-max">11°</span></div></div>
+    <div class="wx-day-x"><div class="wx-glyph -m" data-cond="rainy" aria-hidden="true"></div><div class="wx-grid">
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-umbrella"/></svg>Pluie</div><span class="val -s"><span class="val-n">6</span><span class="val-u">mm</span></span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-wind"/></svg>Vent</div><span class="val -s"><span class="val-n">35</span><span class="val-u">km/h</span></span><span class="wx-stat-s">Sud</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-drop"/></svg>Humidité</div><span class="val -s"><span class="val-n">88</span><span class="val-u">%</span></span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-uv"/></svg>UV</div><span class="val -s"><span class="val-n">1</span></span><span class="wx-stat-s">Faible</span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-sunrise"/></svg>Lever</div><span class="val -s"><span class="val-n">7:40</span></span></div>
+      <div class="wx-stat"><div class="wx-stat-h"><svg class="ico"><use href="#i-sunset"/></svg>Coucher</div><span class="val -s"><span class="val-n">17:19</span></span></div>
+    </div></div>
+  </div>
+</section>
+
+<section class="ds" id="soleil">
+  <h2>Soleil</h2>
+  <p>La course du soleil (données de <code>sun.sun</code>) : l'arc du jour, la position actuelle, lever et coucher, durée du jour. La nuit, la lune parcourt le même arc entre le coucher et le lever suivant.</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="sun"><div class="sun-arc"><svg viewBox="0 0 100 56" aria-hidden="true"><line class="sun-ground" x1="0" y1="50" x2="100" y2="50"/><path class="sun-path" d="M5 50A45 45 0 0 1 95 50"/><path class="sun-done" d="M5 50A45 45 0 0 1 70.4 9.9"/><circle class="sun-dot" cx="70.4" cy="9.9" r="2.6"/></svg></div><div class="sun-times"><span>Lever<b>7:38</b></span><span>Coucher<b>17:21</b></span></div><div class="sun-dur">9 h 43 de jour · 2 min de moins qu'hier</div></div>
+      <div class="sun"><div class="sun-arc"><svg viewBox="0 0 100 56" aria-hidden="true"><line class="sun-ground" x1="0" y1="50" x2="100" y2="50"/><path class="sun-path" d="M5 50A45 45 0 0 1 95 50"/><path class="sun-done" d="M5 50A45 45 0 0 1 5.4 44.4"/><circle class="sun-dot -moon" cx="5.4" cy="44.4" r="2.6"/></svg></div><div class="sun-times"><span>Coucher<b>17:21</b></span><span>Lever<b>7:39</b></span></div><div class="sun-dur">Nuit · lever dans 13 h 58</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="vigilance">
+  <h2>Vigilance Météo-France</h2>
+  <p>Le niveau du département (<code>sensor.69_weather_alert</code>) avec l'échelle officielle vert / jaune / orange / rouge et les phénomènes suivis. Au niveau vert la carte est discrète ; à partir d'orange une alerte apparaît en haut de l'accueil, rouge en premier.</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="vig"><div class="vig-head"><span class="pict is-ok"><svg class="ico"><use href="#i-shield-check"/></svg></span><div style="display:grid"><span class="card-title -s">Vigilance Rhône</span><span class="card-sub">Aucun phénomène surveillé</span></div><span class="vig-lvl" style="margin-left:auto">Vert</span></div></div>
+      <div class="vig"><div class="vig-head"><span class="pict is-warn"><svg class="ico"><use href="#i-alert"/></svg></span><div style="display:grid"><span class="card-title -s">Vigilance Rhône</span><span class="card-sub">Jusqu'à demain 6 h</span></div><span class="vig-lvl -orange" style="margin-left:auto">Orange</span></div>
+        <div class="vig-list"><span class="vig-item -orange"><svg class="ico"><use href="#i-wind"/></svg>Vent</span><span class="vig-item -jaune"><svg class="ico"><use href="#i-pouring"/></svg>Pluie-inondation</span><span class="vig-item"><svg class="ico"><use href="#i-lightning"/></svg>Orages</span><span class="vig-item"><svg class="ico"><use href="#i-waves"/></svg>Crues</span><span class="vig-item"><svg class="ico"><use href="#i-snow"/></svg>Neige-verglas</span><span class="vig-item"><svg class="ico"><use href="#i-thermo-sun"/></svg>Canicule</span><span class="vig-item"><svg class="ico"><use href="#i-thermo"/></svg>Grand froid</span><span class="vig-item"><svg class="ico"><use href="#i-mountain"/></svg>Avalanches</span></div></div>
+    </div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Alertes correspondantes en haut de l'accueil</div>
+    <a class="alert is-vig-orange" href="#"><span class="pict"><svg class="ico"><use href="#i-wind"/></svg></span><span class="alert-body"><span class="alert-t">Vigilance orange vent dans le Rhône</span><span class="alert-d">Rafales jusqu'à 110 km/h · jusqu'à demain 6 h · Météo-France</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+    <a class="alert is-vig-rouge" href="#"><span class="pict"><svg class="ico"><use href="#i-pouring"/></svg></span><span class="alert-body"><span class="alert-t">Vigilance rouge pluie-inondation dans le Rhône</span><span class="alert-d">Jusqu'à ce soir 22 h · Météo-France</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+  </div>
+</section>
+
+
+<section class="ds" id="air">
+  <h2>Qualité de l'air</h2>
+  <p>L'indice ATMO d'Atmo Auvergne-Rhône-Alpes pour Vénissieux (six niveaux officiels : bon, moyen, dégradé, mauvais, très mauvais, extrêmement mauvais), le polluant qui le détermine, les cinq sous-indices (PM₂.₅, PM₁₀, NO₂, O₃, SO₂) avec les concentrations, et les pollens de saison. L'échelle de couleurs est celle d'ATMO, distincte des couleurs d'état de l'app.</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="air"><div class="air-head"><span class="air-lvl lv2" role="img" aria-label="Indice 2 sur 6">2</span><div><div class="air-t">Air moyen</div><div class="air-s">Ozone dominant · Vénissieux · aujourd'hui</div></div></div><div class="air-scale" aria-hidden="true"><i class="is-on"></i><i class="is-on is-now"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="air-ends"><span>Bon</span><span>Extrêmement mauvais</span></div></div>
+      <div class="air"><div class="air-head"><span class="air-lvl lv4" role="img" aria-label="Indice 4 sur 6">4</span><div><div class="air-t">Air mauvais</div><div class="air-s">Particules fines PM₂.₅ · épisode de pollution · demain : dégradé</div></div></div><div class="air-scale" aria-hidden="true"><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class="is-on is-now"></i><i class=""></i><i class=""></i></div><div class="air-ends"><span>Bon</span><span>Extrêmement mauvais</span></div></div>
+      <div class="air"><div class="air-head"><span class="air-lvl lv1" role="img" aria-label="Indice 1 sur 6">1</span><div><div class="air-t">Air bon</div><div class="air-s">Tous les polluants au plus bas · demain : bon</div></div></div><div class="air-scale" aria-hidden="true"><i class="is-on is-now"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="air-ends"><span>Bon</span><span>Extrêmement mauvais</span></div></div>
+      <div class="air"><div class="air-head"><span class="air-lvl is-none" role="img" aria-label="Indice indisponible">—</span><div><div class="air-t" style="color:var(--fg-muted)">Indice indisponible</div><div class="air-s">Atmo non publié depuis 6 h</div></div></div><div class="air-scale" aria-hidden="true"><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><div class="air-ends"><span>Bon</span><span>Extrêmement mauvais</span></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Polluants : sous-indice ATMO (1–6) et concentration ; le polluant dominant en premier</div>
+    <div class="ex-cols">
+      <div class="pollu"><div class="pollu-row is-main"><b>O<sub>3</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">96 <small>µg/m³</small></span></div><div class="pollu-row"><b>PM<sub>2.5</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">9 <small>µg/m³</small></span></div><div class="pollu-row"><b>PM<sub>10</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">14 <small>µg/m³</small></span></div><div class="pollu-row"><b>NO<sub>2</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">18 <small>µg/m³</small></span></div><div class="pollu-row"><b>SO<sub>2</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">2 <small>µg/m³</small></span></div></div>
+      <div class="pollu"><div class="pollu-row is-main"><b>PM<sub>2.5</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class=""></i><i class=""></i></div><span class="pollu-v">38 <small>µg/m³</small></span></div><div class="pollu-row"><b>PM<sub>10</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class="is-on"></i><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">52 <small>µg/m³</small></span></div><div class="pollu-row"><b>NO<sub>2</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">34 <small>µg/m³</small></span></div><div class="pollu-row"><b>O<sub>3</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">40 <small>µg/m³</small></span></div><div class="pollu-row"><b>SO<sub>2</sub></b><div class="pollu-bar" aria-hidden="true"><i class="is-on"></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i><i class=""></i></div><span class="pollu-v">3 <small>µg/m³</small></span></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Pollens (indice Atmo, 0–6 par espèce) — seules les espèces de saison sont affichées, les autres repliées</div>
+    <div class="pollen"><div class="pollen-item lv4"><b><svg class="ico"><use href="#i-flower"/></svg>Graminées</b><span class="dots" data-n="6" data-on="4" aria-label="Graminées niveau 4 sur 6"></span></div><div class="pollen-item lv5"><b><svg class="ico"><use href="#i-flower"/></svg>Ambroisie</b><span class="dots" data-n="6" data-on="5" aria-label="Ambroisie niveau 5 sur 6"></span></div><div class="pollen-item lv0 is-off"><b><svg class="ico"><use href="#i-flower"/></svg>Bouleau</b><span class="dots" data-n="6" data-on="0" aria-label="Bouleau niveau 0 sur 6"></span></div><div class="pollen-item lv1"><b><svg class="ico"><use href="#i-flower"/></svg>Cyprès</b><span class="dots" data-n="6" data-on="1" aria-label="Cyprès niveau 1 sur 6"></span></div><div class="pollen-item lv2"><b><svg class="ico"><use href="#i-flower"/></svg>Armoise</b><span class="dots" data-n="6" data-on="2" aria-label="Armoise niveau 2 sur 6"></span></div><div class="pollen-item lv0 is-off"><b><svg class="ico"><use href="#i-flower"/></svg>Chêne</b><span class="dots" data-n="6" data-on="0" aria-label="Chêne niveau 0 sur 6"></span></div><div class="pollen-item lv0 is-off"><b><svg class="ico"><use href="#i-flower"/></svg>Olivier</b><span class="dots" data-n="6" data-on="0" aria-label="Olivier niveau 0 sur 6"></span></div><div class="pollen-item lv3"><b><svg class="ico"><use href="#i-flower"/></svg>Aulne</b><span class="dots" data-n="6" data-on="3" aria-label="Aulne niveau 3 sur 6"></span></div></div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Pilules, tuile, alerte</div>
+    <div class="ex-row">
+      <span class="chip is-air-2"><svg class="ico"><use href="#i-air"/></svg>Air moyen</span>
+      <span class="chip is-air-4"><svg class="ico"><use href="#i-air"/></svg>Air mauvais · PM₂.₅</span>
+      <span class="chip is-air-4"><svg class="ico"><use href="#i-flower"/></svg>Pollens élevés</span>
+      <div class="tile -mint -air" style="min-width:180px"><span class="pict -s"><svg class="ico"><use href="#i-air"/></svg></span><div><div class="tile-v">Bon</div><div class="tile-l">Air · indice 1</div></div></div>
+    </div>
+    <a class="alert is-air" href="#"><span class="pict"><svg class="ico"><use href="#i-air"/></svg></span><span class="alert-body"><span class="alert-t">Épisode de pollution aux particules fines</span><span class="alert-d">Indice ATMO 4, mauvais · aérer tôt le matin · Atmo Auvergne-Rhône-Alpes</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+  </div>
+  <ul class="rule">
+    <li>Les couleurs ATMO sont réservées à l'air : le rouge d'ATMO n'est pas le rouge d'alerte de l'app, le violet n'existe nulle part ailleurs.</li>
+    <li>L'alerte n'apparaît qu'à partir de « mauvais » (4) ou d'un pollen à 4 et plus ; en dessous, l'air reste une tuile discrète.</li>
+    <li>Pas de capteur intérieur pour l'instant (le Nest Protect ne mesure que le CO) : la carte parle de l'air dehors, et laisse la place à un capteur CO₂ plus tard.</li>
+  </ul>
+</section>
+
+<section class="ds" id="dedans">
+  <h2>Dedans / dehors et tuiles</h2>
+  <p>Ce qui fait le lien avec la maison : la comparaison entre la moyenne intérieure et l'extérieur, et la tuile « Extérieur » qu'on pose dans une grille de pièces ou de chiffres clés.</p>
+  <div class="ex">
+    <div class="ex-cols" style="grid-template-columns:repeat(auto-fit,minmax(min(360px,100%),1fr))">
+      <div class="inout"><div class="inout-side"><span class="inout-l"><svg class="ico"><use href="#i-home"/></svg>Dedans</span><span class="val -std"><span class="val-n">19,8</span><span class="val-u">°</span></span></div><div class="inout-d -cold"><b>−10,8°</b>dehors</div><div class="inout-side"><span class="inout-l">Dehors<svg class="ico"><use href="#i-cloud"/></svg></span><span class="val -std"><span class="val-n">9</span><span class="val-u">°</span></span></div></div>
+      <div class="inout"><div class="inout-side"><span class="inout-l"><svg class="ico"><use href="#i-home"/></svg>Dedans</span><span class="val -std"><span class="val-n">24,5</span><span class="val-u">°</span></span></div><div class="inout-d -warm"><b>+3,5°</b>dehors</div><div class="inout-side"><span class="inout-l">Dehors<svg class="ico"><use href="#i-sun"/></svg></span><span class="val -std"><span class="val-n">28</span><span class="val-u">°</span></span></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-cols -3">
+      <div class="tile -wx -night"><div><div class="tile-v">9<small>°</small></div><div class="tile-l">Extérieur · couvert</div></div><div class="wx-glyph -s" data-cond="cloudy" data-night aria-hidden="true"></div></div>
+      <div class="tile -wx -day"><div><div class="tile-v">24<small>°</small></div><div class="tile-l">Extérieur · éclaircies</div></div><div class="wx-glyph -s" data-cond="partlycloudy" aria-hidden="true"></div></div>
+      <div class="tile -wx -glass"><div><div class="tile-v">−2<small>°</small></div><div class="tile-l">Extérieur · neige</div></div><div class="wx-glyph -s" data-cond="snowy" aria-hidden="true"></div></div>
+      <div class="tile -blue"><span class="pict -s"><svg class="ico"><use href="#i-umbrella"/></svg></span><div><div class="tile-v">60<small>%</small></div><div class="tile-l">Pluie à 20 h</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="etats">
+  <h2>États</h2>
+  <p>Météo-France n'est pas toujours joignable et HA ne rafraîchit la météo que toutes les quelques minutes : la fraîcheur s'affiche toujours, une valeur périmée grise, une source injoignable le dit en clair, et rien n'est inventé.</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="card -tight"><div class="wx -compact"><div class="wx-glyph -s" data-cond="cloudy" data-night aria-hidden="true"></div><div class="wx-main"><span class="val -std"><span class="val-n">9</span><span class="val-u">°</span></span><span class="wx-cond">Couvert</span><span class="wx-updated">il y a 4 min</span></div></div></div>
+      <div class="card -tight is-stale"><div class="wx -compact"><div class="wx-glyph -s" data-cond="cloudy" data-night aria-hidden="true" style="opacity:.5"></div><div class="wx-main"><span class="val -std is-stale"><span class="val-n">9</span><span class="val-u">°</span></span><span class="wx-cond" style="color:var(--fg-muted)">Couvert</span><span class="wx-updated is-old">données de 15:02</span></div></div></div>
+      <div class="card -tight is-unavailable"><div class="wx -compact"><span class="pict -l is-unknown"><svg class="ico"><use href="#i-wifi-off"/></svg></span><div class="wx-main"><span class="val -std is-none"><span class="val-n">—</span></span><span class="wx-cond" style="color:var(--fg-muted)">Météo indisponible</span><span class="wx-updated">Météo-France injoignable depuis 2 h</span></div></div></div>
+      <div class="card -tight" aria-busy="true"><div class="wx -compact"><div class="wx-glyph -s" data-cond="cloudy" aria-hidden="true" style="opacity:.25"></div><div class="wx-main"><span class="val -std is-none"><span class="val-n">—</span></span><span class="wx-cond" style="color:var(--fg-muted)">Chargement…</span><span class="wx-updated">première mesure dans quelques secondes</span></div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="donnees">
+  <h2>Données HA → widget</h2>
+  <p>Ce que Home Assistant expose pour Météo-France, et où ça s'affiche. Les attributs absents (visibilité, point de rosée, couverture nuageuse selon la version de l'intégration) donnent une tuile « — », jamais une estimation.</p>
+  <div class="t-wrap"><table class="t">
+    <thead><tr><th>Source HA</th><th>Donnée</th><th>Format</th><th>Widget</th></tr></thead>
+    <tbody>
+      <tr><td><code>weather.venissieux</code> · state</td><td>condition (15 valeurs)</td><td>glyphe + libellé FR</td><td>Glyphe, Icône trait, En-tête</td></tr>
+      <tr><td>· <code>temperature</code></td><td>température</td><td>°, entier</td><td>En-tête, Pilule, Tuile, Dedans/dehors</td></tr>
+      <tr><td>· <code>apparent_temperature</code></td><td>ressenti</td><td>°, entier</td><td>En-tête (ligne ressenti), Détails</td></tr>
+      <tr><td>· <code>humidity</code>, <code>dew_point</code></td><td>humidité, point de rosée</td><td>%, °</td><td>Pilule, Détails</td></tr>
+      <tr><td>· <code>wind_speed</code>, <code>wind_bearing</code>, <code>wind_gust_speed</code></td><td>vent, direction, rafales</td><td>km/h, ° → point cardinal</td><td>Boussole, Pilule, Détails</td></tr>
+      <tr><td>· <code>pressure</code></td><td>pression (+ tendance calculée sur 3 h)</td><td>hPa, entier</td><td>Pression, Détails</td></tr>
+      <tr><td>· <code>uv_index</code></td><td>indice UV</td><td>0–11+, niveau FR</td><td>UV, Détails</td></tr>
+      <tr><td>· <code>visibility</code>, <code>cloud_coverage</code></td><td>visibilité, nuages</td><td>km, %</td><td>Détails</td></tr>
+      <tr><td><code>weather.get_forecasts</code> hourly</td><td>12 h : condition, température, précipitations, probabilité</td><td>° · % · mm</td><td>Horaire, courbe</td></tr>
+      <tr><td><code>weather.get_forecasts</code> daily</td><td>7 j : condition, min, max, précipitations, probabilité, vent, UV</td><td>° · % · mm · km/h</td><td>Journalier, jour ouvert</td></tr>
+      <tr><td><code>sensor.venissieux_next_rain</code> (+ attributs 1h)</td><td>pluie dans l'heure par tranche de 10 min</td><td>0–3 par tranche</td><td>Pluie dans l'heure</td></tr>
+      <tr><td><code>sensor.69_weather_alert</code> (+ attributs par phénomène)</td><td>vigilance départementale</td><td>Vert / Jaune / Orange / Rouge</td><td>Vigilance, Alerte</td></tr>
+      <tr><td>Atmo AURA (<code>sensor.atmo_*</code>) ou WAQI / Open-Meteo air quality</td><td>indice ATMO, polluant dominant, sous-indices, concentrations</td><td>1–6, µg/m³</td><td>Qualité de l'air, Pilule, Tuile, Alerte ≥ 4</td></tr>
+      <tr><td>Atmo pollens (<code>sensor.pollen_*</code>)</td><td>indice par espèce</td><td>0–6</td><td>Pollens, Alerte ≥ 4</td></tr>
+      <tr><td><code>sun.sun</code></td><td>lever, coucher, élévation</td><td>heures, position 0–1</td><td>Soleil, bascule jour / nuit des glyphes</td></tr>
+      <tr><td><code>sensor.day_area_temperature</code></td><td>moyenne intérieure</td><td>°, 1 décimale</td><td>Dedans / dehors</td></tr>
+      <tr><td><code>last_updated</code> de l'entité</td><td>fraîcheur</td><td>relatif, ambre &gt; 30 min</td><td>En-tête, États</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+</main>
+</div>
+
+<script src="widgets.js"></script>
+<script src="catalogue.js"></script>
+</body>
+</html>

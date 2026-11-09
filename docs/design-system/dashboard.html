@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1017">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1eee8">
+<title>Maison — dashboard</title>
+<!-- Catalogue only: in the app the two faces are self-hosted (OFL), never fetched from Google. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="widgets.css">
+<link rel="stylesheet" href="weather.css">
+<link rel="stylesheet" href="catalogue.css">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></symbol>
+  <symbol id="i-rooms" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-lamp" viewBox="0 0 24 24"><path d="M9 3h6l3 9H6z"/><path d="M12 12v6M8 21h8"/></symbol>
+  <symbol id="i-window" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M12 3v18M4 12h16"/></symbol>
+  <symbol id="i-window-open" viewBox="0 0 24 24"><path d="M4 3h16v18H4z"/><path d="M4 12h8M12 3v18"/><path d="M12 7l7-3v14l-7 3"/></symbol>
+  <symbol id="i-blind" viewBox="0 0 24 24"><path d="M4 4h16M5 4v6h14V4M8 10v2M16 10v2M6 15h12M6 19h12"/></symbol>
+  <symbol id="i-door" viewBox="0 0 24 24"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/><path d="M3 21h18M15 12v.5"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M12 10v6"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L5 14h6l-1 8 9-13h-6l1-7z"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v4a6 6 0 0 1-12 0zM12 18v3"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 10v4M6 10v4M9 10v4M12 10v4"/></symbol>
+  <symbol id="i-battery-low" viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 10v4M6 10v4"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="14" r="3"/><circle cx="12" cy="7.5" r="1"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+  <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol>
+  <symbol id="i-cloud-sun" viewBox="0 0 24 24"><path d="M8 19a3.5 3.5 0 0 1-.4-7 5 5 0 0 1 9.4 1.3A3 3 0 0 1 16.5 19z"/><path d="M14 4v1.5M19.5 6.5l-1 1M21 12h-1.5M16.5 6a3.5 3.5 0 0 1 3.3 3"/></symbol>
+  <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 15a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 15z"/><path d="M8 18v2M12 18v3M16 18v2"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7a2 2 0 1 1-2 2"/></symbol>
+  <symbol id="i-fan" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-5 4-7 6-5s0 6-6 5zM12 14c0 5-4 7-6 5s0-6 6-5zM10 12c-5 0-7-4-5-6s6 0 5 6zM14 12c5 0 7 4 5 6s-6 0-5-6z"/></symbol>
+  <symbol id="i-smoke" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12a3 3 0 0 1 6 0"/><path d="M12 12v.5"/></symbol>
+  <symbol id="i-motion" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8 8a6 6 0 0 0 0 8M16 8a6 6 0 0 1 0 8M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 5.5-1M5 12a10 10 0 0 1 3-2M19 12a10 10 0 0 0-8-2.9M12 20h.01"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.5 10.6a2 2 0 0 0 2.9 2.9M7 7.5C4.5 9 3 12 3 12s3.5 6 9 6c1.4 0 2.6-.3 3.7-.8M10 6.2A9 9 0 0 1 12 6c5.5 0 9 6 9 6s-.8 1.5-2.3 3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.5"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8M6.3 7.3a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 4v16M17 4v16"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18A9 9 0 0 0 12 3z" fill="currentColor"/></symbol>
+  <symbol id="i-cloud-moon" viewBox="0 0 24 24"><path d="M8 19a3.5 3.5 0 0 1-.4-7 5 5 0 0 1 9.4 1.3A3 3 0 0 1 16.5 19z"/><path d="M19.5 10.5A4 4 0 0 1 15 5a4 4 0 1 0 4.5 5.5z"/></symbol>
+  <symbol id="i-pouring" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M7 16l-1 3M11 16l-1 3M15 16l-1 3M19 16l-1 3M9 20l-1 3M13 20l-1 3"/></symbol>
+  <symbol id="i-lightning" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M13 13l-3 5h4l-2 5"/></symbol>
+  <symbol id="i-lightning-rainy" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M12 13l-2.5 4h3.5l-2 5M7 17l-1 3M18 17l-1 3"/></symbol>
+  <symbol id="i-hail" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M8 17v.5M12 19v.5M16 17v.5M10 22v.5M14 22v.5"/></symbol>
+  <symbol id="i-sleet" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M8 16l-1 3M16 16l-1 3M12 16v5M10.3 17.5l3.4 2M13.7 17.5l-3.4 2"/></symbol>
+  <symbol id="i-fog" viewBox="0 0 24 24"><path d="M7 12a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 12z"/><path d="M4 16h16M6 19h12M8 22h8"/></symbol>
+  <symbol id="i-exceptional" viewBox="0 0 24 24"><path d="M7 14a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 14z"/><path d="M12 16v4M12 22v.5"/></symbol>
+  <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0-10 0M12 9V3M9 6l3-3 3 3M2 18h2M20 18h2M3 22h18"/></symbol>
+  <symbol id="i-sunset" viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0-10 0M12 3v6M9 6l3 3 3-3M2 18h2M20 18h2M3 22h18"/></symbol>
+  <symbol id="i-uv" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/><path d="M10 10.5v2a2 2 0 0 0 4 0v-2" stroke-width="1.5"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M5 19a9 9 0 1 1 14 0"/><path d="M12 13l4-4"/><path d="M12 13v.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+  <symbol id="i-umbrella" viewBox="0 0 24 24"><path d="M3 13a9 9 0 0 1 18 0z"/><path d="M12 13v6a2 2 0 0 0 4 0M12 4V2"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+  <symbol id="i-thermo-sun" viewBox="0 0 24 24"><path d="M8 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M10 10v6"/><circle cx="18" cy="6" r="2"/><path d="M18 2v1M18 9v1M14 6h1M21 6h1"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19C5 9 11 4 21 4c0 10-5 16-16 15z"/><path d="M5 19l8-8"/></symbol>
+  <symbol id="i-waves" viewBox="0 0 24 24"><path d="M3 8c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2M3 14c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2M3 20c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2"/></symbol>
+  <symbol id="i-mountain" viewBox="0 0 24 24"><path d="M3 20l6-11 4 6 3-4 5 9z"/></symbol>
+  <symbol id="i-flower" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M12 9.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM12 20.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM9.5 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20.5 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></symbol>
+  <symbol id="i-air" viewBox="0 0 24 24"><path d="M3 8h9a3 3 0 1 0-3-3M3 12h13a3 3 0 1 1-3 3M3 16h6a2 2 0 1 1-2 2"/><circle cx="19" cy="7" r="1.5"/><circle cx="20" cy="18" r="1"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></symbol>
+</svg>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><span class="brand-mark"><svg class="ico"><use href="#i-home"/></svg></span>Maison <small>· design system</small></a>
+  <nav class="seg menu" aria-label="Menu">
+    <a href="index.html" data-page="system">System</a>
+    <a href="mobile.html" data-page="mobile">Mobile</a>
+    <a href="dashboard.html" data-page="dashboard" class="is-active">Dashboard</a>
+    <a href="meteo.html" data-page="meteo">Météo</a>
+  </nav>
+  <div class="tools">
+    <button class="btn" type="button" id="theme" title="Thème : système"><svg class="ico -s"><use href="#i-contrast"/></svg><span id="theme-l">Système</span></button>
+  </div>
+</header>
+
+<div class="desk"><div class="dash">
+  <aside class="rail">
+    <nav aria-label="Navigation">
+      <a class="is-active" href="#" aria-label="Accueil"><svg class="ico -l"><use href="#i-home"/></svg></a>
+      <a href="#" aria-label="Pièces"><svg class="ico -l"><use href="#i-rooms"/></svg></a>
+      <a href="#" aria-label="Lumières, 3 allumées"><svg class="ico -l"><use href="#i-bulb"/></svg><span class="pict-n">3</span></a>
+      <a href="#" aria-label="Chauffage"><svg class="ico -l"><use href="#i-flame"/></svg></a>
+      <a href="#" aria-label="Sécurité"><svg class="ico -l"><use href="#i-shield"/></svg></a>
+      <a href="#" aria-label="Caméras"><svg class="ico -l"><use href="#i-camera"/></svg></a>
+    </nav>
+    <div class="rail-bot"><span class="pict" aria-label="Notifications"><svg class="ico"><use href="#i-bell"/></svg></span><span class="who is-home"><span class="avatar" aria-label="Abdelhak, à la maison">A</span></span></div>
+  </aside>
+
+  <div class="dash-main">
+    <header class="dash-top">
+      <div class="greet"><h1>Bonsoir Abdelhak</h1><p>Dimanche 8 novembre · 17:41 · 2 pièces en chauffe, 3 lumières allumées</p></div>
+      <div class="seg" role="tablist"><a class="is-active" href="#">Maison</a><a href="#">Salon</a><a href="#">Cuisine <span class="seg-n">!</span></a><a href="#">Entrée</a><a href="#">Bureau <span class="seg-n">3</span></a><a href="#">Chambre</a><a href="#">Bébé</a></div>
+      <div class="dash-tools">
+        <span class="chip"><svg class="ico"><use href="#i-moon"/></svg>9° · Vénissieux</span>
+        <span class="who-pill is-home"><span class="who-stack" aria-hidden="true"><span class="avatar -s" style="border-color:var(--accent)">A</span><span class="avatar -s" style="border-style:dashed;color:var(--fg-faint)">M</span></span><span class="who-t"><span class="who-n">1 / 2</span><span class="who-s">à la maison</span></span></span>
+      </div>
+    </header>
+
+    <div class="dash-alerts">
+      <a class="alert is-warn" href="#"><span class="pict"><svg class="ico"><use href="#i-window-open"/></svg></span><span class="alert-body"><span class="alert-t">Fenêtre ouverte pendant que la cuisine chauffe</span><span class="alert-d">Depuis 20 min · consigne 21°</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+      <a class="alert" href="#"><span class="pict is-unknown"><svg class="ico"><use href="#i-wifi-off"/></svg></span><span class="alert-body"><span class="alert-t">3 appareils injoignables</span><span class="alert-d">Fenêtre salon, fenêtre bureau, store TRADFRI · depuis plus d'une heure</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+      <a class="alert is-warn" href="#"><span class="pict"><svg class="ico"><use href="#i-battery-low"/></svg></span><span class="alert-body"><span class="alert-t">Pile faible</span><span class="alert-d">Tête tado du salon</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+    </div>
+
+    <div class="dash-grid">
+
+      <div class="card dash-wx">
+        <div class="wx"><div class="wx-main"><span class="val -hero"><span class="val-n">9</span><span class="val-u">°</span></span><span class="wx-cond">Nuageux, ciel qui se dégage</span><span class="wx-range"><span><svg class="ico"><use href="#i-arrow-down"/></svg> 5°</span><span><svg class="ico"><use href="#i-arrow-up"/></svg> 12°</span></span></div><div class="wx-glyph -s" data-cond="partlycloudy" data-night aria-hidden="true"></div></div>
+        <div class="wx-hours">
+          <div class="wx-h is-now"><span>Maint.</span><svg class="ico"><use href="#i-cloud"/></svg><b>9°</b></div>
+          <div class="wx-h"><span>19 h</span><svg class="ico"><use href="#i-cloud"/></svg><b>8°</b></div>
+          <div class="wx-h"><span>20 h</span><svg class="ico"><use href="#i-rain"/></svg><b>8°</b></div>
+          <div class="wx-h"><span>21 h</span><svg class="ico"><use href="#i-moon"/></svg><b>7°</b></div>
+        </div>
+        <div class="wx-days">
+          <div class="wx-d"><span>lun.</span><svg class="ico"><use href="#i-rain"/></svg><span class="wx-min">7°</span><span class="wx-bar" style="--a:25%;--b:50%"></span><span class="wx-max">11°</span></div>
+          <div class="wx-d"><span>mar.</span><svg class="ico"><use href="#i-cloud"/></svg><span class="wx-min">5°</span><span class="wx-bar" style="--a:15%;--b:45%"></span><span class="wx-max">12°</span></div>
+          <div class="wx-d"><span>mer.</span><svg class="ico"><use href="#i-sun"/></svg><span class="wx-min">3°</span><span class="wx-bar" style="--a:5%;--b:30%"></span><span class="wx-max">15°</span></div>
+        </div>
+      </div>
+
+      <a class="hero -wide -cinema dash-hero has-img" href="#">
+        <img class="hero-img" src="../../media/rooms/salon.jpg" alt="">
+        <div class="hero-top">
+          <span class="tag -live"><span class="dot is-crit is-live" aria-hidden="true"></span>LIVE</span>
+          <div class="chip-row"><span class="chip -on-photo is-heat"><svg class="ico"><use href="#i-thermo"/></svg>21 °C</span><span class="chip -on-photo"><svg class="ico"><use href="#i-drop"/></svg>54 %</span><span class="chip -on-photo"><svg class="ico"><use href="#i-bolt"/></svg>86 W</span><span class="chip -on-photo"><svg class="ico"><use href="#i-motion"/></svg>Calme</span></div>
+        </div>
+        <div class="player"><span class="player-cover" aria-hidden="true"></span><span class="player-body"><span class="player-t">France Inter</span><span class="player-a">Enceinte salon · 35 %</span><span class="player-prog"><span>direct</span><span class="gauge-track"><span class="gauge-fill" style="--v:100%"></span></span><span></span></span></span><span class="pwr is-on"><svg class="ico"><use href="#i-pause"/></svg></span></div>
+        <div class="hero-bot -right"><span class="hero-body"><span class="hero-t">Salon</span><span class="hero-s">2 lumières · chauffe · 19,5°</span></span><svg class="ico" style="color:rgba(255,255,255,.7)"><use href="#i-expand"/></svg></div>
+      </a>
+
+      <div class="card dash-heat">
+        <div class="card-head"><span class="pict is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><div style="display:grid;min-width:0"><span class="card-title">Chauffage</span><span class="card-sub">2 pièces en chauffe · moyenne 19,8°</span></div></div>
+        <div class="chip-row"><span class="tag is-accent">Planning</span><span class="tag">Nuit</span><span class="tag">Boost</span><span class="tag">Tout couper</span></div>
+        <div class="dotsline"><span class="dots -heat" data-n="14" data-on="5" aria-label="Puissance de chauffe 35 %"></span><span class="val -meta"><span class="val-n">35</span><span class="val-u">%</span></span></div>
+        <div class="list">
+              <a class="row" href="#"><span class="pict -s is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Salon</span></span><span class="pair is-heating"><span class="val -s"><span class="val-n">19,5</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target"><span class="val-n">21</span><span class="val-u">°</span></span></span></a>
+              <a class="row" href="#"><span class="pict -s is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Cuisine</span><span class="row-sub"><span class="dot is-warn" aria-hidden="true"></span> Fenêtre ouverte</span></span><span class="pair is-heating"><span class="val -s"><span class="val-n">18,5</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target"><span class="val-n">21</span><span class="val-u">°</span></span></span></a>
+              <a class="row" href="#"><span class="pict -s "><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Entrée</span></span><span class="pair "><span class="val -s"><span class="val-n">20</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target"><span class="val-n">20</span><span class="val-u">°</span></span></span></a>
+              <a class="row" href="#"><span class="pict -s "><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Bureau</span></span><span class="pair is-off"><span class="val -s"><span class="val-n">18,2</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target">Arrêt</span></span></a>
+              <a class="row" href="#"><span class="pict -s "><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Chambre</span></span><span class="pair is-off"><span class="val -s"><span class="val-n">19,2</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target">Arrêt</span></span></a>
+              <a class="row" href="#"><span class="pict -s is-unknown"><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Chambre bébé</span><span class="row-sub">Injoignable · 2 h</span></span><span class="pair "><span class="val -s is-stale"><span class="val-n">19,0</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target">—</span></span></a>
+        </div>
+        <div class="card-foot"><span>Présence tado · <b style="color:var(--fg);font-weight:500">Maison</b></span><time class="time" title="17:41:12">il y a 12 s</time></div>
+      </div>
+
+      <div class="dash-devs">
+        <a class="dev has-img" href="#"><img class="hero-img" src="../../media/devices/bulb-on.jpg" alt=""><div class="hero-bot"><span class="hero-body"><span class="hero-t">Lampe canapé</span><span class="hero-s">Allumée · 60 %</span></span></div><span class="pwr is-on"><svg class="ico"><use href="#i-power"/></svg></span></a>
+        <a class="dev has-img" href="#"><img class="hero-img" src="../../media/devices/speaker.jpg" alt=""><div class="hero-bot"><span class="hero-body"><span class="hero-t">Enceinte</span><span class="hero-s">France Inter</span></span></div><span class="pwr is-on"><svg class="ico"><use href="#i-pause"/></svg></span></a>
+        <a class="dev has-img is-off" href="#"><img class="hero-img" src="../../media/devices/bulb-off.jpg" alt=""><div class="hero-bot"><span class="hero-body"><span class="hero-t">Plafonnier</span><span class="hero-s">Éteint</span></span></div><span class="pwr"><svg class="ico"><use href="#i-power"/></svg></span></a>
+      </div>
+
+      <div class="dash-tiles">
+        <div class="tile"><span class="pict -s"><svg class="ico"><use href="#i-bolt"/></svg></span><div><div class="tile-v">336<small>W</small></div><div class="tile-l">Maintenant</div></div></div>
+        <div class="tile -blue"><span class="pict -s"><svg class="ico"><use href="#i-thermo"/></svg></span><div><div class="tile-v">19,8<small>°</small></div><div class="tile-l">Moyenne maison</div></div></div>
+        <div class="tile -mint"><span class="pict -s"><svg class="ico"><use href="#i-drop"/></svg></span><div><div class="tile-v">52<small>%</small></div><div class="tile-l">Humidité</div></div></div>
+        <div class="tile -sand"><span class="pict -s"><svg class="ico"><use href="#i-shield-check"/></svg></span><div><div class="tile-v">Armée</div><div class="tile-l">Alarme</div></div></div>
+      </div>
+
+      <div class="dash-col dash-side">
+        <div class="card">
+          <div class="card-head"><span class="pict is-ok"><svg class="ico"><use href="#i-shield-check"/></svg></span><div style="display:grid;min-width:0"><span class="card-title">Sécurité</span><span class="card-sub">Armée · tout est fermé</span></div><span class="toggle is-on" role="img" aria-label="Alarme armée"></span></div>
+          <a class="hero -wide has-img" href="#" style="box-shadow:none"><img class="hero-img" src="../../media/rooms/bureau.jpg" alt=""><div class="hero-top"><span class="tag -live"><span class="dot is-crit is-live" aria-hidden="true"></span>LIVE</span><div class="chip-row"><span class="chip -s -on-photo"><svg class="ico"><use href="#i-motion"/></svg>Calme</span></div></div><div class="hero-bot"><span class="hero-body"><span class="hero-t">Bureau</span><span class="hero-s">il y a 12 s</span></span><svg class="ico" style="color:rgba(255,255,255,.7)"><use href="#i-expand"/></svg></div></a>
+          <div class="list">
+            <div class="row"><span class="pict -s is-ok"><svg class="ico"><use href="#i-window"/></svg></span><span><span class="row-name">Ouvrants</span><span class="row-sub">6 capteurs</span></span><span class="status -s"><span class="dot is-ok" aria-hidden="true"></span>Tout fermé</span></div>
+            <div class="row"><span class="pict -s is-ok"><svg class="ico"><use href="#i-smoke"/></svg></span><span><span class="row-name">Nest Protect</span><span class="row-sub">Entrée · fumée et CO</span></span><span class="status -s"><span class="dot is-ok" aria-hidden="true"></span>OK</span></div>
+            <div class="row"><span class="pict -s"><svg class="ico"><use href="#i-eye-off"/></svg></span><span><span class="row-name">Mode privé</span><span class="row-sub">2 caméras</span></span><span class="toggle -s" role="img" aria-label="Mode privé inactif"></span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="pict is-on"><svg class="ico"><use href="#i-bulb"/></svg></span><div style="display:grid;min-width:0"><span class="card-title">Lumières</span><span class="card-sub">3 allumées · 2 pièces</span></div><span class="toggle is-on" role="img" aria-label="Lumières allumées"></span></div>
+          <div class="arc" data-v="68"><div class="arc-c"><span class="arc-l">Intensité moyenne</span><span class="val -std"><span class="val-n">68</span><span class="val-u">%</span></span></div><div class="arc-ends"><span>0</span><span>100</span></div></div>
+          <div class="list">
+            <div class="row"><span class="pict -s is-lit"><svg class="ico"><use href="#i-lamp"/></svg></span><span><span class="row-name">Lampe canapé</span><span class="row-sub">Salon · 60 %</span></span><span class="toggle -s is-on" role="img" aria-label="Allumée"></span></div>
+            <div class="row"><span class="pict -s is-lit"><svg class="ico"><use href="#i-bulb"/></svg></span><span><span class="row-name">Hue Play</span><span class="row-sub">Salon · ambre · 45 %</span></span><span class="toggle -s is-on" role="img" aria-label="Allumée"></span></div>
+            <div class="row"><span class="pict -s is-lit"><svg class="ico"><use href="#i-bulb"/></svg></span><span><span class="row-name">Bureau</span><span class="row-sub">Groupe · 100 %</span></span><span class="toggle -s is-on" role="img" aria-label="Allumée"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dash-rooms">
+        <a class="room  has-img" href="#"><img class="hero-img" src="../../media/rooms/salon.jpg" alt=""><div class="room-head"><span class="pict -s is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><span class="pictv is-on"><svg class="ico"><use href="#i-bulb"/></svg>2</span></div><div class="room-body"><span class="room-name">Salon</span><span class="val -std"><span class="val-n">19,5</span><span class="val-u">°</span></span></div></a>
+        <a class="room  has-img" href="#"><img class="hero-img" src="../../media/rooms/cuisine.jpg" alt=""><div class="room-head"><span class="pict -s is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><span class="pictv is-warn"><svg class="ico"><use href="#i-window-open"/></svg>20 min</span></div><div class="room-body"><span class="room-name">Cuisine</span><span class="val -std"><span class="val-n">18,5</span><span class="val-u">°</span></span></div></a>
+        <a class="room  has-img" href="#"><img class="hero-img" src="../../media/rooms/entree.jpg" alt=""><div class="room-head"><span class="pict -s is-ok"><svg class="ico"><use href="#i-door"/></svg></span><span class="pictv"><svg class="ico"><use href="#i-smoke"/></svg>OK</span></div><div class="room-body"><span class="room-name">Entrée</span><span class="val -std"><span class="val-n">20</span><span class="val-u">°</span></span></div></a>
+        <a class="room  has-img" href="#"><img class="hero-img" src="../../media/rooms/bureau.jpg" alt=""><div class="room-head"><span class="pict -s"><svg class="ico"><use href="#i-flame"/></svg></span><span class="pictv is-on"><svg class="ico"><use href="#i-bulb"/></svg>1</span></div><div class="room-body"><span class="room-name">Bureau</span><span class="val -std"><span class="val-n">18,2</span><span class="val-u">°</span></span></div></a>
+        <a class="room  has-img" href="#"><img class="hero-img" src="../../media/rooms/chambre.jpg" alt=""><div class="room-head"><span class="pict -s"><svg class="ico"><use href="#i-flame"/></svg></span><span class="pictv"><svg class="ico"><use href="#i-window"/></svg></span></div><div class="room-body"><span class="room-name">Chambre</span><span class="val -std"><span class="val-n">19,2</span><span class="val-u">°</span></span></div></a>
+        <a class="room is-stale has-img" href="#"><img class="hero-img" src="../../media/rooms/chambre.jpg" alt=""><div class="room-head"><span class="pict -s is-unknown" style="color:#fff"><svg class="ico"><use href="#i-wifi-off"/></svg></span><time class="time is-old" title="15:41">2 h</time></div><div class="room-body"><span class="room-name">Chambre bébé</span><span class="val -std"><span class="val-n">19,0</span><span class="val-u">°</span></span></div></a>
+      </div>
+
+    </div>
+  </div>
+</div></div>
+
+<script src="widgets.js"></script>
+<script src="catalogue.js"></script>
+</body>
+</html>

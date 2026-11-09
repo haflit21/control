@@ -1,0 +1,74 @@
+/* Maison — wide layout (iPad landscape, Mac). Depends on tokens.css + widgets.css.
+   Layout only: every visible thing is a widget from widgets.css. */
+
+.desk { position: relative; isolation: isolate; min-height: calc(100dvh - 60px); }
+.desk::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(45% 40% at 0% 0%, var(--bg-glow-1), transparent 70%), radial-gradient(40% 45% at 100% 100%, var(--bg-glow-2), transparent 70%); }
+.dash { position: relative; z-index: 1; display: grid; grid-template-columns: 76px minmax(0, 1fr); }
+
+/* rail */
+.rail { position: sticky; top: 60px; height: calc(100dvh - 60px); display: grid; grid-template-rows: 1fr auto; justify-items: center; gap: var(--sp-6); padding: var(--sp-5) 0; border-right: 1px solid var(--border); }
+.rail nav { display: grid; gap: var(--sp-2); align-content: start; }
+.rail nav a { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; color: var(--fg-muted); transition: background var(--dur-hover) ease, color var(--dur-hover) ease; }
+@media (hover: hover) and (pointer: fine) { .rail nav a:hover { background: var(--surface-2); color: var(--fg); } }
+.rail nav a.is-active { color: var(--accent-fg); background: var(--accent); box-shadow: var(--accent-glow); }
+.rail nav a .pict-n { top: 2px; right: 2px; }
+.rail-bot { display: grid; gap: var(--sp-3); justify-items: center; }
+
+/* main */
+.dash-main { display: grid; gap: var(--sp-5); padding: var(--sp-5) var(--sp-6) var(--sp-7); min-width: 0; max-width: 1680px; width: 100%; margin-inline: auto; }
+.dash-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--sp-5); }
+.dash-top .seg { justify-self: center; }
+.dash-top .seg a { padding: 0 14px; }
+.dash-tools { display: flex; align-items: center; gap: var(--sp-3); }
+.dash-alerts { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: var(--sp-3); }
+.dash-alerts:empty { display: none; }
+
+/* the grid */
+.dash-grid { display: grid; grid-template-columns: 320px minmax(0, 1fr) 320px; grid-template-rows: auto auto auto 1fr;
+  grid-template-areas: "wx hero hero" "heat devs side" "heat tiles side" "heat rooms side"; gap: var(--sp-4); align-items: start; }
+.dash-wx { grid-area: wx; } .dash-hero { grid-area: hero; } .dash-heat { grid-area: heat; } .dash-devs { grid-area: devs; } .dash-tiles { grid-area: tiles; align-self: start; } .dash-side { grid-area: side; } .dash-rooms { grid-area: rooms; }
+.dash-col { display: grid; gap: var(--sp-4); min-width: 0; }
+.dash .hero.-cinema { aspect-ratio: 21 / 9; }
+.dash-devs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); align-content: start; }
+.dash-devs .dev { aspect-ratio: 1 / 1.1; }
+.dash-devs .hero-bot { padding: var(--sp-2) 10px; left: var(--sp-2); right: var(--sp-2); bottom: var(--sp-2); border-radius: 16px; }
+.dash-devs .hero-t { font-size: 14px; } .dash-devs .hero-s { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-4); }
+.dash-tiles .tile { padding: var(--sp-3) var(--sp-4); gap: var(--sp-3); }
+.dash-heat .pair .val.-s, .dash-heat .pair-target { font-size: var(--fs-l); }
+.dash .arc { max-width: 240px; margin-inline: auto; }
+.dash-rooms { align-self: start; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); }
+.dash-rooms .room { min-height: 176px; }
+.dash-heat .row-sub { text-transform: none; letter-spacing: 0; font-size: var(--fs-xs); }
+.dash-sec h2, .dash-sec h3 { margin: var(--sp-2) 0 0; }
+
+/* hero overlays specific to the wide layout */
+.hero .player { position: absolute; left: var(--sp-4); bottom: var(--sp-4); width: min(400px, 52%); background: rgba(20, 20, 28, .5); border-color: rgba(255, 255, 255, .14); color: var(--fg-on-photo); }
+.hero .player .player-a, .hero .player .player-prog { color: rgba(255, 255, 255, .7); }
+.hero .player .gauge-track { background: rgba(255, 255, 255, .2); } .hero .player .gauge-fill { background: #fff; }
+.hero .hero-bot.-right { left: auto; width: auto; max-width: 44%; }
+
+/* responsive */
+@media (max-width: 1280px) {
+  .dash-grid { grid-template-columns: 300px minmax(0, 1fr); grid-template-rows: auto auto auto auto auto;
+    grid-template-areas: "wx hero" "heat devs" "heat tiles" "heat rooms" "side side"; }
+  .dash-side { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash .hero.-cinema { aspect-ratio: 16 / 9; }
+  .dash-top { grid-template-columns: auto minmax(0, 1fr); }
+  .dash-tools { grid-column: 1 / -1; justify-content: flex-start; }
+}
+@media (max-width: 860px) {
+  .dash { grid-template-columns: minmax(0, 1fr); }
+  .rail { display: none; }
+  .dash-main { padding: var(--sp-4); gap: var(--sp-4); }
+  .dash-top { grid-template-columns: minmax(0, 1fr); }
+  .dash-top .seg { justify-self: stretch; }
+  .dash-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "hero" "wx" "heat" "devs" "tiles" "side" "rooms"; grid-template-rows: none; }
+  .dash .hero.-cinema { aspect-ratio: 16 / 10; }
+  .dash-side { grid-template-columns: minmax(0, 1fr); }
+  .dash-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-rooms { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero .player { width: calc(100% - 32px); }
+  .hero .hero-bot.-right { display: none; }
+}

@@ -1,0 +1,312 @@
+# Maison — pièces, appareils et entités Home Assistant derrière chacun.
+# Aucun secret ici : HA_URL et HA_TOKEN sont dans .env.
+# Rôles d'entités par type : voir server/internal/config/config.go.
+
+name: Maison
+
+serve:
+  listen: ":8080"
+  allow_from: ["192.168.30.0/24", "192.168.4.0/24", "192.168.10.0/24", "127.0.0.1", "::1"]
+  state_dir: state
+  media_dir: media   # photos des pièces et des appareils, servies sous /media/
+
+globals:
+  weather: weather.venissieux
+  sun: sun.sun
+  # Qualité de l'air extérieur (Open-Meteo, sans clé). Sans coordonnées : celles de zone.home dans HA.
+  air:
+    latitude: 45.697
+    longitude: 4.886
+    place: Vénissieux
+  # Agenda partagé : entités calendar.* de HA (Google, iCloud, CalDAV…). À adapter — `make check` dit ce qui manque.
+  calendars:
+    - entity: calendar.famille
+      name: Famille
+      color: "#ec9b74"
+    - entity: calendar.poubelles
+      name: Poubelles
+      color: "#6fcf9a"
+  presence:
+    - { entity: person.abdelhak, name: Abdelhak }
+    - { entity: person.marion, name: Marion }
+  average:
+    temperature: sensor.day_area_temperature
+    humidity: sensor.day_area_humidity
+  heating:
+    schedule: script.thermometer_auto
+    night: script.thermometer_night
+    off: script.thermometer_off
+    boost: button.tado_home_boost_all_zones
+    presence: select.tado_home_presence_mode
+    quota: sensor.tado_home_api_remaining
+  alarm:
+    armed: input_boolean.alarm
+    ack: input_button.alarm_acknowledge
+    acked: input_boolean.alarm_acknowledge
+    unifi: alarm_control_panel.salon_dream_machine_pro_alarm_manager
+  cameras:
+    private: binary_sensor.camera_sensor_private
+    toggle: script.1758277386339
+
+rooms:
+  - id: salon
+    name: Salon
+    icon: sofa
+    image: rooms/salon.jpg
+    devices:
+      - id: chauffage
+        kind: heating
+        name: Chauffage
+        primary: true
+        entities:
+          climate: climate.tado_smart_thermostat_ru0044248832
+          humidity: sensor.salon_salon_humidity
+          heating_power: sensor.salon_salon_heating_power
+          mold_risk: binary_sensor.salon_salon_mold_risk
+          battery: binary_sensor.salon_tado_smart_thermostat_ru0044248832_battery
+          zone_mode: sensor.salon_salon_zone_mode
+      - id: tete
+        kind: heating
+        name: Tête radiateur
+        hidden: true
+        entities:
+          climate: climate.tado_smart_radiator_thermostat_va0577785344
+          battery: binary_sensor.tado_smart_radiator_thermostat_va0577785344_battery
+      - id: clim
+        kind: ac
+        name: Climatisation
+        entities:
+          climate: climate.ac_16928681
+          eco: switch.ac_16928681_eco_mode
+          boost: switch.ac_16928681_high_power_mode
+          power: sensor.ac_16928681_power_consumption
+      - id: fenetre
+        kind: opening
+        name: Fenêtre
+        entities:
+          contact: binary_sensor.window_sensor_livingroom_contact
+      - id: mouvement
+        kind: motion
+        name: Mouvement
+        entities:
+          motion: binary_sensor.g3_flex_motion_2
+      - id: enceinte
+        kind: media
+        name: Enceinte
+        entities:
+          media_player: media_player.salon
+      - id: camera
+        kind: camera
+        name: Caméra
+        entities:
+          camera: camera.g3_flex_high_2
+          motion: binary_sensor.g3_flex_motion_2
+          privacy: binary_sensor.camera_sensor_private
+
+  - id: cuisine
+    name: Cuisine
+    icon: kitchen
+    image: rooms/cuisine.jpg
+    devices:
+      - id: chauffage
+        kind: heating
+        name: Chauffage
+        primary: true
+        entities:
+          climate: climate.tado_smart_radiator_thermostat_va0123096576
+          temperature: sensor.tado_smart_radiator_thermostat_va0123096576_current_temperature
+          humidity: sensor.cuisine_cuisine_humidity
+          battery: binary_sensor.tado_smart_radiator_thermostat_va0123096576_battery
+          zone_mode: sensor.cuisine_cuisine_zone_mode
+      - id: fenetre
+        kind: opening
+        name: Fenêtre
+        entities:
+          contact: binary_sensor.window_sensor_kitchen_contact
+
+  - id: entree
+    name: Entrée
+    icon: door
+    image: rooms/entree.jpg
+    devices:
+      - id: chauffage
+        kind: heating
+        name: Chauffage
+        primary: true
+        entities:
+          climate: climate.tado_smart_radiator_thermostat_va3411430912
+          humidity: sensor.entree_entree_humidity
+          battery: binary_sensor.tado_smart_radiator_thermostat_va3411430912_battery
+          zone_mode: sensor.entree_entree_zone_mode
+      - id: porte
+        kind: opening
+        name: Porte d'entrée
+        entities:
+          contact: binary_sensor.door_sensor_home_contact
+      - id: nest
+        kind: smoke
+        name: Nest Protect
+        entities:
+          smoke: binary_sensor.nest_protect_entryway_smoke_status
+          co: binary_sensor.nest_protect_entryway_co_status
+
+  - id: bureau
+    name: Bureau
+    icon: desk
+    image: rooms/bureau.jpg
+    devices:
+      - id: chauffage
+        kind: heating
+        name: Chauffage
+        primary: true
+        entities:
+          climate: climate.tado_smart_radiator_thermostat_va0780421376
+          battery: binary_sensor.tado_smart_radiator_thermostat_va0780421376_battery
+          zone_mode: sensor.bureau_bureau_zone_mode
+      - id: fenetre
+        kind: opening
+        name: Fenêtre
+        entities:
+          contact: binary_sensor.window_sensor_office_contact
+      - id: mouvement
+        kind: motion
+        name: Mouvement
+        entities:
+          motion: binary_sensor.g3_flex_motion
+      - id: volet
+        kind: cover
+        name: Volet
+        entities:
+          cover: cover.shutter_legrand
+      - id: store
+        kind: cover
+        name: Store
+        entities:
+          cover: cover.tradfri_blind
+      - id: hue1
+        kind: light
+        name: Hue Play 1
+        image: devices/hue-play-on.jpg
+        image_off: devices/hue-play-off.jpg
+        entities:
+          light: light.light_philips_hue_play_1
+      - id: hue2
+        kind: light
+        name: Hue Play 2
+        image: devices/hue-play-on.jpg
+        image_off: devices/hue-play-off.jpg
+        entities:
+          light: light.light_philips_hue_play_2
+      - id: ampoule
+        kind: light
+        name: Ampoule
+        entities:
+          light: light.ampoule_4
+      - id: transformateur
+        kind: light
+        name: Transformateur
+        image: devices/led-strip-on.jpg
+        image_off: devices/led-strip-off.jpg
+        entities:
+          light: light.transformateur
+      - id: canape
+        kind: light_group
+        name: Canapé
+        image: devices/lamp-on.jpg
+        image_off: devices/lamp-off.jpg
+        entities:
+          light: light.sofa
+      - id: sofa1
+        kind: light
+        name: Sofa 1
+        image: devices/spots-on.jpg
+        image_off: devices/spots-off.jpg
+        hidden: true
+        entities:
+          light: light.sofa1
+      - id: sofa2
+        kind: light
+        name: Sofa 2
+        image: devices/spots-on.jpg
+        image_off: devices/spots-off.jpg
+        hidden: true
+        entities:
+          light: light.sofa_2
+      - id: sofa3
+        kind: light
+        name: Sofa 3
+        image: devices/spots-on.jpg
+        image_off: devices/spots-off.jpg
+        hidden: true
+        entities:
+          light: light.sofa_3
+      - id: groupe
+        kind: light_group
+        name: Bureau
+        image: devices/spotlight-on.jpg
+        image_off: devices/spotlight-off.jpg
+        entities:
+          light: light.office
+      - id: prise
+        kind: plug
+        name: Prise
+        entities:
+          switch: switch.smart_power_outlet_1
+          power: sensor.smart_power_outlet_1_power
+      - id: camera
+        kind: camera
+        name: Caméra
+        entities:
+          camera: camera.g3_flex_high
+          motion: binary_sensor.g3_flex_motion
+          privacy: binary_sensor.camera_sensor_private
+
+  - id: chambre
+    name: Chambre
+    icon: bed
+    image: rooms/chambre.jpg
+    devices:
+      - id: chauffage
+        kind: heating
+        name: Chauffage
+        primary: true
+        entities:
+          climate: climate.tado_smart_radiator_thermostat_va0638660608
+          humidity: sensor.chambre_chambre_humidity
+          battery: binary_sensor.tado_smart_radiator_thermostat_va0638660608_battery
+          zone_mode: sensor.chambre_chambre_zone_mode
+      - id: fenetre
+        kind: opening
+        name: Fenêtre
+        entities:
+          contact: binary_sensor.window_sensor_parental_contact
+
+  - id: bebe
+    name: Chambre bébé
+    icon: crib
+    image: rooms/bebe.jpg
+    devices:
+      - id: chauffage
+        kind: heating
+        name: Chauffage
+        primary: true
+        entities:
+          climate: climate.tado_smart_radiator_thermostat_va1930506240
+          humidity: sensor.chambre_bebe_chambre_bebe_humidity
+          battery: binary_sensor.tado_smart_radiator_thermostat_va1930506240_battery
+          zone_mode: sensor.chambre_bebe_chambre_bebe_zone_mode
+      - id: fenetre
+        kind: opening
+        name: Fenêtre
+        entities:
+          contact: binary_sensor.window_sensor_child_contact
+
+# Jamais affichés (documentation) : media_player.tv, media_player.tv_2,
+# media_player.bbox_miami, Pirate Weather, switch.*_schedule (Tado Hijack),
+# switch.desk_pc, input_button.turn_on_pc, permit join Zigbee2MQTT, téléphones.
+ignore:
+  - media_player.tv
+  - media_player.tv_2
+  - media_player.bbox_miami
+  - switch.desk_pc
+  - input_button.turn_on_pc

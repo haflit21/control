@@ -1,0 +1,7 @@
+/* The design system is the single source of truth: docs/design-system/*.css. */
+@import "../../../docs/design-system/tokens.css";
+@import "../../../docs/design-system/widgets.css";
+@import "../../../docs/design-system/weather.css";
+@import "../../../docs/design-system/dashboard.css";
+@import "../../../docs/design-system/agenda.css";
+@import "../../../docs/design-system/wall.css";

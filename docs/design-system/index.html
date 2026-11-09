@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0d1017">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1eee8">
+<title>Maison — design system · System</title>
+<!-- Catalogue only: in the app the two faces are self-hosted (OFL), never fetched from Google. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&family=Inter:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="widgets.css">
+<link rel="stylesheet" href="weather.css">
+<link rel="stylesheet" href="agenda.css">
+<link rel="stylesheet" href="catalogue.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></symbol>
+  <symbol id="i-rooms" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="i-lamp" viewBox="0 0 24 24"><path d="M9 3h6l3 9H6z"/><path d="M12 12v6M8 21h8"/></symbol>
+  <symbol id="i-window" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M12 3v18M4 12h16"/></symbol>
+  <symbol id="i-window-open" viewBox="0 0 24 24"><path d="M4 3h16v18H4z"/><path d="M4 12h8M12 3v18"/><path d="M12 7l7-3v14l-7 3"/></symbol>
+  <symbol id="i-blind" viewBox="0 0 24 24"><path d="M4 4h16M5 4v6h14V4M8 10v2M16 10v2M6 15h12M6 19h12"/></symbol>
+  <symbol id="i-door" viewBox="0 0 24 24"><path d="M5 21V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v17"/><path d="M3 21h18M15 12v.5"/></symbol>
+  <symbol id="i-thermo" viewBox="0 0 24 24"><path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M12 10v6"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 7 6 11a6 6 0 0 1-12 0c0-4 6-11 6-11z"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2L5 14h6l-1 8 9-13h-6l1-7z"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M6 8h12v4a6 6 0 0 1-12 0zM12 18v3"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 10v4M6 10v4M9 10v4M12 10v4"/></symbol>
+  <symbol id="i-battery-low" viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M22 10v4M6 10v4"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><circle cx="12" cy="14" r="3"/><circle cx="12" cy="7.5" r="1"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></symbol>
+  <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.6-1.7"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 18z"/></symbol>
+  <symbol id="i-cloud-sun" viewBox="0 0 24 24"><path d="M8 19a3.5 3.5 0 0 1-.4-7 5 5 0 0 1 9.4 1.3A3 3 0 0 1 16.5 19z"/><path d="M14 4v1.5M19.5 6.5l-1 1M21 12h-1.5M16.5 6a3.5 3.5 0 0 1 3.3 3"/></symbol>
+  <symbol id="i-rain" viewBox="0 0 24 24"><path d="M7 15a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 15z"/><path d="M8 18v2M12 18v3M16 18v2"/></symbol>
+  <symbol id="i-snow" viewBox="0 0 24 24"><path d="M12 3v18M4.2 7.5l15.6 9M19.8 7.5l-15.6 9M12 3l-2.5 2.5M12 3l2.5 2.5M12 21l-2.5-2.5M12 21l2.5-2.5"/></symbol>
+  <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7a2 2 0 1 1-2 2"/></symbol>
+  <symbol id="i-fan" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M12 10c0-5 4-7 6-5s0 6-6 5zM12 14c0 5-4 7-6 5s0-6 6-5zM10 12c-5 0-7-4-5-6s6 0 5 6zM14 12c5 0 7 4 5 6s-6 0-5-6z"/></symbol>
+  <symbol id="i-smoke" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12a3 3 0 0 1 6 0"/><path d="M12 12v.5"/></symbol>
+  <symbol id="i-motion" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M8 8a6 6 0 0 0 0 8M16 8a6 6 0 0 1 0 8M5 5a10 10 0 0 0 0 14M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 5.5-1M5 12a10 10 0 0 1 3-2M19 12a10 10 0 0 0-8-2.9M12 20h.01"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.5 10.6a2 2 0 0 0 2.9 2.9M7 7.5C4.5 9 3 12 3 12s3.5 6 9 6c1.4 0 2.6-.3 3.7-.8M10 6.2A9 9 0 0 1 12 6c5.5 0 9 6 9 6s-.8 1.5-2.3 3"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17v.5"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M6 12h12"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 6v12M6 12h12"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.7M12 17v.5"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></symbol>
+  <symbol id="i-arrow-down" viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8M6.3 7.3a8 8 0 1 0 11.4 0"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4l13 8-13 8z"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path d="M7 4v16M17 4v16"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3v18A9 9 0 0 0 12 3z" fill="currentColor"/></symbol>
+  <symbol id="i-cloud-moon" viewBox="0 0 24 24"><path d="M8 19a3.5 3.5 0 0 1-.4-7 5 5 0 0 1 9.4 1.3A3 3 0 0 1 16.5 19z"/><path d="M19.5 10.5A4 4 0 0 1 15 5a4 4 0 1 0 4.5 5.5z"/></symbol>
+  <symbol id="i-pouring" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M7 16l-1 3M11 16l-1 3M15 16l-1 3M19 16l-1 3M9 20l-1 3M13 20l-1 3"/></symbol>
+  <symbol id="i-lightning" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M13 13l-3 5h4l-2 5"/></symbol>
+  <symbol id="i-lightning-rainy" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M12 13l-2.5 4h3.5l-2 5M7 17l-1 3M18 17l-1 3"/></symbol>
+  <symbol id="i-hail" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M8 17v.5M12 19v.5M16 17v.5M10 22v.5M14 22v.5"/></symbol>
+  <symbol id="i-sleet" viewBox="0 0 24 24"><path d="M7 13a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 13z"/><path d="M8 16l-1 3M16 16l-1 3M12 16v5M10.3 17.5l3.4 2M13.7 17.5l-3.4 2"/></symbol>
+  <symbol id="i-fog" viewBox="0 0 24 24"><path d="M7 12a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 12z"/><path d="M4 16h16M6 19h12M8 22h8"/></symbol>
+  <symbol id="i-exceptional" viewBox="0 0 24 24"><path d="M7 14a4 4 0 0 1-.5-8 6 6 0 0 1 11.3 1.5A3.5 3.5 0 0 1 17.5 14z"/><path d="M12 16v4M12 22v.5"/></symbol>
+  <symbol id="i-sunrise" viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0-10 0M12 9V3M9 6l3-3 3 3M2 18h2M20 18h2M3 22h18"/></symbol>
+  <symbol id="i-sunset" viewBox="0 0 24 24"><path d="M17 18a5 5 0 0 0-10 0M12 3v6M9 6l3 3 3-3M2 18h2M20 18h2M3 22h18"/></symbol>
+  <symbol id="i-uv" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/><path d="M10 10.5v2a2 2 0 0 0 4 0v-2" stroke-width="1.5"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M5 19a9 9 0 1 1 14 0"/><path d="M12 13l4-4"/><path d="M12 13v.5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+  <symbol id="i-umbrella" viewBox="0 0 24 24"><path d="M3 13a9 9 0 0 1 18 0z"/><path d="M12 13v6a2 2 0 0 0 4 0M12 4V2"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/></symbol>
+  <symbol id="i-thermo-sun" viewBox="0 0 24 24"><path d="M8 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M10 10v6"/><circle cx="18" cy="6" r="2"/><path d="M18 2v1M18 9v1M14 6h1M21 6h1"/></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M5 19C5 9 11 4 21 4c0 10-5 16-16 15z"/><path d="M5 19l8-8"/></symbol>
+  <symbol id="i-waves" viewBox="0 0 24 24"><path d="M3 8c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2M3 14c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2M3 20c2.5 0 2.5 2 5 2s2.5-2 5-2 2.5 2 5 2 2.5-2 5-2"/></symbol>
+  <symbol id="i-mountain" viewBox="0 0 24 24"><path d="M3 20l6-11 4 6 3-4 5 9z"/></symbol>
+  <symbol id="i-flower" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/><path d="M12 9.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM12 20.5a3 3 0 1 1 0-6 3 3 0 0 1 0 6zM9.5 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20.5 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></symbol>
+  <symbol id="i-air" viewBox="0 0 24 24"><path d="M3 8h9a3 3 0 1 0-3-3M3 12h13a3 3 0 1 1-3 3M3 16h6a2 2 0 1 1-2 2"/><circle cx="19" cy="7" r="1.5"/><circle cx="20" cy="18" r="1"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol><symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol><symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></symbol>
+</svg>
+
+<header class="topbar">
+  <a class="brand" href="index.html"><span class="brand-mark"><svg class="ico"><use href="#i-home"/></svg></span>Maison <small>· design system</small></a>
+  <nav class="seg menu" aria-label="Menu">
+    <a href="index.html" data-page="system" class="is-active">System</a>
+    <a href="mobile.html" data-page="mobile">Mobile</a>
+    <a href="dashboard.html" data-page="dashboard">Dashboard</a>
+    <a href="meteo.html" data-page="meteo">Météo</a>
+  </nav>
+  <div class="tools">
+    <button class="btn" type="button" id="phone" aria-pressed="false" title="Largeur téléphone (390 px)"><svg class="ico -s"><use href="#i-phone"/></svg><span>Téléphone</span></button>
+    <button class="btn" type="button" id="theme" title="Thème : système"><svg class="ico -s"><use href="#i-contrast"/></svg><span id="theme-l">Système</span></button>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="toc" aria-label="Sections">
+  <span class="toc-g">Fondations</span>
+  <a href="#couleurs">Couleurs</a><a href="#typo">Typographie</a><a href="#espace">Verre, rayons, mouvement</a><a href="#icones">Icônes</a>
+  <span class="toc-g">Widgets d'affichage</span>
+  <a href="#valeur">Valeur</a><a href="#pilule">Pilule de mesure</a><a href="#paire">Paire actuelle → consigne</a><a href="#etat">Point d'état</a><a href="#picto">Picto d'état</a><a href="#etiquette">Étiquette</a><a href="#jauge">Jauges</a><a href="#bascule">Bascule, bouton</a><a href="#temps">Temps, compteur-phrase</a><a href="#heros">Carte héros</a><a href="#appareil">Carte appareil</a><a href="#tuile">Tuile</a><a href="#liste">Liste</a><a href="#lecteur">Lecteur</a><a href="#pieces">Barre de pièces, navigation</a><a href="#meteo">Météo</a><a href="#presence">Présence</a><a href="#agenda">Agenda</a><a href="#commande">Commande</a><a href="#alerte">Alerte</a><a href="#surface">Surface, carte de pièce</a>
+  <span class="toc-g">Référence</span>
+  <a href="#inventaire">Données → widget</a>
+</nav>
+
+<main id="main">
+
+<!-- ============ FONDATIONS ============ -->
+<section class="ds" id="couleurs" data-group="fondations">
+  <h2>Couleurs</h2>
+  <p>La toile est la nuit : un bleu nuit profond, avec deux lueurs d'ambiance (chaude en haut, bleutée en bas). Dessus, des surfaces en verre dépoli translucides. La <strong>terracotta</strong> est la lumière : c'est l'accent, et c'est ce qui est allumé, sélectionné, ou qui chauffe. Les états gardent leur sens : vert = tout va bien, ambre = attention, rouge = alerte, bleu d'eau = froid/clim, gris = neutre ou inconnu. Le bleu nuit éclairci sert aux tuiles d'information.</p>
+  <p>Le thème clair est dérivé (ivoire chaud, accent assombri) : il existe pour le plein jour, mais c'est le sombre qu'on dessine en premier.</p>
+  <div class="ex">
+    <div class="ex-l">Toile, surfaces et encres</div>
+    <div class="ex-grid" id="sw-neutral"></div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Accent, nuit et sémantique (texte · fond · bord)</div>
+    <div class="ex-grid" id="sw-sem"></div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Tuiles pastel (encre sombre)</div>
+    <div class="ex-cols -3">
+      <div class="tile"><span class="pict -s"><svg class="ico"><use href="#i-bolt"/></svg></span><div><div class="tile-v">48<small>kWh</small></div><div class="tile-l">Aujourd'hui</div></div></div>
+      <div class="tile -blue"><span class="pict -s"><svg class="ico"><use href="#i-bolt"/></svg></span><div><div class="tile-v">680<small>kWh</small></div><div class="tile-l">Ce mois</div></div></div>
+      <div class="tile -mint"><span class="pict -s"><svg class="ico"><use href="#i-check"/></svg></span><div><div class="tile-v">Tout fermé</div><div class="tile-l">Ouvrants</div></div></div>
+      <div class="tile -sand"><span class="pict -s"><svg class="ico"><use href="#i-thermo"/></svg></span><div><div class="tile-v">19,8<small>°</small></div><div class="tile-l">Moyenne</div></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Audit de contraste (verre composé sur la toile, les deux thèmes)</div>
+    <div class="t-wrap"><table class="t" id="contrast"><thead><tr><th>Paire</th><th>Sombre</th><th>Clair</th><th>Exigence</th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <ul class="rule">
+    <li>L'accent est plus présent que dans une console (bascules, picto « allumé », onglet actif, bouton primaire) mais reste le seul glow de l'écran : s'il y a deux lueurs côte à côte, l'une est de trop.</li>
+    <li>Allumé et chauffe partagent la chaleur terracotta, volontairement : ce qui est allumé éclaire. L'icône fait la différence (ampoule / flamme), jamais la couleur seule.</li>
+    <li>Un triplet s'emploie ensemble : <code>--x-fg</code> texte et icône, <code>--x-bg</code> fond doux, <code>--x-bd</code> bord. Sur photo, le texte est blanc sur un scrim de verre sombre.</li>
+  </ul>
+</section>
+
+<section class="ds" id="typo" data-group="fondations">
+  <h2>Typographie</h2>
+  <p>Deux faces, auto-hébergées (licence OFL) : <strong>Outfit</strong> pour les titres et les chiffres, en graisse fine (300) sur les grands nombres, et <strong>Inter</strong> pour le texte courant. Corps 15 px, rien sous 12 px, chiffres tabulaires partout. Les petits libellés secondaires sont en capitales espacées (12 px, +6 %), comme sur les tableaux de bord de référence.</p>
+  <div class="ex">
+    <div class="type-row"><span class="sw-name">giant 72</span><span class="val -giant"><span class="val-n">19,5</span><span class="val-u">°</span></span></div>
+    <div class="type-row"><span class="sw-name">hero 56</span><span class="val -hero"><span class="val-n">9</span><span class="val-u">°</span></span></div>
+    <div class="type-row"><span class="sw-name">2xl 30</span><span style="font-family:var(--font-display);font-size:var(--fs-2xl);font-weight:500;letter-spacing:-.02em">Bonsoir Abdelhak</span></div>
+    <div class="type-row"><span class="sw-name">xl 22</span><span style="font-family:var(--font-display);font-size:var(--fs-xl);font-weight:500">Chauffage</span></div>
+    <div class="type-row"><span class="sw-name">l 17</span><span style="font-family:var(--font-display);font-size:var(--fs-l);font-weight:500">Lampe canapé</span></div>
+    <div class="type-row"><span class="sw-name">m 15</span><span>Fenêtre ouverte depuis 20 min pendant que la pièce chauffe.</span></div>
+    <div class="type-row"><span class="sw-name">s 13</span><span style="font-size:var(--fs-s);color:var(--fg-muted)">Humidité 54 % · pas de risque de moisissure</span></div>
+    <div class="type-row"><span class="sw-name">xs caps</span><span class="row-sub">Allumée depuis 06:30</span></div>
+  </div>
+  <ul class="rule">
+    <li>Formats via <code>Intl</code> en <code>fr-FR</code> : « 19,5 ° », « il y a 3 min », pluriels par <code>Intl.PluralRules</code>. Température à 1 décimale (météo : entier), pourcentages et watts entiers, consigne au demi-degré, vrai signe « − ».</li>
+    <li>Pas de monospace à l'écran. Les polices sont embarquées dans l'app (PWA hors ligne), jamais chargées depuis Google en production.</li>
+  </ul>
+</section>
+
+<section class="ds" id="espace" data-group="fondations">
+  <h2>Verre, rayons, mouvement</h2>
+  <p>Trois niveaux de verre (<code>--surface</code>, <code>-2</code>, <code>-3</code>) de plus en plus opaques, flou 18 px, bord à 8 % de blanc. Rayons généreux : 14 (pilules et petits contrôles), 22 (cartes), 30 (cartes héros, panneaux), pilule. Une ombre portée douce sous les cartes qui contiennent une photo, aucune sous le verre plat. Grille de 4 px, règle du 2×, lignes de 48 et 56 px, cibles 44 px.</p>
+  <div class="ex">
+    <div class="ex-l">Niveaux de verre sur une photo</div>
+    <div style="position:relative;height:120px;border-radius:var(--radius-m);overflow:hidden"><img class="hero-img" src="../../media/rooms/salon.jpg" alt=""><div style="position:absolute;inset:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px"><div class="glass" style="border-radius:var(--radius-s);display:grid;place-items:center;color:#fff">surface</div><div class="glass -two" style="border-radius:var(--radius-s);display:grid;place-items:center;color:#fff">surface-2</div><div class="glass -three" style="border-radius:var(--radius-s);display:grid;place-items:center">surface-3</div></div></div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Rayons</div>
+    <div class="rad-row">
+      <div class="rad" style="border-radius:var(--radius-s)">s 14</div>
+      <div class="rad" style="border-radius:var(--radius-m)">m 22</div>
+      <div class="rad" style="border-radius:var(--radius-l)">l 30</div>
+      <div class="rad" style="border-radius:var(--radius-pill)">pill</div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Échelle d'espacement</div>
+    <div class="sp-row">
+      <div><div class="sp-box" style="width:4px;height:24px"></div><div class="sp-l">4</div></div>
+      <div><div class="sp-box" style="width:8px;height:24px"></div><div class="sp-l">8</div></div>
+      <div><div class="sp-box" style="width:12px;height:24px"></div><div class="sp-l">12</div></div>
+      <div><div class="sp-box" style="width:16px;height:24px"></div><div class="sp-l">16</div></div>
+      <div><div class="sp-box" style="width:24px;height:24px"></div><div class="sp-l">24</div></div>
+      <div><div class="sp-box" style="width:32px;height:24px"></div><div class="sp-l">32</div></div>
+      <div><div class="sp-box" style="width:40px;height:24px"></div><div class="sp-l">40</div></div>
+    </div>
+  </div>
+  <ul class="rule">
+    <li>Mouvement inchangé (principes Sentinel) : la fréquence décide, pression .97 en 120 ms, panneau 240 ms, toast 400 ms, jamais <code>transition: all</code>, reduced motion = opacité seule. Le glow ne s'anime pas : il est là ou pas.</li>
+    <li>Le flou de verre coûte sur téléphone : au plus trois surfaces floutées visibles en même temps sur une photo ; les cartes posées sur la toile peuvent être en <code>-solid</code>.</li>
+  </ul>
+</section>
+
+<section class="ds" id="icones" data-group="fondations">
+  <h2>Icônes</h2>
+  <p>Sprite SVG inline, boîte 24, trait 1,75 px arrondi, une seule famille, météo comprise. Les gros glyphes météo (soleil, lune, nuage) sont dessinés en CSS avec leur lueur. Pas d'emoji, pas de logos.</p>
+  <div class="ex"><div class="icon-grid" id="icons"></div></div>
+</section>
+
+<!-- ============ WIDGETS ============ -->
+<section class="ds" id="valeur" data-group="widgets">
+  <h2>Valeur</h2>
+  <p>Un chiffre et son unité, en Outfit. Les grandes tailles sont en graisse fine, l'unité plus petite et atténuée. Deux états qui changent le sens : <em>absente</em> (« — ») et <em>périmée</em> (grisée au-delà de 2 min, l'heure dans <code>title</code>).</p>
+  <div class="ex">
+    <div class="ex-l">giant · hero · std · s · meta</div>
+    <div class="ex-row">
+      <span class="val -giant"><span class="val-n">19,5</span><span class="val-u">°</span></span>
+      <span class="val -hero"><span class="val-n">21</span><span class="val-u">°C</span></span>
+      <span class="val -std"><span class="val-n">54</span><span class="val-u">%</span></span>
+      <span class="val -s"><span class="val-n">1 240</span><span class="val-u">W</span></span>
+      <span class="val -meta"><span class="val-n">19,5</span><span class="val-u">°C</span></span>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">absente · périmée · chaleur · froid · négative</div>
+    <div class="ex-row">
+      <span class="val -std is-none" title="Pas encore reçue"><span class="val-n">—</span><span class="val-u">°C</span></span>
+      <span class="val -std is-stale" title="Dernière valeur à 17:02"><span class="val-n">19,5</span><span class="val-u">°C</span></span>
+      <span class="val -std is-heat"><span class="val-n">21</span><span class="val-u">°</span></span>
+      <span class="val -std is-cool"><span class="val-n">24</span><span class="val-u">°</span></span>
+      <span class="val -std"><span class="val-n">−3,5</span><span class="val-u">°C</span></span>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Avec libellé</div>
+    <div class="ex-cols -3">
+      <div class="stat"><span class="stat-l">Température</span><span class="val -std"><span class="val-n">19,5</span><span class="val-u">°C</span></span></div>
+      <div class="stat"><span class="stat-l">Humidité</span><span class="val -std"><span class="val-n">54</span><span class="val-u">%</span></span><span class="stat-m">Pas de risque de moisissure</span></div>
+      <div class="stat"><span class="stat-l">Prise bureau</span><span class="val -std"><span class="val-n">86</span><span class="val-u">W</span></span><span class="stat-m">Allumée depuis 2 h</span></div>
+      <div class="stat"><span class="stat-l">Moyenne</span><span class="val -std is-none"><span class="val-n">—</span></span><span class="stat-m">En attente</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="pilule" data-group="widgets">
+  <h2>Pilule de mesure</h2>
+  <p>Une icône et une valeur dans une pilule de verre. C'est la rangée de mesures posée sur la photo d'une pièce (température, humidité, puissance), et le résumé compact dans un en-tête de carte. Trois tailles ; la variante <code>-on-photo</code> est plus sombre et écrit en blanc.</p>
+  <div class="ex">
+    <div class="ex-row">
+      <span class="chip is-heat"><svg class="ico"><use href="#i-thermo"/></svg>21 °C</span>
+      <span class="chip"><svg class="ico"><use href="#i-drop"/></svg>54 %</span>
+      <span class="chip"><svg class="ico"><use href="#i-bolt"/></svg>250 W</span>
+      <span class="chip is-cool"><svg class="ico"><use href="#i-wind"/></svg>30 %</span>
+      <span class="chip is-ok"><svg class="ico"><use href="#i-check"/></svg>Tout fermé</span>
+      <span class="chip -s"><svg class="ico"><use href="#i-drop"/></svg>54 %</span>
+      <span class="chip -l is-heat"><svg class="ico"><use href="#i-thermo"/></svg>21 °C</span>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Sur photo</div>
+    <div style="position:relative;height:110px;border-radius:var(--radius-m);overflow:hidden"><img class="hero-img" src="../../media/rooms/bureau.jpg" alt=""><div class="chip-row" style="position:absolute;top:16px;right:16px"><span class="chip -s -on-photo is-heat"><svg class="ico"><use href="#i-thermo"/></svg>20 °C</span><span class="chip -s -on-photo"><svg class="ico"><use href="#i-drop"/></svg>30 %</span><span class="chip -s -on-photo"><svg class="ico"><use href="#i-bolt"/></svg>250 W</span><span class="chip -s -on-photo"><svg class="ico"><use href="#i-wind"/></svg>30 %</span></div><span class="tag -live" style="position:absolute;top:16px;left:16px"><span class="dot is-crit is-live" aria-hidden="true"></span>LIVE</span></div>
+  </div>
+</section>
+
+<section class="ds" id="paire" data-group="widgets">
+  <h2>Paire actuelle → consigne</h2>
+  <p>Température actuelle, flèche, consigne, et la flamme (avec sa lueur) si la pièce chauffe. Compacte sur les lignes de l'accueil, large en tête de la carte chauffage d'une pièce, où le chiffre passe en 72 px.</p>
+  <div class="ex">
+    <div class="ex-l">chauffe · atteinte · arrêt · clim en froid · consigne inconnue</div>
+    <div class="ex-row">
+      <span class="pair is-heating"><span class="val -s"><span class="val-n">19,5</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target"><span class="val-n">21</span><span class="val-u">°</span></span><svg class="ico pair-flame" role="img" aria-label="Chauffe"><use href="#i-flame"/></svg></span>
+      <span class="pair"><span class="val -s"><span class="val-n">21</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target"><span class="val-n">21</span><span class="val-u">°</span></span></span>
+      <span class="pair is-off"><span class="val -s"><span class="val-n">18,2</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target">Arrêt</span></span>
+      <span class="pair is-cooling"><span class="val -s"><span class="val-n">26,4</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target"><span class="val-n">24</span><span class="val-u">°</span></span><svg class="ico pair-flame" role="img" aria-label="Refroidit"><use href="#i-snow"/></svg></span>
+      <span class="pair"><span class="val -s is-stale"><span class="val-n">19,5</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target">—</span></span>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Large</div>
+    <div class="ex-cols">
+      <div class="pair -wide is-heating"><span class="val -giant"><span class="val-n">19,5</span><span class="val-u">°</span></span><span class="pair-side"><span class="stat-l">Consigne · jusqu'à 22 h</span><span class="pair-target"><svg class="ico pair-flame" aria-hidden="true"><use href="#i-flame"/></svg><span class="val-n">21</span><span class="val-u">°</span></span></span></div>
+      <div class="pair -wide is-off"><span class="val -giant"><span class="val-n">18,2</span><span class="val-u">°</span></span><span class="pair-side"><span class="stat-l">Chauffage</span><span class="pair-target">Arrêt</span></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="etat" data-group="widgets">
+  <h2>Point d'état et libellé</h2>
+  <p>Un point lumineux (il porte une petite lueur de sa couleur) et un libellé. Inconnu en pointillé sans lueur. Seul l'état transitoire pulse.</p>
+  <div class="ex">
+    <div class="ex-row">
+      <span class="status"><span class="dot is-ok" aria-hidden="true"></span>Tout est fermé</span>
+      <span class="status"><span class="dot is-warn" aria-hidden="true"></span>Pile faible</span>
+      <span class="status"><span class="dot is-crit" aria-hidden="true"></span>Fumée détectée</span>
+      <span class="status"><span class="dot is-heat" aria-hidden="true"></span>2 pièces en chauffe</span>
+      <span class="status"><span class="dot is-cool" aria-hidden="true"></span>Clim en froid</span>
+      <span class="status"><span class="dot is-unknown" aria-hidden="true"></span>Injoignable <span class="status-sub">depuis 2 h</span></span>
+      <span class="status"><span class="dot" aria-hidden="true"></span>Arrêt</span>
+      <span class="status"><span class="dot is-accent is-live" aria-hidden="true"></span>Réglage en cours…</span>
+      <span class="status -s"><span class="dot is-ok" aria-hidden="true"></span>Armée</span>
+      <span class="dot -l is-warn" role="img" aria-label="Attention"></span>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="picto" data-group="widgets">
+  <h2>Picto d'état</h2>
+  <p>Une icône dans un rond de verre. Trois registres : éteint (verre), <code>is-lit</code> (verre plus clair, pour une lumière allumée sans mettre de couleur), <code>is-on</code> (plein accent avec lueur : ce que l'utilisateur a activé). Puis les couleurs d'état quand il y a un sens à porter.</p>
+  <div class="ex">
+    <div class="ex-l">éteint · lit · on · chauffe · froid · attention · alerte · ok · nuit · inconnu</div>
+    <div class="pict-row">
+      <span class="pict" role="img" aria-label="Lumières éteintes"><svg class="ico"><use href="#i-bulb"/></svg></span>
+      <span class="pict is-lit" role="img" aria-label="3 lumières allumées"><svg class="ico"><use href="#i-bulb"/></svg><span class="pict-n">3</span></span>
+      <span class="pict is-on" role="img" aria-label="Allumé"><svg class="ico"><use href="#i-bulb"/></svg></span>
+      <span class="pict is-heat" role="img" aria-label="Chauffe"><svg class="ico"><use href="#i-flame"/></svg></span>
+      <span class="pict is-cool" role="img" aria-label="Clim"><svg class="ico"><use href="#i-wind"/></svg></span>
+      <span class="pict is-warn" role="img" aria-label="Fenêtre ouverte"><svg class="ico"><use href="#i-window-open"/></svg></span>
+      <span class="pict is-crit" role="img" aria-label="Fumée"><svg class="ico"><use href="#i-smoke"/></svg></span>
+      <span class="pict is-ok" role="img" aria-label="Alarme armée"><svg class="ico"><use href="#i-shield-check"/></svg></span>
+      <span class="pict is-night" role="img" aria-label="Information"><svg class="ico"><use href="#i-moon"/></svg></span>
+      <span class="pict is-unknown" role="img" aria-label="Injoignable"><svg class="ico"><use href="#i-wifi-off"/></svg></span>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Tailles (32 · 40 · 48 · 56) et picto + valeur courte</div>
+    <div class="ex-row">
+      <span class="pict -s is-heat"><svg class="ico"><use href="#i-flame"/></svg></span>
+      <span class="pict is-heat"><svg class="ico"><use href="#i-flame"/></svg></span>
+      <span class="pict -l is-on"><svg class="ico"><use href="#i-bulb"/></svg></span>
+      <span class="pict -xl is-cool"><svg class="ico"><use href="#i-wind"/></svg></span>
+      <span class="pictv is-heat"><svg class="ico"><use href="#i-flame"/></svg>21°</span>
+      <span class="pictv is-on"><svg class="ico"><use href="#i-bulb"/></svg>3</span>
+      <span class="pictv"><svg class="ico"><use href="#i-blind"/></svg>60 %</span>
+      <span class="pictv is-warn"><svg class="ico"><use href="#i-window-open"/></svg>Ouverte</span>
+      <span class="pictv is-crit"><svg class="ico"><use href="#i-battery-low"/></svg>Pile</span>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="etiquette" data-group="widgets">
+  <h2>Étiquette</h2>
+  <p>Un ou deux mots sur une pilule : mode, condition, ou la pastille LIVE d'une caméra. <code>is-accent</code> est le segment sélectionné d'un choix de modes. Jamais deux étiquettes côte à côte sur une même ligne, sauf dans une rangée de modes.</p>
+  <div class="ex">
+    <div class="ex-row">
+      <span class="tag is-accent">Planning</span>
+      <span class="tag">Nuit</span>
+      <span class="tag"><svg class="ico"><use href="#i-clock"/></svg>Manuel · 1 h</span>
+      <span class="tag is-heat"><svg class="ico"><use href="#i-flame"/></svg>Chauffe</span>
+      <span class="tag is-cool"><svg class="ico"><use href="#i-snow"/></svg>Froid · Eco</span>
+      <span class="tag is-ok"><svg class="ico"><use href="#i-shield-check"/></svg>Armée</span>
+      <span class="tag is-warn"><svg class="ico"><use href="#i-battery-low"/></svg>Pile faible</span>
+      <span class="tag is-crit"><svg class="ico"><use href="#i-alert"/></svg>Fumée</span>
+      <span class="tag is-unknown"><svg class="ico"><use href="#i-wifi-off"/></svg>Injoignable</span>
+      <span class="tag"><svg class="ico"><use href="#i-eye-off"/></svg>Mode privé</span>
+      <span class="tag -live"><span class="dot is-crit is-live" aria-hidden="true"></span>LIVE</span>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="jauge" data-group="widgets">
+  <h2>Jauges</h2>
+  <p>Trois formes pour une grandeur bornée. La <strong>barre</strong> (8 px, remplissage lumineux, piste de la même teinte) pour un volet, une intensité, un volume. Les <strong>points</strong> pour une lecture d'ambiance (puissance de chauffe, intensité d'une lampe). L'<strong>arc</strong> à graduations pour la carte d'une lumière ou d'une clim quand on a la place. Le chiffre est toujours écrit.</p>
+  <div class="ex">
+    <div class="ex-l">Barres</div>
+    <div class="ex-cols">
+      <div class="gauge"><div class="gauge-head"><span>Volet</span><b>60 %</b></div><div class="gauge-track" role="meter" aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"><div class="gauge-fill" style="--v:60%"></div></div><div class="gauge-ends"><span>Fermé</span><span>Ouvert</span></div></div>
+      <div class="gauge -heat"><div class="gauge-head"><span>Puissance de chauffe</span><b>35 %</b></div><div class="gauge-track" role="meter" aria-valuenow="35" aria-valuemin="0" aria-valuemax="100"><div class="gauge-fill" style="--v:35%"></div></div></div>
+      <div class="gauge -cool"><div class="gauge-head"><span>Ventilation</span><b>2 / 5</b></div><div class="gauge-track" role="meter" aria-valuenow="2" aria-valuemin="0" aria-valuemax="5"><div class="gauge-fill" style="--v:40%"></div></div></div>
+      <div class="gauge -ok -thick -hatched"><div class="gauge-head"><span>Énergie</span><b>62 % <span style="color:var(--fg-muted);font-weight:400;font-size:var(--fs-s)">moyen</span></b></div><div class="gauge-track" role="meter" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100"><div class="gauge-fill" style="--v:62%"></div></div><div class="gauge-ends"><span>0</span><span>100 %</span></div></div>
+      <div class="gauge -warn"><div class="gauge-head"><span>Quota tado</span><b>12 %</b></div><div class="gauge-track" role="meter" aria-valuenow="12" aria-valuemin="0" aria-valuemax="100"><div class="gauge-fill" style="--v:12%"></div></div></div>
+      <div class="gauge is-none"><div class="gauge-head"><span>Store TRADFRI</span><b>—</b></div><div class="gauge-track" aria-hidden="true"><div class="gauge-fill"></div></div><div class="gauge-ends"><span>Injoignable depuis 3 j</span></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Points</div>
+    <div class="ex-cols">
+      <div class="dotsline"><span class="dots -heat" data-n="14" data-on="9" aria-label="Chauffe à 62 %"></span><span class="val -s is-heat"><span class="val-n">22</span><span class="val-u">°C</span></span></div>
+      <div class="dotsline"><span class="dots -cool" data-n="14" data-on="8" aria-label="Humidité 55 %"></span><span class="val -s is-cool"><span class="val-n">55</span><span class="val-u">%</span></span></div>
+      <div class="dotsline"><span class="dots -l" data-n="16" data-on="11" aria-label="Intensité 67 %"></span><span class="val -s"><span class="val-n">67</span><span class="val-u">%</span></span></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Arcs</div>
+    <div class="ex-cols -3">
+      <div class="arc" data-v="68"><div class="arc-c"><span class="arc-l">Intensité</span><span class="val -std"><span class="val-n">68</span><span class="val-u">%</span></span></div><div class="arc-ends"><span>0</span><span>100</span></div></div>
+      <div class="arc -heat" data-v="55"><div class="arc-c"><span class="arc-l">Consigne</span><span class="val -std is-heat"><span class="val-n">21</span><span class="val-u">°</span></span></div><div class="arc-ends"><span>5°</span><span>25°</span></div></div>
+      <div class="arc" data-v="0"><div class="arc-c"><span class="arc-l">Volume</span><span class="val -std is-none"><span class="val-n">—</span></span></div><div class="arc-ends"><span>0</span><span>100</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="bascule" data-group="widgets">
+  <h2>Bascule et bouton marche</h2>
+  <p>Affichés ici comme états (ils deviendront les contrôles) : la bascule prend l'accent et sa lueur quand c'est allumé, le bouton marche rond aussi. Une bascule « occupée » (action envoyée, HA n'a pas encore répondu) fait pulser son curseur.</p>
+  <div class="ex">
+    <div class="ex-row">
+      <span class="toggle" role="img" aria-label="Éteint"></span>
+      <span class="toggle is-on" role="img" aria-label="Allumé"></span>
+      <span class="toggle is-on is-busy" role="img" aria-label="Allumage en cours"></span>
+      <span class="toggle -s" role="img" aria-label="Éteint"></span>
+      <span class="toggle -s is-on" role="img" aria-label="Allumé"></span>
+      <span class="pwr" role="img" aria-label="Éteint"><svg class="ico"><use href="#i-power"/></svg></span>
+      <span class="pwr is-on" role="img" aria-label="Allumé"><svg class="ico"><use href="#i-power"/></svg></span>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="temps" data-group="widgets">
+  <h2>Temps relatif et compteur-phrase</h2>
+  <p>Relatif sous 24 h, absolu au-delà, heure exacte dans <code>title</code>. Le compteur-phrase met le chiffre en Outfit et nomme l'état zéro comme une bonne nouvelle.</p>
+  <div class="ex">
+    <div class="ex-row">
+      <time class="time" title="17:41:12">il y a 12 s</time>
+      <time class="time" title="17:20">ouverte depuis 20 min</time>
+      <time class="time is-old" title="15:00"><svg class="ico -s"><use href="#i-clock"/></svg>injoignable depuis 2 h</time>
+      <time class="time" title="22:00">jusqu'à 22 h</time>
+      <time class="time" title="06/11/2026 14:02">06/11 à 14:02</time>
+      <span class="time is-live"><span class="dot is-accent is-live" aria-hidden="true"></span>envoi…</span>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-row">
+      <span class="phrase -l is-heat"><svg class="ico"><use href="#i-flame"/></svg><b>2</b>&nbsp;pièces en chauffe</span>
+      <span class="phrase -l is-zero"><svg class="ico"><use href="#i-flame"/></svg>Chauffage coupé</span>
+      <span class="phrase -l is-on"><svg class="ico"><use href="#i-bulb"/></svg><b>3</b>&nbsp;allumées</span>
+      <span class="phrase -l is-zero"><svg class="ico"><use href="#i-bulb"/></svg>Tout est éteint</span>
+      <span class="phrase -l is-warn"><svg class="ico"><use href="#i-window-open"/></svg><b>1</b>&nbsp;fenêtre ouverte</span>
+      <span class="phrase -l is-good"><svg class="ico"><use href="#i-check"/></svg>Tout est fermé</span>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="heros" data-group="widgets">
+  <h2>Carte héros</h2>
+  <p>La photo d'une pièce (ou le flux de sa caméra) plein cadre, rayon 30, pastille LIVE en haut à gauche, pilules de mesures en haut à droite, barre de verre en bas avec picto, nom, sous-titre en capitales et une action. C'est la première chose qu'on voit sur l'accueil et en tête de chaque pièce. États : direct, mode privé, injoignable, chargement.</p>
+  <div class="ex -canvas">
+    <div class="ex-cols">
+      <a class="hero has-img" href="#"><img class="hero-img" src="../../media/rooms/salon.jpg" alt=""><div class="hero-top"><span class="tag -live"><span class="dot is-crit is-live" aria-hidden="true"></span>LIVE</span><div class="chip-row"><span class="chip -s -on-photo is-heat"><svg class="ico"><use href="#i-thermo"/></svg>21°</span><span class="chip -s -on-photo"><svg class="ico"><use href="#i-drop"/></svg>54 %</span></div></div><div class="hero-bot"><span class="pict"><svg class="ico"><use href="#i-camera"/></svg></span><span class="hero-body"><span class="hero-t">Salon</span><span class="hero-s">2 lumières · chauffe</span></span><svg class="ico" style="color:rgba(255,255,255,.7)"><use href="#i-expand"/></svg></div></a>
+      <a class="hero is-private has-img" href="#"><img class="hero-img" src="../../media/rooms/bureau.jpg" alt=""><div class="hero-center"><span class="pict -l" style="color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)"><svg class="ico"><use href="#i-eye-off"/></svg></span>Mode privé</div><div class="hero-bot"><span class="pict"><svg class="ico"><use href="#i-camera"/></svg></span><span class="hero-body"><span class="hero-t">Bureau</span><span class="hero-s">Caméra en privé</span></span></div></a>
+      <a class="hero is-offline has-img" href="#"><img class="hero-img" src="../../media/rooms/bureau.jpg" alt=""><div class="hero-center"><span class="pict -l" style="color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)"><svg class="ico"><use href="#i-wifi-off"/></svg></span>Injoignable depuis 3 h</div><div class="hero-bot"><span class="pict"><svg class="ico"><use href="#i-camera"/></svg></span><span class="hero-body"><span class="hero-t">Bureau</span><span class="hero-s">Dernière image à 14:02</span></span></div></a>
+      <a class="hero is-loading" href="#" aria-busy="true"><div class="ph" aria-hidden="true"></div><div class="hero-bot"><span class="pict"><svg class="ico"><use href="#i-camera"/></svg></span><span class="hero-body"><span class="hero-t">Salon</span><span class="hero-s">Connexion…</span></span></div></a>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="appareil" data-group="widgets">
+  <h2>Carte appareil</h2>
+  <p>Portrait 3:4 avec l'image de l'appareil (photo du produit, ou un dessin par défaut), étiquette de verre en bas : nom, état en capitales, bouton marche. Éteint = image désaturée et assombrie. Pour les lumières, les volets, la clim, l'enceinte.</p>
+  <div class="ex -canvas">
+    <div class="ex-devs">
+      <a class="dev has-img" href="#"><img class="hero-img" src="../../media/devices/bulb-on.jpg" alt=""><div class="hero-bot"><span class="hero-body"><span class="hero-t">Lampe canapé</span><span class="hero-s">Allumée · 60 %</span></span></div><span class="pwr is-on"><svg class="ico"><use href="#i-power"/></svg></span></a>
+      <a class="dev has-img" href="#"><img class="hero-img" src="../../media/devices/speaker.jpg" alt=""><div class="hero-bot"><span class="hero-body"><span class="hero-t">Enceinte</span><span class="hero-s">France Inter</span></span></div><span class="pwr is-on"><svg class="ico"><use href="#i-pause"/></svg></span></a>
+      <a class="dev has-img is-off" href="#"><img class="hero-img" src="../../media/devices/bulb-off.jpg" alt=""><div class="hero-bot"><span class="hero-body"><span class="hero-t">Plafonnier</span><span class="hero-s">Éteint</span></span></div><span class="pwr"><svg class="ico"><use href="#i-power"/></svg></span></a>
+      <a class="dev is-off is-offline has-img" href="#"><img class="hero-img" src="../../media/devices/blind.jpg" alt=""><div class="hero-center"><span class="pict -l" style="color:#fff;background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2)"><svg class="ico"><use href="#i-wifi-off"/></svg></span>Injoignable</div><div class="hero-bot"><span class="hero-body"><span class="hero-t">Store TRADFRI</span><span class="hero-s">Depuis 3 j</span></span></div></a>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="tuile" data-group="widgets">
+  <h2>Tuile</h2>
+  <p>Un picto, une grande valeur, un libellé en capitales. Pastel (pêche, bleu nuit clair, menthe, sable) pour quelques chiffres clés à encre sombre, ou en verre pour s'aligner avec les cartes.</p>
+  <div class="ex">
+    <div class="ex-cols -3">
+      <div class="tile"><span class="pict -s"><svg class="ico"><use href="#i-flame"/></svg></span><div><div class="tile-v">2</div><div class="tile-l">Pièces en chauffe</div></div></div>
+      <div class="tile -blue"><span class="pict -s"><svg class="ico"><use href="#i-thermo"/></svg></span><div><div class="tile-v">19,8<small>°</small></div><div class="tile-l">Moyenne maison</div></div></div>
+      <div class="tile -glass"><span class="pict -s"><svg class="ico"><use href="#i-bulb"/></svg></span><div><div class="tile-v">3</div><div class="tile-l">Allumées</div></div></div>
+      <div class="tile -glass"><span class="pict -s"><svg class="ico"><use href="#i-bolt"/></svg></span><div><div class="tile-v">336<small>W</small></div><div class="tile-l">Maintenant</div></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="liste" data-group="widgets">
+  <h2>Liste</h2>
+  <p>Picto rond à gauche, nom et sous-titre en capitales, valeur en Outfit à droite avec son unité dessous. Lignes de 56 px séparées d'un filet à 8 %.</p>
+  <div class="ex">
+    <div class="list">
+      <a class="row" href="#"><span class="pict"><svg class="ico"><use href="#i-bulb"/></svg></span><span><span class="row-name">Lumières</span><span class="row-sub">10 appareils</span></span><span class="row-end"><span class="row-v">78</span><span class="row-u">kWh</span></span></a>
+      <a class="row" href="#"><span class="pict"><svg class="ico"><use href="#i-plug"/></svg></span><span><span class="row-name">Prise bureau</span><span class="row-sub">1 appareil</span></span><span class="row-end"><span class="row-v">86</span><span class="row-u">W</span></span></a>
+      <a class="row" href="#"><span class="pict is-cool"><svg class="ico"><use href="#i-wind"/></svg></span><span><span class="row-name">Climatisation</span><span class="row-sub">Salon</span></span><span class="row-end"><span class="row-v">1 240</span><span class="row-u">W</span></span></a>
+      <a class="row" href="#"><span class="pict is-unknown"><svg class="ico"><use href="#i-wifi-off"/></svg></span><span><span class="row-name">Store TRADFRI</span><span class="row-sub" style="color:var(--warn-fg)">Injoignable depuis 3 j</span></span><span class="row-end"><span class="row-v" style="color:var(--fg-faint)">—</span></span></a>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="lecteur" data-group="widgets">
+  <h2>Lecteur</h2>
+  <p>Pochette, titre, source en capitales, progression fine, bouton lecture/pause. Pour l'enceinte du salon ; la pochette vient de HA quand il y en a une.</p>
+  <div class="ex -canvas">
+    <div class="ex-cols">
+      <div class="player"><span class="player-cover" aria-hidden="true"></span><span class="player-body"><span class="player-t">Oops! I Did It Again</span><span class="player-a">Britney Spears · Salon</span><span class="player-prog"><span>1:31</span><span class="gauge-track"><span class="gauge-fill" style="--v:48%"></span></span><span>3:02</span></span></span><span class="pwr is-on"><svg class="ico"><use href="#i-pause"/></svg></span></div>
+      <div class="player is-idle"><span class="player-cover" aria-hidden="true"></span><span class="player-body"><span class="player-t">Enceinte salon</span><span class="player-a">Rien en lecture</span></span><span class="pwr"><svg class="ico"><use href="#i-play"/></svg></span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="pieces" data-group="widgets">
+  <h2>Barre de pièces et navigation</h2>
+  <p>Les pièces se choisissent dans une barre de segments en pilule (le segment actif est plein, en blanc cassé sur la nuit) ; elle défile si elle déborde. La navigation du bas a trois entrées, l'active en accent.</p>
+  <div class="ex -canvas">
+    <div class="seg" role="tablist"><a class="is-active" href="#">Salon</a><a href="#">Cuisine</a><a href="#">Entrée</a><a href="#">Bureau <span class="seg-n">3</span></a><a href="#">Chambre</a><a href="#">Chambre bébé</a></div>
+    <nav class="nav" style="max-width:360px" aria-label="Navigation"><a class="is-active" href="#"><svg class="ico"><use href="#i-home"/></svg>Accueil</a><a href="#"><svg class="ico"><use href="#i-rooms"/></svg>Pièces</a><a href="#"><svg class="ico"><use href="#i-shield"/></svg>Sécurité</a></nav>
+  </div>
+</section>
+
+<section class="ds" id="meteo" data-group="widgets">
+  <h2>Météo</h2>
+  <p>En tête de l'accueil : grande température fine, condition, min et max, et un glyphe lumineux dessiné en CSS (soleil, lune, nuage). Les prévisions se déplient : rangée horaire, puis les jours avec la plage min–max sur une barre froid → chaud.</p>
+  <div class="ex">
+    <div class="ex-cols">
+      <div class="wx"><div class="wx-main"><span class="val -hero"><span class="val-n">12</span><span class="val-u">°</span></span><span class="wx-cond">Éclaircies</span><span class="wx-range"><span><svg class="ico"><use href="#i-arrow-down"/></svg> 6°</span><span><svg class="ico"><use href="#i-arrow-up"/></svg> 14°</span></span></div><div class="wx-glyph" data-cond="partlycloudy" aria-hidden="true"></div></div>
+      <div class="wx"><div class="wx-main"><span class="val -hero"><span class="val-n">7</span><span class="val-u">°</span></span><span class="wx-cond">Nuit claire</span><span class="wx-range"><span><svg class="ico"><use href="#i-arrow-down"/></svg> 3°</span><span><svg class="ico"><use href="#i-arrow-up"/></svg> 11°</span></span></div><div class="wx-glyph" data-cond="clear-night" aria-hidden="true"></div></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Horaire</div>
+    <div class="wx-hours">
+      <div class="wx-h is-now"><span>Maint.</span><svg class="ico"><use href="#i-cloud-sun"/></svg><b>12°</b></div>
+      <div class="wx-h"><span>18 h</span><svg class="ico"><use href="#i-cloud"/></svg><b>11°</b></div>
+      <div class="wx-h"><span>19 h</span><svg class="ico"><use href="#i-cloud"/></svg><b>10°</b></div>
+      <div class="wx-h"><span>20 h</span><svg class="ico"><use href="#i-rain"/></svg><b>9°</b></div>
+      <div class="wx-h"><span>21 h</span><svg class="ico"><use href="#i-rain"/></svg><b>9°</b></div>
+      <div class="wx-h"><span>22 h</span><svg class="ico"><use href="#i-moon"/></svg><b>8°</b></div>
+      <div class="wx-h"><span>23 h</span><svg class="ico"><use href="#i-moon"/></svg><b>7°</b></div>
+      <div class="wx-h"><span>0 h</span><svg class="ico"><use href="#i-moon"/></svg><b>7°</b></div>
+    </div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Journalier</div>
+    <div class="wx-days">
+      <div class="wx-d"><span>Auj.</span><svg class="ico"><use href="#i-cloud-sun"/></svg><span class="wx-min">6°</span><span class="wx-bar" style="--a:20%;--b:35%"></span><span class="wx-max">14°</span></div>
+      <div class="wx-d"><span>lun.</span><svg class="ico"><use href="#i-rain"/></svg><span class="wx-min">7°</span><span class="wx-bar" style="--a:25%;--b:50%"></span><span class="wx-max">11°</span></div>
+      <div class="wx-d"><span>mar.</span><svg class="ico"><use href="#i-cloud"/></svg><span class="wx-min">5°</span><span class="wx-bar" style="--a:15%;--b:45%"></span><span class="wx-max">12°</span></div>
+      <div class="wx-d"><span>mer.</span><svg class="ico"><use href="#i-sun"/></svg><span class="wx-min">3°</span><span class="wx-bar" style="--a:5%;--b:30%"></span><span class="wx-max">15°</span></div>
+      <div class="wx-d"><span>jeu.</span><svg class="ico"><use href="#i-snow"/></svg><span class="wx-min">−1°</span><span class="wx-bar" style="--a:0%;--b:70%"></span><span class="wx-max">4°</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="presence" data-group="widgets">
+  <h2>Présence</h2>
+  <p>Initiale dans un rond (ou la photo de la personne) : cerclé d'accent avec un point vert à la maison, pointillé et atténué absent. La pilule de présence résume dans l'en-tête de l'accueil.</p>
+  <div class="ex">
+    <div class="ex-row">
+      <span class="who is-home"><span class="avatar" aria-hidden="true">A</span>Abdelhak · à la maison</span>
+      <span class="who is-away"><span class="avatar" aria-hidden="true">M</span>Marion · absente</span>
+      <span class="who-pill is-home"><span class="who-stack" aria-hidden="true"><span class="avatar -s" style="border-color:var(--accent)">A</span><span class="avatar -s" style="border-style:dashed;color:var(--fg-faint)">M</span></span><span class="who-t"><span class="who-n">1 / 2</span><span class="who-s">à la maison</span></span></span>
+      <span class="who-pill"><span class="who-stack" aria-hidden="true"><span class="avatar -s" style="border-style:dashed;color:var(--fg-faint)">A</span><span class="avatar -s" style="border-style:dashed;color:var(--fg-faint)">M</span></span><span class="who-t"><span class="who-n">Personne</span><span class="who-s">à la maison</span></span></span>
+    </div>
+  </div>
+</section>
+
+<section class="ds" id="alerte" data-group="widgets">
+  <h2>Alerte</h2>
+  <p>Une ligne de verre par alerte en haut de l'accueil, masquée s'il n'y en a pas : picto coloré, titre, détail, chevron vers la pièce. Fumée et CO toujours en premier, sur fond rouge avec une lueur.</p>
+  <div class="ex -canvas">
+    <a class="alert is-crit" href="#"><span class="pict"><svg class="ico"><use href="#i-smoke"/></svg></span><span class="alert-body"><span class="alert-t">Fumée détectée dans l'entrée</span><span class="alert-d">Nest Protect · depuis 40 s</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+    <a class="alert is-warn" href="#"><span class="pict"><svg class="ico"><use href="#i-window-open"/></svg></span><span class="alert-body"><span class="alert-t">Fenêtre ouverte pendant que la cuisine chauffe</span><span class="alert-d">Depuis 20 min · consigne 21°</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+    <a class="alert is-warn" href="#"><span class="pict"><svg class="ico"><use href="#i-battery-low"/></svg></span><span class="alert-body"><span class="alert-t">Pile faible</span><span class="alert-d">Tête tado du salon</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+    <a class="alert" href="#"><span class="pict is-unknown"><svg class="ico"><use href="#i-wifi-off"/></svg></span><span class="alert-body"><span class="alert-t">3 appareils injoignables</span><span class="alert-d">Fenêtre salon, fenêtre bureau, store TRADFRI · depuis plus d'une heure</span></span><svg class="ico alert-go"><use href="#i-chevron"/></svg></a>
+    <div class="alert is-info"><span class="pict"><svg class="ico"><use href="#i-wifi-off"/></svg></span><span class="alert-body"><span class="alert-t">Connexion perdue</span><span class="alert-d">Les valeurs datent de 17:02 · nouvelle tentative…</span></span></div>
+  </div>
+</section>
+
+<section class="ds" id="surface" data-group="widgets">
+  <h2>Surface et carte de pièce</h2>
+  <p>La carte de verre (rayon 22, inset 24) porte les widgets. La <strong>carte de pièce</strong> est une photo d'ambiance sous un dégradé sombre, avec le picto d'état dominant en haut, une mesure courte, le nom et la température en bas ; deux par ligne sur iPhone.</p>
+  <div class="ex -canvas">
+    <div class="ex-l">Cartes de pièce : chauffe · chauffe + fenêtre · lumières · fermée · périmée · injoignable</div>
+    <div class="ex-rooms">
+      <a class="room has-img" href="#"><img class="hero-img" src="../../media/rooms/salon.jpg" alt=""><div class="room-head"><span class="pict -s is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><span class="pictv is-on"><svg class="ico"><use href="#i-bulb"/></svg>2</span></div><div class="room-body"><span class="room-name">Salon</span><span class="val -std"><span class="val-n">19,5</span><span class="val-u">°</span></span></div></a>
+      <a class="room has-img" href="#"><img class="hero-img" src="../../media/rooms/cuisine.jpg" alt=""><div class="room-head"><span class="pict -s is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><span class="pictv is-warn"><svg class="ico"><use href="#i-window-open"/></svg>20 min</span></div><div class="room-body"><span class="room-name">Cuisine</span><span class="val -std"><span class="val-n">18,5</span><span class="val-u">°</span></span></div></a>
+      <a class="room has-img" href="#"><img class="hero-img" src="../../media/rooms/bureau.jpg" alt=""><div class="room-head"><span class="pict -s"><svg class="ico"><use href="#i-flame"/></svg></span><span class="pictv is-on"><svg class="ico"><use href="#i-bulb"/></svg>3</span></div><div class="room-body"><span class="room-name">Bureau</span><span class="val -std"><span class="val-n">18,2</span><span class="val-u">°</span></span></div></a>
+      <a class="room has-img" href="#"><img class="hero-img" src="../../media/rooms/chambre.jpg" alt=""><div class="room-head"><span class="pict -s"><svg class="ico"><use href="#i-flame"/></svg></span><span class="pictv"><svg class="ico"><use href="#i-window"/></svg></span></div><div class="room-body"><span class="room-name">Chambre d'amis du deuxième</span><span class="val -std"><span class="val-n">17,8</span><span class="val-u">°</span></span></div></a>
+      <a class="room is-stale has-img" href="#"><img class="hero-img" src="../../media/rooms/chambre.jpg" alt=""><div class="room-head"><span class="pict -s"><svg class="ico"><use href="#i-flame"/></svg></span><span class="time is-old" title="17:02">17:02</span></div><div class="room-body"><span class="room-name">Chambre bébé</span><span class="val -std"><span class="val-n">19,0</span><span class="val-u">°</span></span></div></a>
+      <a class="room is-unavailable has-img" href="#"><img class="hero-img" src="../../media/rooms/entree.jpg" alt=""><div class="room-head"><span class="pict -s is-unknown" style="color:#fff"><svg class="ico"><use href="#i-wifi-off"/></svg></span></div><div class="room-body"><span class="room-name">Entrée</span><span class="val -std is-none"><span class="val-n">—</span></span></div></a>
+    </div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Carte de verre avec en-tête, modes et lignes (Chauffage de la maison)</div>
+    <div class="card" style="max-width:420px">
+      <div class="card-head"><span class="pict is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><div style="display:grid;min-width:0"><span class="card-title">Chauffage</span><span class="card-sub">2 pièces en chauffe · moyenne 19,8°</span></div></div>
+      <div class="chip-row"><span class="tag is-accent">Planning</span><span class="tag">Nuit</span><span class="tag">Boost</span><span class="tag">Tout couper</span></div>
+      <div class="list">
+        <a class="row" href="#"><span class="pict -s is-heat"><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Salon</span></span><span class="pair is-heating"><span class="val -s"><span class="val-n">19,5</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target"><span class="val-n">21</span><span class="val-u">°</span></span></span></a>
+        <a class="row" href="#"><span class="pict -s"><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Bureau</span></span><span class="pair is-off"><span class="val -s"><span class="val-n">18,2</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target">Arrêt</span></span></a>
+        <a class="row" href="#"><span class="pict -s is-unknown"><svg class="ico"><use href="#i-flame"/></svg></span><span><span class="row-name">Chambre bébé</span><span class="row-sub">Injoignable depuis 2 h</span></span><span class="pair"><span class="val -s is-stale"><span class="val-n">19,0</span><span class="val-u">°</span></span><svg class="ico -s pair-arrow"><use href="#i-arrow-right"/></svg><span class="pair-target">—</span></span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RÉFÉRENCE ============ -->
+<section class="ds" id="agenda" data-group="widgets">
+  <h2>Agenda</h2>
+  <p>La semaine partagée de la maison, lue dans les calendriers de Home Assistant. Sept colonnes sur grand écran, une liste par jour sur téléphone, et un <strong>coup d'œil</strong> (les prochains événements) sur l'accueil. Chaque calendrier a sa couleur, posée sur une barre fine à gauche de l'événement ; la terracotta reste à « aujourd'hui ». Un événement passé s'efface, un événement en cours est souligné.</p>
+  <div class="ex">
+    <div class="ex-l">En-tête : semaine, navigation, légende des calendriers</div>
+    <div class="agenda-head"><div><div class="agenda-title">Agenda<small>semaine du 9 au 15 novembre</small></div></div><div class="agenda-nav"><button type="button" aria-label="Semaine précédente"><svg class="ico"><use href="#i-chevron-left"/></svg></button><button type="button" class="-today">Aujourd'hui</button><button type="button" aria-label="Semaine suivante"><svg class="ico"><use href="#i-chevron-right"/></svg></button></div></div>
+    <div class="cal-legend" style="margin-top:12px"><span class="chip" style="--cal:#ec9b74"><i></i>Famille</span><span class="chip" style="--cal:#6fcf9a"><i></i>Poubelles</span></div>
+  </div>
+  <div class="ex">
+    <div class="ex-l">Semaine (sept colonnes) : aujourd'hui souligné, journée entière en aplat teinté, événement passé estompé</div>
+    <div class="week"><div class="day is-today"><div class="day-head"><span class="day-name">lun.</span><span class="day-num">9</span></div><div class="ev is-past" style="--cal:#ec9b74"><span class="ev-t">Crèche · dépôt</span><span class="ev-s">08:15 – 08:45 · Crèche des Lilas</span></div></div><div class="day "><div class="day-head"><span class="day-name">mar.</span><span class="day-num">10</span></div><div class="ev -allday" style="--cal:#6fcf9a"><span class="ev-t">Poubelle jaune</span></div></div><div class="day "><div class="day-head"><span class="day-name">mer.</span><span class="day-num">11</span></div><div class="ev" style="--cal:#ec9b74"><span class="ev-t">Bébé nageur</span><span class="ev-s">17:30 – 18:15 · Piscine</span></div></div><div class="day "><div class="day-head"><span class="day-name">jeu.</span><span class="day-num">12</span></div><div class="ev" style="--cal:#ec9b74"><span class="ev-t">Pédiatre · vaccin</span><span class="ev-s">09:30 – 10:00 · Cabinet Dr Martin</span></div></div><div class="day "><div class="day-head"><span class="day-name">ven.</span><span class="day-num">13</span></div><div class="ev -allday" style="--cal:#ec9b74"><span class="ev-t">Anniversaire de Nora</span></div><div class="ev -allday" style="--cal:#6fcf9a"><span class="ev-t">Verre</span></div></div><div class="day "><div class="day-head"><span class="day-name">sam.</span><span class="day-num">14</span></div><div class="ev" style="--cal:#ec9b74"><span class="ev-t">Courses</span><span class="ev-s">10:00 – 11:30</span></div></div><div class="day "><div class="day-head"><span class="day-name">dim.</span><span class="day-num">15</span></div><span class="day-empty">Rien de prévu</span></div></div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Coup d'œil (accueil) et liste par jour (téléphone)</div>
+    <div class="ex-cols">
+      <div class="card -tight" style="max-width:420px"><div class="card-head"><span class="pict"><svg class="ico"><use href="#i-calendar"/></svg></span><div style="display:grid;min-width:0"><span class="card-title -s">Agenda</span><span class="card-sub">Les prochains jours</span></div><a class="sec-link" href="#" style="margin-left:auto">Semaine</a></div><div class="glance"><div class="ev -allday" style="--cal:#6fcf9a"><span class="ev-t">Poubelle jaune</span><span class="ev-d">demain</span></div><div class="ev" style="--cal:#ec9b74"><span class="ev-t">Bébé nageur</span><span class="ev-s">17:30</span><span class="ev-d">mer. 11</span></div><div class="ev" style="--cal:#ec9b74"><span class="ev-t">Pédiatre · vaccin</span><span class="ev-s">09:30</span><span class="ev-d">jeu. 12</span></div></div></div>
+      <div class="daylist" style="max-width:360px"><div class="day is-today"><div class="day-head"><span class="day-num">9</span><span class="day-name">aujourd'hui</span></div><div class="ev is-past" style="--cal:#ec9b74"><span class="ev-t">Crèche · dépôt</span><span class="ev-s">08:15</span></div></div><div class="day"><div class="day-head"><span class="day-num">10</span><span class="day-name">mardi</span></div><div class="ev -allday" style="--cal:#6fcf9a"><span class="ev-t">Poubelle jaune</span></div></div><div class="day"><div class="day-head"><span class="day-num">11</span><span class="day-name">mercredi</span></div><div class="ev" style="--cal:#ec9b74"><span class="ev-t">Bébé nageur</span><span class="ev-s">17:30</span></div></div></div>
+    </div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">États : aucun calendrier · injoignable</div>
+    <div class="ex-cols"><div class="agenda-state"><span class="pict -l"><svg class="ico"><use href="#i-calendar"/></svg></span>Aucun calendrier configuré</div><div class="agenda-state"><span class="pict -l is-unknown"><svg class="ico"><use href="#i-wifi-off"/></svg></span>Calendriers injoignables</div></div>
+  </div>
+  <ul class="rule">
+    <li>Les couleurs de calendrier viennent de <code>maison.yaml</code> (<code>calendars[].color</code>) ; sans couleur, gris neutre. Elles ne portent jamais un état.</li>
+    <li>La fenêtre chargée va du lundi de la semaine en cours à cinq semaines ; au-delà, la page le dit plutôt que d'afficher du vide.</li>
+  </ul>
+</section>
+
+<section class="ds" id="commande" data-group="widgets">
+  <h2>Commande</h2>
+  <p>Les widgets qui agissent (étape 2). Un geste = une requête ; le contrôle prend tout de suite la position demandée, légèrement estompé (<code>is-pending</code>) jusqu'à la confirmation de Home Assistant, et revient en arrière avec un toast d'erreur si elle ne vient pas. Un seul geste irréversible par feuille de confirmation : couper tout le chauffage, désarmer l'alarme, éteindre toutes les lumières.</p>
+  <div class="ex -canvas">
+    <div class="ex-l">Bascule et bouton marche actifs : repos · allumé · en attente · désactivé</div>
+    <div class="ex-row">
+      <button type="button" class="toggle" aria-pressed="false" aria-label="Lumière éteinte"></button>
+      <button type="button" class="toggle is-on" aria-pressed="true" aria-label="Lumière allumée"></button>
+      <button type="button" class="toggle is-on is-pending" aria-pressed="true" aria-label="Allumage en cours"></button>
+      <button type="button" class="toggle" disabled aria-label="Indisponible"></button>
+      <button type="button" class="pwr" aria-pressed="false" aria-label="Éteint"><svg class="ico"><use href="#i-power"/></svg></button>
+      <button type="button" class="pwr is-on" aria-pressed="true" aria-label="Allumé"><svg class="ico"><use href="#i-power"/></svg></button>
+      <button type="button" class="pwr is-on is-pending" aria-label="En attente"><svg class="ico"><use href="#i-power"/></svg></button>
+    </div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Pas à pas (consigne, demi-degré) : standard · chauffe · grand</div>
+    <div class="ex-row">
+      <div class="stepper"><button type="button" aria-label="Moins"><svg class="ico"><use href="#i-minus"/></svg></button><span class="stepper-v">20<span class="val-u">°</span></span><button type="button" aria-label="Plus"><svg class="ico"><use href="#i-plus"/></svg></button></div>
+      <div class="stepper -heat"><button type="button" aria-label="Moins"><svg class="ico"><use href="#i-minus"/></svg></button><span class="stepper-v">21<span class="val-u">°</span></span><button type="button" aria-label="Plus"><svg class="ico"><use href="#i-plus"/></svg></button></div>
+      <div class="stepper -heat -l"><button type="button" aria-label="Moins"><svg class="ico"><use href="#i-minus"/></svg></button><span class="stepper-v">21,5<span class="val-u">°</span></span><button type="button" aria-label="Plus"><svg class="ico"><use href="#i-plus"/></svg></button></div>
+    </div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Curseur : position de volet · intensité · volume (froid) · en attente</div>
+    <div class="ex-cols">
+      <div class="slider"><div class="slider-head"><span>Volet</span><b>60 %</b></div><input type="range" min="0" max="100" value="60" style="--v:60%" aria-label="Position du volet"><div class="slider-ends"><span>Fermé</span><span>Ouvert</span></div></div>
+      <div class="slider"><div class="slider-head"><span>Intensité</span><b>80 %</b></div><input type="range" min="1" max="100" value="80" style="--v:80%" aria-label="Intensité"><div class="slider-ends"><span>Doux</span><span>Plein</span></div></div>
+      <div class="slider -cool"><div class="slider-head"><span>Volume</span><b>35 %</b></div><input type="range" min="0" max="100" value="35" style="--v:35%" aria-label="Volume"><div class="slider-ends"><span>Muet</span><span>Fort</span></div></div>
+      <div class="slider is-pending"><div class="slider-head"><span>Volet</span><b>25 %</b></div><input type="range" min="0" max="100" value="25" style="--v:25%" aria-label="Position du volet"><div class="slider-ends"><span>Fermé</span><span>Ouvert</span></div></div>
+    </div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Modes de chauffage : segment actif (terracotta) ; manuel avec durée</div>
+    <div class="ex-row">
+      <div class="seg" role="tablist"><button type="button" class="is-active">Planning</button><button type="button">Manuel</button><button type="button">Arrêt</button></div>
+      <div class="chip-row"><span class="chip is-on">Jusqu'au prochain bloc</span><span class="chip">1 h</span><span class="chip">3 h</span><span class="chip">Sans fin</span></div>
+    </div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Feuille de confirmation (rendue ici dans le cadre) et toasts</div>
+    <div class="ex-cols">
+      <div class="sheet" style="position:relative">
+        <div class="sheet-head"><span class="pict -l is-warn"><svg class="ico"><use href="#i-shield"/></svg></span><div><div class="sheet-t">Désarmer l'alarme ?</div><div class="sheet-d">Les capteurs et les caméras ne déclencheront plus rien jusqu'au réarmement.</div></div></div>
+        <div class="sheet-acts"><button type="button" class="btn">Annuler</button><button type="button" class="btn -danger">Désarmer</button></div>
+      </div>
+      <div style="display:grid;gap:12px;align-content:start">
+        <div class="toast"><span class="dot is-ok"></span><span><span class="toast-t">Salon · 21°</span> <span class="toast-d">consigne envoyée</span></span></div>
+        <div class="toast"><span class="dot is-accent"></span><span><span class="toast-t">Lumières éteintes</span> <span class="toast-d">6 lampes</span></span><button type="button">Annuler</button></div>
+        <div class="toast is-error"><span class="dot is-crit"></span><span><span class="toast-t">Volet : pas de réponse</span> <span class="toast-d">Home Assistant n'a pas répondu · remis à 60 %</span></span><button type="button">OK</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="ex -canvas">
+    <div class="ex-l">Panneau lumière (ampoule couleur) : intensité, blanc chaud → froid, teinte, saturation, pastilles</div>
+    <div class="light-panel" style="max-width:460px;--tint:hsl(30 85% 62%);--hue:hsl(30 85% 55%)">
+      <div class="hrow"><div class="hrow" style="gap:12px"><span class="light-sample"></span><div><div class="card-title -s">Hue Play 1</div><div class="card-sub">Allumée · 60 % · ambre</div></div></div><button type="button" class="pwr is-on" aria-label="Allumée"><svg class="ico"><use href="#i-power"/></svg></button></div>
+      <div class="slider -dim"><div class="slider-head"><span>Intensité</span><b>60 %</b></div><input type="range" min="1" max="100" value="60" style="--v:60%" aria-label="Intensité"><div class="slider-ends"><span>Doux</span><span>Plein</span></div></div>
+      <div class="slider -temp"><div class="slider-head"><span>Blanc</span><b>2 700 K</b></div><input type="range" min="2000" max="6500" step="100" value="2700" aria-label="Température de blanc"><div class="slider-ends"><span>Chaud</span><span>Froid</span></div></div>
+      <div class="slider -hue"><div class="slider-head"><span>Teinte</span><b>30°</b></div><input type="range" min="0" max="360" value="30" aria-label="Teinte"></div>
+      <div class="slider -sat"><div class="slider-head"><span>Saturation</span><b>85 %</b></div><input type="range" min="0" max="100" value="85" aria-label="Saturation"></div>
+      <div class="swatches" role="group" aria-label="Préréglages">
+        <button type="button" class="swatch" style="--c:#ffb46b" aria-label="Blanc chaud"></button><button type="button" class="swatch" style="--c:#fff0dc" aria-label="Blanc neutre"></button><button type="button" class="swatch" style="--c:#dfe9ff" aria-label="Lumière du jour"></button>
+        <button type="button" class="swatch is-on" style="--c:hsl(30 85% 60%)" aria-label="Ambre"></button><button type="button" class="swatch" style="--c:hsl(0 80% 58%)" aria-label="Rouge"></button><button type="button" class="swatch" style="--c:hsl(290 60% 60%)" aria-label="Violet"></button><button type="button" class="swatch" style="--c:hsl(205 85% 60%)" aria-label="Bleu"></button><button type="button" class="swatch" style="--c:hsl(140 60% 50%)" aria-label="Vert"></button>
+      </div>
+    </div>
+  </div>
+  <ul class="rule">
+    <li>Optimiste mais honnête : le contrôle bouge tout de suite, mais reste estompé tant que l'état ne revient pas de Home Assistant ; si rien ne revient en 8 s, il reprend l'ancienne valeur et un toast le dit.</li>
+    <li>Un curseur envoie à la relâche (et au plus toutes les 400 ms pendant le glissement) ; un pas à pas envoie 600 ms après le dernier appui.</li>
+    <li>Les gestes à conséquence (couper le chauffage de la maison, désarmer, tout éteindre) passent par la feuille ; le reste est direct.</li>
+    <li>Panneau lumière : la piste du curseur porte la couleur, la poignée reste blanche ; bouger la teinte ou une pastille couleur passe en mode couleur, bouger le blanc repasse en blanc. Les pastilles sont les seuls raccourcis ; pas de palette éditable en v1.</li>
+  </ul>
+</section>
+
+<section class="ds" id="inventaire" data-group="reference">
+  <h2>Données → widget</h2>
+  <p>Tout ce que l'app affiche, et la brique qui s'en charge.</p>
+  <div class="t-wrap"><table class="t">
+    <thead><tr><th>Donnée</th><th>Format</th><th>Widget</th><th>Où</th></tr></thead>
+    <tbody>
+      <tr><td>Température (pièce, tête, moyenne, météo, clim)</td><td>°C, 1 décimale (météo : entier)</td><td>Valeur, Pilule</td><td>partout</td></tr>
+      <tr><td>Consigne</td><td>°C, pas de 0,5</td><td>Paire, Arc</td><td>accueil, carte chauffage</td></tr>
+      <tr><td>Humidité</td><td>%, entier</td><td>Pilule, Valeur -meta, Points</td><td>pièce, héros</td></tr>
+      <tr><td>Puissance instantanée</td><td>W, entier</td><td>Pilule, Liste, Tuile</td><td>prise, clim, héros</td></tr>
+      <tr><td>Puissance de chauffe</td><td>%</td><td>Points -heat, Barre -heat</td><td>carte chauffage</td></tr>
+      <tr><td>Position volet, intensité, volume</td><td>0–100 %</td><td>Barre, Arc, Points</td><td>pièce</td></tr>
+      <tr><td>Couleur / température de couleur</td><td>teinte, K</td><td>pastille (avec les contrôles)</td><td>Hue Play</td></tr>
+      <tr><td>Marche / arrêt</td><td>on, off</td><td>Bascule, Bouton marche, Picto is-on, Carte appareil</td><td>pièce, accueil</td></tr>
+      <tr><td>Chauffe en cours</td><td>oui / non</td><td>Picto is-heat, flamme de la Paire, Étiquette</td><td>partout</td></tr>
+      <tr><td>Ouvert / fermé (+ depuis quand)</td><td>état + temps</td><td>Picto + valeur, Pilule, Alerte si chauffe</td><td>pièce, sécurité</td></tr>
+      <tr><td>Mouvement</td><td>détecté / calme</td><td>Pilule sur photo</td><td>héros</td></tr>
+      <tr><td>Présence</td><td>à la maison / absent</td><td>Présence (pilule)</td><td>en-tête accueil</td></tr>
+      <tr><td>Mode chauffage, durée du manuel</td><td>Planning / Manuel · 1 h / Arrêt</td><td>Étiquettes (rangée de modes), Paire (Arrêt)</td><td>carte chauffage</td></tr>
+      <tr><td>Mode clim, Eco, Puissance</td><td>froid, chaud, ventilation, auto</td><td>Étiquette -cool, Barre -cool, Bascule</td><td>Salon</td></tr>
+      <tr><td>Alarme maison, alarme UniFi</td><td>désarmée / armée / déclenchée</td><td>Picto -ok/-crit, Bascule, Point d'état</td><td>sécurité</td></tr>
+      <tr><td>Mode privé caméras</td><td>actif / inactif</td><td>Héros is-private, Étiquette</td><td>caméra</td></tr>
+      <tr><td>Média</td><td>lecture / pause / inactif</td><td>Lecteur, Carte appareil</td><td>Salon</td></tr>
+      <tr><td>Fumée / CO</td><td>ok / alerte</td><td>Alerte is-crit, Picto -crit</td><td>alertes, entrée</td></tr>
+      <tr><td>Risque de moisissure</td><td>ok / risque</td><td>Pilule is-ok / is-warn</td><td>Salon</td></tr>
+      <tr><td>Batterie</td><td>ok / faible</td><td>Étiquette -warn, Alerte</td><td>pièce, alertes</td></tr>
+      <tr><td>Disponibilité</td><td>joignable / injoignable depuis</td><td>is-unknown (picto, point), is-unavailable (carte, pièce), Héros is-offline, Alerte groupée</td><td>partout</td></tr>
+      <tr><td>Fraîcheur</td><td>à jour / périmée (&gt; 2 min)</td><td>Valeur is-stale, carte is-stale, Temps is-old</td><td>partout</td></tr>
+      <tr><td>Connexion de l'app</td><td>en ligne / perdue</td><td>Alerte is-info (bandeau)</td><td>haut de page</td></tr>
+      <tr><td>Agrégats</td><td>« 2 pièces en chauffe », « 3 allumées », « Tout est fermé »</td><td>Compteur-phrase, Tuile, sous-titre de carte</td><td>accueil</td></tr>
+      <tr><td>Heure, salutation</td><td>« Bonsoir Abdelhak », 17:41</td><td>Salutation (greet)</td><td>en-tête accueil</td></tr>
+      <tr><td>Horodatages</td><td>relatif &lt; 24 h, absolu au-delà</td><td>Temps relatif</td><td>partout</td></tr>
+      <tr><td>Météo</td><td>icône + ° + min/max ; horaire ; journalier</td><td>Météo</td><td>en-tête accueil</td></tr>
+      <tr><td>Image caméra, photo de pièce</td><td>4:3, 16:9</td><td>Carte héros, Carte de pièce</td><td>accueil, pièce</td></tr>
+      <tr><td>Image d'appareil</td><td>3:4</td><td>Carte appareil</td><td>pièce</td></tr>
+      <tr><td>Noms (pièce, appareil, personne)</td><td>texte non fiable, échappé, tronqué en fin</td><td>titres de carte, héros, pièce</td><td>partout</td></tr>
+      <tr><td>Quota API tado</td><td>% restant</td><td>Barre -warn sous seuil</td><td>accueil, discret</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+</main>
+</div>
+
+<script src="widgets.js"></script>
+<script src="catalogue.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+node_modules/
+dist/
+server/internal/server/ui/dist/*
+!server/internal/server/ui/dist/.gitkeep
+server/bin/
+state/
+.env
+*.log
+.DS_Store
+
+# Sorties des sessions Claude, fichiers en attente de suppression
+/Claude outputs/
+/_to_delete/
+# Garde-fous contre les secrets
+.env.*
+!.env.example
+*.pem
+*.key
+.claude/settings.local.json

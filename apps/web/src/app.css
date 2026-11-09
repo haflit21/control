@@ -1,0 +1,125 @@
+/* Application shell on top of the design system. Phone: one column + bottom
+   nav. Wide (≥ 861 px): the dashboard layout (rail + grid) from dashboard.css. */
+
+.desk { min-height: 100dvh; }
+.rail { top: 0; height: 100dvh; }
+.dash-main { padding-bottom: calc(var(--sp-7) + 90px); align-content: start; }
+@media (min-width: 861px) { .dash-main { padding-bottom: var(--sp-7); } }
+
+/* phone: safe areas, bottom nav */
+.nav-wrap { position: fixed; left: var(--sp-4); right: var(--sp-4); bottom: max(12px, env(safe-area-inset-bottom)); z-index: 5; }
+@media (min-width: 861px) { .nav-wrap { display: none; } .bell-phone { display: none; } }
+.bell-phone { cursor: pointer; position: relative; flex: none; }
+.dash-main > header.dash-top { padding-top: env(safe-area-inset-top); }
+
+/* page column (phone) */
+@media (max-width: 860px) { .greet h1 { font-size: 24px; } .dash-top .who-pill { padding: 4px 12px 4px 5px; } }
+.page { display: grid; gap: var(--sp-5); min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+@media (max-width: 420px) { .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.hrow { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); }
+.stack { display: grid; gap: var(--sp-3); }
+.muted { color: var(--fg-muted); }
+.pict.-on-photo { color: #fff; background: rgba(255, 255, 255, .1); border-color: rgba(255, 255, 255, .2); }
+
+/* connection banner */
+.banner { position: sticky; top: 0; z-index: 6; display: flex; align-items: center; gap: var(--sp-3); padding: 10px var(--sp-4); margin: 0 calc(-1 * var(--sp-4)); background: var(--surface-solid-2); border-bottom: 1px solid var(--border); color: var(--fg-muted); font-size: var(--fs-s); }
+.banner .dot { flex: none; }
+.banner.is-demo { color: var(--fg-faint); }
+
+/* loading / error states */
+.state { display: grid; justify-items: center; text-align: center; gap: var(--sp-2); padding: var(--sp-7) var(--sp-4); color: var(--fg-muted); }
+.state .pict { margin-bottom: var(--sp-2); }
+.state h2 { margin: 0; font-size: var(--fs-xl); font-weight: 500; color: var(--fg); }
+.state p { margin: 0; max-width: 48ch; font-size: var(--fs-s); }
+.skel { display: block; border-radius: var(--radius-s); background: var(--surface-2); animation: skel 1.4s ease-in-out infinite; }
+@keyframes skel { 50% { opacity: .5; } }
+
+/* room page */
+.room-hero-chips .chip { white-space: nowrap; }
+.dev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-3); }
+.sensor-list .row { padding-inline: 0; }
+
+/* links reset */
+a { color: inherit; }
+.seg a { text-decoration: none; }
+
+/* wide: the home grid uses dashboard.css areas; other pages use a two-column grid */
+@media (min-width: 861px) {
+  .page.-wide { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: var(--sp-4); align-items: start; }
+  .page.-wide > .span { grid-column: 1 / -1; }
+  .page.-weather { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .page.-wide > .card, .page.-wide > .stack { align-self: start; }
+}
+@media (min-width: 1280px) {
+  .page.-wide { grid-template-columns: 320px minmax(0, 1fr) 320px; }
+  .page.-weather { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* home page: dashboard areas on wide screens, plain column on phone */
+.dash-tools { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; justify-content: flex-end; }
+.home-grid { grid-template-areas: "heat hero side" "heat devs side" "heat agenda side"; grid-template-rows: auto auto 1fr; }
+.dash-agenda { grid-area: agenda; align-self: start; }
+.dash-top .chip.is-air-4, .dash-top .chip.is-air-5, .dash-top .chip.is-air-6 { border-color: var(--warn-bd); }
+@media (max-width: 860px) { .dash-top .chip[class*="is-air"] { display: none; } }
+.home-grid .dash-devs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); align-self: start; }
+.heat-avg { display: grid; gap: var(--sp-2); padding-top: var(--sp-3); border-top: 1px solid var(--border); }
+@media (min-width: 861px) {
+  .home-grid .dash-hero { aspect-ratio: 21 / 9; }
+}
+@media (max-width: 1280px) and (min-width: 861px) {
+  .home-grid { grid-template-areas: "hero hero" "heat devs" "heat agenda" "heat side"; grid-template-rows: auto auto auto 1fr; }
+  .home-grid .dash-devs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 860px) {
+  .home-grid { display: contents; }
+  .home-grid .dash-hero, .home-grid .dash-heat, .home-grid .dash-devs, .home-grid .dash-side, .home-grid .dash-agenda { grid-area: auto; }
+  .home-grid .dash-devs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+  .home-grid .dash-devs > .card:last-child { display: none; } /* cameras: on the Sécurité tab on a phone */
+  .dash-top .dash-tools { flex-wrap: nowrap; gap: var(--sp-2); }
+  .dash-top .who-pill .who-s { display: none; }
+  .dash-top .who-pill { padding: 4px 10px 4px 5px; }
+}
+
+/* rooms index */
+.rooms-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
+@media (min-width: 861px) { .rooms-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); } .rooms-grid .room { min-height: 240px; } }
+@media (min-width: 1280px) { .rooms-grid .room { min-height: 280px; } }
+
+/* room page: two columns on wide screens */
+.room-main, .room-side { display: grid; gap: var(--sp-5); min-width: 0; align-content: start; }
+@media (min-width: 1100px) {
+  .page.-room { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sp-4) var(--sp-5); align-items: start; }
+  .page.-room > .seg { grid-column: 1 / -1; }
+  .page.-room .dev-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+}
+
+/* security: alarm | cameras (2 per row) ; ouvrants | mouvement */
+.sec-cams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); align-content: start; }
+.list.-cols { display: grid; }
+@media (min-width: 861px) {
+  .page.-security { display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-areas: "alarm cams" "opens motion" "journal journal"; gap: var(--sp-4); align-items: start; }
+  .sec-alarm { grid-area: alarm; } .sec-cams { grid-area: cams; } .sec-opens { grid-area: opens; } .sec-motion { grid-area: motion; } .sec-journal { grid-area: journal; }
+  .sec-journal .list.-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--sp-5); }
+  .sec-opens .list.-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--sp-5); }
+}
+@media (min-width: 1280px) {
+  .page.-security { grid-template-columns: 340px minmax(0, 1fr) 340px; grid-template-areas: "alarm cams cams" "opens opens motion" "journal journal journal"; }
+  .sec-journal .list.-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) { .sec-cams { grid-template-columns: minmax(0, 1fr); } }
+
+/* agenda page */
+.agenda-head .agenda-nav { flex: none; }
+@media (max-width: 860px) { .agenda .week { display: none; } }
+
+/* heating controls: stepper + mode segment side by side when there is room */
+.heat-ctl { display: grid; gap: var(--sp-3); align-items: center; }
+@media (min-width: 520px) { .heat-ctl { grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-4); } }
+.heat-ctl .seg { max-width: 100%; }
+.chip-row button.chip { appearance: none; cursor: pointer; font: inherit; }
+
+/* journal : une ligne par action, heure tabulaire à droite */
+.jr-time { font-variant-numeric: tabular-nums; color: var(--fg-muted); font-size: var(--fs-s); white-space: nowrap; }
+.jr-more { display: flex; justify-content: center; padding: var(--sp-2) 0 0; }

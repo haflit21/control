@@ -1,0 +1,52 @@
+/* Maison — design system · mode mur (tablette fixée, iPad paysage ≈ 1024–1366 px)
+   Pas de rail ni de barre : l'écran entier est le tableau. Grande horloge, caméras qui tournent,
+   touches larges. Même widgets, plus grands ; la nuit l'écran s'assombrit (`.wall.is-night`). */
+
+.wall { position: relative; min-height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: var(--sp-5); padding: var(--sp-5) var(--sp-6); isolation: isolate; }
+.wall::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(50% 40% at 0% 0%, var(--bg-glow-1), transparent 70%), radial-gradient(45% 45% at 100% 100%, var(--bg-glow-2), transparent 70%); }
+.wall.is-night { filter: brightness(.72); }
+.wall.is-night .wall-clock { color: var(--fg-muted); }
+
+/* en-tête : horloge, date, météo, personnes, alertes */
+.wall-top { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--sp-5); }
+.wall-clock { font-family: var(--font-display); font-weight: 300; font-size: 72px; letter-spacing: -.04em; line-height: 1; font-variant-numeric: tabular-nums; }
+.wall-clock small { font-size: 28px; color: var(--fg-muted); font-weight: 300; margin-left: 4px; }
+.wall-date { font-size: var(--fs-l); color: var(--fg-muted); text-transform: capitalize; }
+.wall-tools { display: flex; align-items: center; gap: var(--sp-3); justify-content: flex-end; flex-wrap: wrap; }
+.wall-tools .who-pill, .wall-tools .wx-pill { padding-block: 8px; }
+.wall-tools .wx-pill .who-n { font-size: var(--fs-l); }
+.wall-alerts { display: grid; gap: var(--sp-2); min-width: 0; }
+.wall-alerts .alert { padding: 10px 14px; }
+
+/* grille : chauffage · caméra + lumières · agenda + ouvrants */
+.wall-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr) 320px; grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "heat cam agenda" "heat lights opens"; gap: var(--sp-4); min-height: 0; }
+.wall-heat { grid-area: heat; } .wall-cam { grid-area: cam; min-height: 0; } .wall-lights { grid-area: lights; } .wall-agenda { grid-area: agenda; } .wall-opens { grid-area: opens; }
+.wall-cam .hero { aspect-ratio: auto; height: 100%; min-height: 300px; }
+.wall-cam .hero-t { font-size: var(--fs-xl); }
+/* caméras : points de rotation en haut à gauche, à côté de LIVE */
+.wall-dots { display: inline-flex; gap: 6px; align-items: center; margin-left: var(--sp-2); }
+.wall-dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255, 255, 255, .35); }
+.wall-dots i.is-on { background: #fff; }
+/* lumières : rangée de boutons larges, une par lampe allumée + « tout éteindre » */
+.wall-lights { display: flex; gap: var(--sp-3); flex-wrap: wrap; align-items: center; align-content: flex-start; align-self: start; }
+.wall-light { display: inline-flex; align-items: center; gap: var(--sp-3); height: 56px; padding: 0 18px 0 8px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border); color: var(--fg); font: inherit; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-m); cursor: pointer; }
+.wall-light .thumb, .wall-light .pict { width: 40px; height: 40px; }
+.wall-light small { color: var(--fg-muted); font-weight: 400; font-family: var(--font-body, inherit); }
+.wall-light:active { transform: scale(.97); }
+.wall-light.-off { color: var(--fg-muted); border-style: dashed; }
+/* chauffage : la carte du dashboard, chiffres plus grands */
+.wall-heat .pair .val.-s, .wall-heat .pair-target { font-size: var(--fs-xl); }
+.wall-heat .row { padding-block: 12px; }
+/* agenda : aujourd'hui + demain en liste */
+.wall-agenda .day { min-height: 0; }
+/* tactile : pas de hover, cibles ≥ 48 px */
+.wall button.toggle { transform: scale(1.15); transform-origin: right center; }
+
+@media (max-width: 1100px) {
+  .wall-grid { grid-template-columns: 280px minmax(0, 1fr); grid-template-areas: "heat cam" "heat lights" "agenda opens"; grid-template-rows: minmax(0, 1fr) auto auto; }
+  .wall-clock { font-size: 56px; }
+}
+@media (orientation: portrait) {
+  .wall-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cam" "lights" "heat" "agenda" "opens"; grid-template-rows: auto; }
+  .wall-cam .hero { min-height: 240px; aspect-ratio: 16 / 9; height: auto; }
+}

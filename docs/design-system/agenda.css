@@ -1,0 +1,65 @@
+/* Maison — design system · agenda (semaine partagée)
+   Une semaine en sept colonnes sur grand écran, une liste par jour sur téléphone.
+   Les calendriers ont chacun une couleur (--cal), posée sur une barre fine à gauche
+   de l'événement ; la terracotta reste à l'interactif (jour sélectionné, aujourd'hui). */
+
+.agenda { display: grid; gap: var(--sp-4); min-width: 0; }
+.agenda-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; }
+.agenda-title { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-xl); letter-spacing: -.01em; }
+.agenda-title small { font-size: var(--fs-s); color: var(--fg-muted); font-weight: 400; margin-left: var(--sp-2); }
+.agenda-nav { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.agenda-nav button { appearance: none; display: inline-grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--surface); color: var(--fg); cursor: pointer; font: inherit; }
+.agenda-nav button.-today { width: auto; padding: 0 14px; font-size: var(--fs-s); }
+.agenda-nav button:hover { background: var(--surface-2); }
+.agenda-nav .ico { width: 16px; height: 16px; }
+
+/* légende des calendriers */
+.cal-legend { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.cal-legend .chip i { width: 8px; height: 8px; border-radius: 50%; background: var(--cal, var(--fg-muted)); }
+
+/* semaine : 7 colonnes */
+.week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: var(--sp-2); align-items: start; }
+.day { display: grid; gap: var(--sp-2); min-width: 0; padding: var(--sp-3); border-radius: var(--radius-m); background: var(--surface); border: 1px solid var(--border); min-height: 220px; align-content: start; }
+.day.is-today { border-color: var(--accent); box-shadow: var(--accent-glow); }
+.day.is-past { opacity: .7; }
+.day-head { display: grid; gap: 0; }
+.day-name { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: .08em; color: var(--fg-muted); }
+.day-num { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-xl); line-height: 1.1; }
+.day.is-today .day-num { color: var(--accent-strong); }
+.day-empty { font-size: var(--fs-xs); color: var(--fg-faint); padding-top: var(--sp-2); }
+
+/* événement */
+.ev { position: relative; display: grid; gap: 2px; padding: 6px 8px 6px 12px; border-radius: var(--radius-s); background: var(--surface-2); min-width: 0; text-decoration: none; color: inherit; }
+.ev::before { content: ""; position: absolute; left: 4px; top: 6px; bottom: 6px; width: 3px; border-radius: 2px; background: var(--cal, var(--fg-muted)); }
+.ev-t { font-size: var(--fs-s); font-weight: 500; color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev-s { font-size: var(--fs-xs); color: var(--fg-muted); font-variant-numeric: tabular-nums; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ev.-allday { background: color-mix(in srgb, var(--cal, var(--fg-muted)) 18%, transparent); }
+.ev.-allday::before { display: none; }
+.ev.-allday .ev-t { padding-left: 0; }
+.ev.is-past { opacity: .55; }
+.ev.is-now { outline: 1px solid var(--accent); outline-offset: -1px; }
+
+/* liste par jour (téléphone) */
+.daylist { display: grid; gap: var(--sp-3); }
+.daylist .day { min-height: 0; }
+.daylist .day-head { display: flex; align-items: baseline; gap: var(--sp-2); }
+.daylist .day-num { font-size: var(--fs-l); }
+.daylist .day-name { font-size: var(--fs-s); text-transform: none; letter-spacing: 0; }
+.daylist .ev { grid-template-columns: 5ch minmax(0, 1fr); gap: var(--sp-3); align-items: baseline; }
+.daylist .ev .ev-s { order: -1; color: var(--fg); }
+.daylist .ev.-allday { grid-template-columns: minmax(0, 1fr); }
+
+/* coup d'œil (accueil) : les prochains événements */
+.glance { display: grid; gap: var(--sp-2); }
+.glance .ev { grid-template-columns: 5ch minmax(0, 1fr) auto; align-items: baseline; gap: var(--sp-3); }
+.glance .ev .ev-s { order: -1; color: var(--fg); }
+.glance .ev .ev-d { font-size: var(--fs-xs); color: var(--fg-faint); white-space: nowrap; }
+.glance .ev.-allday { grid-template-columns: minmax(0, 1fr) auto; }
+
+/* état vide / indisponible */
+.agenda-state { display: grid; gap: var(--sp-2); place-items: center; text-align: center; padding: var(--sp-6); color: var(--fg-muted); font-size: var(--fs-s); border-radius: var(--radius-m); border: 1px dashed var(--border-strong); }
+
+@media (max-width: 1100px) {
+  .week { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .week .day:nth-child(n+5) { grid-column: span 1; }
+}

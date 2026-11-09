@@ -1,0 +1,26 @@
+# Stack Portainer « maison » sur le NAS : réseau macvlan, IP dédiée (proposition 192.168.10.6),
+# .env (HA_URL, HA_TOKEN, MAISON_TOKEN) ajouté dans les variables d'environnement de la stack.
+services:
+  maison:
+    image: 192.168.10.157:5011/maison:latest
+    container_name: maison
+    restart: unless-stopped
+    environment:
+      HA_URL: ${HA_URL}
+      HA_TOKEN: ${HA_TOKEN}
+      MAISON_TOKEN: ${MAISON_TOKEN}
+      MAISON_LISTEN: ":80"
+      TZ: Europe/Paris
+    volumes:
+      - maison_state:/data/state
+      # tes propres photos à la place de celles de l'image : décommente et dépose rooms/*.jpg, devices/*.jpg
+      # - /volume1/docker/maison/media:/media:ro
+    networks:
+      lan:
+        ipv4_address: 192.168.10.6
+volumes:
+  maison_state:
+networks:
+  lan:
+    external: true
+    name: macvlan_lan   # le réseau macvlan déjà utilisé par Sentinel

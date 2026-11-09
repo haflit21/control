@@ -1,0 +1,249 @@
+/* Maison — weather widgets (Météo-France through Home Assistant). Depends on tokens.css + widgets.css + widgets.js.
+   Glyphs are drawn by MaisonWidgets.weatherGlyph from data-cond / data-night; everything else is CSS. */
+
+:root {
+  --wx-cloud: #f1f2f6; --wx-cloud-2: #c3c8d3; --wx-cloud-dark: #8b93a6; --wx-cloud-night: #8d94a8; --wx-cloud-night-2: #5e6577;
+  --wx-sun-1: #fff3cf; --wx-sun-2: #ffcf6b; --wx-sun-3: #f0a040; --wx-sun-glow: rgba(255, 190, 90, .55);
+  --wx-moon-1: #f6f3ea; --wx-moon-2: #cfcbc4; --wx-moon-3: #8e8a85; --wx-moon-glow: rgba(230, 225, 215, .35);
+  --wx-rain: #7fc4ea; --wx-snow: #ffffff; --wx-hail: #dfe6f0; --wx-bolt: #ffd166; --wx-fog: rgba(255, 255, 255, .55); --wx-wind: #b9c3d4;
+  --uv-1: #7bd48f; --uv-2: #f2c35e; --uv-3: #f0954a; --uv-4: #f3786f; --uv-5: #b48cf2;        /* faible, modéré, élevé, très élevé, extrême */
+  --vig-vert: #7bd48f; --vig-jaune: #f2c35e; --vig-orange: #f0954a; --vig-rouge: #f3786f;        /* échelle officielle Météo-France */
+  --wx-cold: #7fd4e6; --wx-hot: #ec9b74;
+  /* indice ATMO (échelle officielle, 6 niveaux) : bon, moyen, dégradé, mauvais, très mauvais, extrêmement mauvais */
+  --atmo-1: #5fd9cf; --atmo-2: #6fcf9a; --atmo-3: #f2d55e; --atmo-4: #f3786f; --atmo-5: #b8435a; --atmo-6: #9b5fd0;
+}
+:root[data-theme="light"], :root:not([data-theme="dark"]) { }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) { --wx-cloud: #ffffff; --wx-cloud-2: #cfd4de; --wx-cloud-dark: #7c8599; --wx-fog: rgba(60, 70, 90, .35); --wx-wind: #7c8599; --wx-snow: #e8eef7; --wx-hail: #c9d3e2; --uv-1: #2d9a4a; --uv-2: #c99a1a; --uv-3: #d9702a; --uv-4: #d3453a; --uv-5: #7c4dcc; --vig-vert: #2d9a4a; --vig-jaune: #c99a1a; --vig-orange: #d9702a; --vig-rouge: #d3453a; --atmo-1: #1aa89c; --atmo-2: #2d9a4a; --atmo-3: #c99a1a; --atmo-4: #d3453a; --atmo-5: #8f2440; --atmo-6: #6b3fa6; } }
+:root[data-theme="light"] { --wx-cloud: #ffffff; --wx-cloud-2: #cfd4de; --wx-cloud-dark: #7c8599; --wx-fog: rgba(60, 70, 90, .35); --wx-wind: #7c8599; --wx-snow: #e8eef7; --wx-hail: #c9d3e2; --uv-1: #2d9a4a; --uv-2: #c99a1a; --uv-3: #d9702a; --uv-4: #d3453a; --uv-5: #7c4dcc; --vig-vert: #2d9a4a; --vig-jaune: #c99a1a; --vig-orange: #d9702a; --vig-rouge: #d3453a; --atmo-1: #1aa89c; --atmo-2: #2d9a4a; --atmo-3: #c99a1a; --atmo-4: #d3453a; --atmo-5: #8f2440; --atmo-6: #6b3fa6; }
+
+/* ---------- glyph ---------- */
+.wx-glyph { position: relative; width: 96px; height: 96px; flex: none; }
+.wx-glyph.-xs { width: 32px; height: 32px; } .wx-glyph.-s { width: 56px; height: 56px; } .wx-glyph.-m { width: 72px; height: 72px; } .wx-glyph.-xl { width: 140px; height: 140px; }
+.wx-glyph .g-disc { position: absolute; inset: 14%; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--wx-sun-1), var(--wx-sun-2) 45%, var(--wx-sun-3) 100%); box-shadow: 0 0 .38em var(--wx-sun-glow), 0 0 .9em rgba(255, 160, 70, .3); font-size: 1em; }
+.wx-glyph .g-disc.-moon { background: radial-gradient(circle at 35% 30%, var(--wx-moon-1), var(--wx-moon-2) 50%, var(--wx-moon-3) 100%); box-shadow: 0 0 .38em var(--wx-moon-glow), 0 0 .8em rgba(200, 200, 220, .2); }
+.wx-glyph .g-disc.-small { inset: 4% 4% auto auto; width: 46%; height: 46%; }
+.wx-glyph .g-cloud { position: absolute; left: -4%; bottom: 2%; width: 86%; height: 86%; fill: var(--wx-cloud); filter: drop-shadow(0 .08em .16em rgba(0, 0, 0, .45)); overflow: visible; }
+.wx-glyph .g-cloud.-with-disc { left: -8%; bottom: -4%; width: 84%; height: 84%; }
+.wx-glyph .g-cloud.-low { bottom: 14%; }
+.wx-glyph .g-cloud .g-cloud-back { fill: var(--wx-cloud-2); }
+.wx-glyph.-dark .g-cloud { fill: var(--wx-cloud-dark); }
+.wx-glyph.-night .g-cloud { fill: var(--wx-cloud-night); } .wx-glyph.-night .g-cloud .g-cloud-back { fill: var(--wx-cloud-night-2); }
+.wx-glyph .g-fx { position: absolute; left: 18%; bottom: -6%; width: 64%; height: 32%; overflow: visible; }
+.wx-glyph .g-fx.-solo { left: 10%; right: 10%; bottom: 30%; width: 80%; height: 40%; }
+.wx-glyph .g-rain { stroke: var(--wx-rain); stroke-width: 4; stroke-linecap: round; fill: none; }
+.wx-glyph .g-rain.-heavy { stroke-width: 3.5; }
+.wx-glyph .g-snow { stroke: var(--wx-snow); stroke-width: 3; stroke-linecap: round; fill: none; }
+.wx-glyph .g-hail { fill: var(--wx-hail); }
+.wx-glyph .g-bolt { fill: var(--wx-bolt); filter: drop-shadow(0 0 .25em rgba(255, 209, 102, .7)); }
+.wx-glyph .g-fog { stroke: var(--wx-fog); stroke-width: 4; stroke-linecap: round; fill: none; }
+.wx-glyph .g-wind { stroke: var(--wx-wind); stroke-width: 4; stroke-linecap: round; fill: none; }
+.wx-glyph .g-bang { fill: var(--crit-fg); } .wx-glyph .g-bang-i { stroke: var(--bg); stroke-width: 4; stroke-linecap: round; fill: none; }
+/* sizes drive the em used by shadows */
+.wx-glyph { font-size: 96px; } .wx-glyph.-xs { font-size: 32px; } .wx-glyph.-s { font-size: 56px; } .wx-glyph.-m { font-size: 72px; } .wx-glyph.-xl { font-size: 140px; }
+
+/* ---------- 1. En-tête (extends .wx from widgets.css) ---------- */
+.wx.-hero { grid-template-columns: minmax(0, 1fr) auto; gap: var(--sp-4) var(--sp-5); }
+.wx.-hero .val.-hero { font-size: 64px; }
+.wx-feel { font-size: var(--fs-s); color: var(--fg-muted); }
+.wx-place { font-size: var(--fs-xs); color: var(--fg-faint); text-transform: uppercase; letter-spacing: .06em; }
+.wx.-compact { grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-3); }
+.wx.-compact .val.-std { font-size: var(--fs-2xl); }
+.wx-updated { font-size: var(--fs-xs); color: var(--fg-faint); }
+.wx-updated.is-old { color: var(--warn-fg); }
+
+/* ---------- 2. Grille de détails ---------- */
+.wx-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-3); }
+.wx-stat { display: grid; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-s); background: var(--surface); border: 1px solid var(--border); min-width: 0; }
+.wx-stat-h { display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--fg-muted); text-transform: uppercase; letter-spacing: .06em; }
+.wx-stat-h .ico { width: 14px; height: 14px; color: var(--fg-faint); }
+.wx-stat .val.-s { font-size: 24px; }
+.wx-stat-s { font-size: var(--fs-xs); color: var(--fg-faint); }
+.wx-stat.is-none .val .val-n { color: var(--fg-faint); }
+
+/* ---------- 3. Boussole (vent) ---------- */
+.compass { position: relative; width: 120px; aspect-ratio: 1; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border); display: grid; place-items: center; flex: none; --deg: 0deg; }
+.compass.-l { width: 160px; }
+.compass::before { content: ""; position: absolute; inset: 8%; border-radius: 50%; border: 1px dashed var(--border-strong); }
+.compass b { position: absolute; font-size: 10px; font-weight: 500; color: var(--fg-faint); letter-spacing: .04em; }
+.compass b:nth-of-type(1) { top: 7px; } .compass b:nth-of-type(2) { right: 9px; } .compass b:nth-of-type(3) { bottom: 7px; } .compass b:nth-of-type(4) { left: 8px; }
+.compass b:nth-of-type(1) { color: var(--fg); }
+.compass-arrow { position: absolute; inset: 0; transform: rotate(var(--deg)); transition: transform var(--dur-panel) var(--ease-out); }
+.compass-arrow::before { content: ""; position: absolute; left: 50%; top: 14%; width: 0; height: 0; transform: translateX(-50%); border: 7px solid transparent; border-bottom: 18px solid var(--accent); border-top: 0; filter: drop-shadow(0 0 6px var(--accent)); }
+.compass-arrow::after { content: ""; position: absolute; left: 50%; bottom: 14%; width: 0; height: 0; transform: translateX(-50%); border: 7px solid transparent; border-top: 18px solid var(--fg-faint); border-bottom: 0; opacity: .5; }
+.compass-c { display: grid; justify-items: center; gap: 0; position: relative; z-index: 1; }
+.compass-c .val.-s { font-size: 22px; }
+.compass-c small { font-size: 10px; color: var(--fg-faint); text-transform: uppercase; letter-spacing: .06em; }
+.wind { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-4); align-items: center; }
+.wind-facts { display: grid; gap: var(--sp-2); }
+.wind-fact { display: flex; justify-content: space-between; gap: var(--sp-3); font-size: var(--fs-s); color: var(--fg-muted); }
+.wind-fact b { color: var(--fg); font-weight: 500; font-family: var(--font-display); font-size: var(--fs-m); }
+/* Beaufort-ish scale under the facts */
+.wind-scale { display: flex; gap: 3px; }
+.wind-scale i { flex: 1; height: 6px; border-radius: var(--radius-pill); background: var(--surface-3); }
+.wind-scale i.is-on { background: var(--accent); }
+.wind-scale i.is-on.-gust { background: var(--warn-fg); }
+
+/* ---------- 4. Indice UV ---------- */
+.uv { display: grid; gap: var(--sp-2); }
+.uv-head { display: flex; justify-content: space-between; align-items: baseline; font-size: var(--fs-s); color: var(--fg-muted); }
+.uv-head b { font-family: var(--font-display); font-weight: 500; color: var(--fg); font-size: var(--fs-m); }
+.uv-bar { position: relative; height: 8px; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--uv-1) 0 18%, var(--uv-2) 18% 45%, var(--uv-3) 45% 64%, var(--uv-4) 64% 91%, var(--uv-5) 91% 100%); opacity: .9; }
+.uv-bar::after { content: ""; position: absolute; top: 50%; left: calc(var(--v, 0) / 11 * 100%); width: 16px; height: 16px; border-radius: 50%; background: var(--fg); border: 3px solid var(--bg); transform: translate(-50%, -50%); box-shadow: 0 0 0 1px var(--border-strong); }
+.uv-ends { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--fg-faint); }
+.uv.is-none .uv-bar { opacity: .25; } .uv.is-none .uv-bar::after { display: none; }
+.uv-lvl { font-weight: 500; }
+.uv-lvl.lv1 { color: var(--uv-1); } .uv-lvl.lv2 { color: var(--uv-2); } .uv-lvl.lv3 { color: var(--uv-3); } .uv-lvl.lv4 { color: var(--uv-4); } .uv-lvl.lv5 { color: var(--uv-5); }
+
+/* ---------- 5. Pression ---------- */
+.press { display: grid; gap: var(--sp-2); }
+.press-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--sp-3); }
+.press-trend { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-s); color: var(--fg-muted); }
+.press-trend .ico { width: 14px; height: 14px; }
+.press-trend.-up .ico { color: var(--ok-fg); } .press-trend.-down .ico { color: var(--warn-fg); }
+.press-bar { position: relative; height: 6px; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--wx-rain), var(--surface-3) 50%, var(--wx-sun-2)); opacity: .8; }
+.press-bar::after { content: ""; position: absolute; top: 50%; left: calc((var(--v, 1013) - 980) / 60 * 100%); width: 12px; height: 12px; border-radius: 50%; background: var(--fg); border: 2px solid var(--bg); transform: translate(-50%, -50%); }
+.press-ends { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--fg-faint); }
+
+/* ---------- 6. Pluie dans l'heure (Météo-France « next rain ») ---------- */
+.rain-hour { display: grid; gap: var(--sp-2); }
+.rain-hour-h { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-3); font-size: var(--fs-m); color: var(--fg); }
+.rain-hour-h small { font-size: var(--fs-s); color: var(--fg-muted); }
+.rain-seg { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.rain-seg i { height: 14px; border-radius: 4px; background: var(--surface-2); }
+.rain-seg i.lv1 { background: color-mix(in srgb, var(--wx-rain) 40%, var(--surface-2)); }
+.rain-seg i.lv2 { background: color-mix(in srgb, var(--wx-rain) 75%, var(--surface-2)); }
+.rain-seg i.lv3 { background: var(--wx-rain); box-shadow: 0 0 10px var(--wx-rain); }
+.rain-seg.-tall i { height: 40px; }
+.rain-ends { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); font-size: var(--fs-xs); color: var(--fg-faint); }
+.rain-ends span:not(:first-child) { text-align: center; } .rain-ends span:last-child { text-align: end; }
+.rain-legend { display: flex; gap: var(--sp-3); font-size: var(--fs-xs); color: var(--fg-faint); flex-wrap: wrap; }
+.rain-legend i { display: inline-block; width: 12px; height: 8px; border-radius: 2px; vertical-align: middle; margin-right: 4px; background: var(--surface-2); }
+.rain-legend i.lv1 { background: color-mix(in srgb, var(--wx-rain) 40%, var(--surface-2)); } .rain-legend i.lv2 { background: color-mix(in srgb, var(--wx-rain) 75%, var(--surface-2)); } .rain-legend i.lv3 { background: var(--wx-rain); }
+
+/* ---------- 7. Horaire (extends .wx-hours) ---------- */
+.wx-hours.-full .wx-h { min-width: 68px; gap: 6px; }
+.wx-pop { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--wx-rain); font-variant-numeric: tabular-nums; }
+.wx-pop .ico { width: 10px; height: 10px; }
+.wx-pop.is-zero { visibility: hidden; }           /* keeps the row height, says nothing */
+.wx-hours .wx-glyph.-xs { width: 28px; height: 28px; font-size: 28px; }
+.wx-strip { display: grid; gap: 0; }
+.wx-strip .spark { order: 2; height: 28px; margin-top: -6px; }
+.spark { display: block; width: 100%; height: 40px; overflow: visible; }
+.spark-line { fill: none; stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.spark-fill { fill: var(--accent); opacity: .12; }
+.spark.-cool .spark-line { stroke: var(--wx-rain); } .spark.-cool .spark-fill { fill: var(--wx-rain); }
+.spark.-muted .spark-line { stroke: var(--fg-faint); } .spark.-muted .spark-fill { fill: var(--fg-faint); opacity: .08; }
+
+/* ---------- 8. Journalier (extends .wx-days) ---------- */
+.wx-days.-full .wx-d { grid-template-columns: 4.5ch 28px 5ch 3ch minmax(40px, 1fr) 3ch; height: 48px; }
+.wx-days.-full .wx-d .wx-glyph { font-size: 28px; }
+.wx-d .wx-pop { justify-self: start; }
+.wx-d.is-today { color: var(--fg); }
+.wx-d .wx-bar::after { opacity: .95; }
+.wx-day-x { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-4); align-items: center; padding: var(--sp-3) 0 var(--sp-1); }
+.wx-day-x .wx-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: var(--sp-2); }
+.wx-day-x .wx-stat { padding: var(--sp-2) var(--sp-3); gap: 2px; }
+.wx-day-x .wx-stat .val.-s { font-size: 18px; }
+
+/* ---------- 9. Soleil ---------- */
+.sun { display: grid; gap: var(--sp-2); }
+.sun-arc { position: relative; width: 100%; max-width: 320px; margin-inline: auto; aspect-ratio: 100 / 56; }
+.sun-arc svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.sun-arc .sun-path { fill: none; stroke: var(--border-strong); stroke-width: 1.5; stroke-dasharray: 2 4; vector-effect: non-scaling-stroke; }
+.sun-arc .sun-done { fill: none; stroke: var(--wx-sun-2); stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.sun-arc .sun-ground { stroke: var(--border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.sun-arc .sun-dot { fill: var(--wx-sun-2); filter: drop-shadow(0 0 6px var(--wx-sun-glow)); }
+.sun-arc .sun-dot.-moon { fill: var(--wx-moon-2); filter: drop-shadow(0 0 6px var(--wx-moon-glow)); }
+.sun-times { display: flex; justify-content: space-between; font-size: var(--fs-s); color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+.sun-times b { display: block; color: var(--fg); font-family: var(--font-display); font-weight: 500; font-size: var(--fs-l); }
+.sun-times span:last-child { text-align: end; }
+.sun-dur { text-align: center; font-size: var(--fs-xs); color: var(--fg-faint); }
+
+/* ---------- 10. Vigilance Météo-France ---------- */
+.vig { display: grid; gap: var(--sp-3); }
+.vig-head { display: flex; align-items: center; gap: var(--sp-3); }
+.vig-lvl { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 14px 0 10px; border-radius: var(--radius-pill); font-weight: 500; font-size: var(--fs-s); color: var(--fg); background: var(--surface-2); border: 1px solid var(--border); }
+.vig-lvl::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--vig-vert); box-shadow: 0 0 8px var(--vig-vert); }
+.vig-lvl.-jaune::before { background: var(--vig-jaune); box-shadow: 0 0 8px var(--vig-jaune); }
+.vig-lvl.-orange::before { background: var(--vig-orange); box-shadow: 0 0 8px var(--vig-orange); }
+.vig-lvl.-rouge::before { background: var(--vig-rouge); box-shadow: 0 0 8px var(--vig-rouge); }
+.vig-lvl.-orange, .vig-lvl.-rouge { background: color-mix(in srgb, var(--vig-orange) 16%, transparent); border-color: color-mix(in srgb, var(--vig-orange) 45%, transparent); }
+.vig-lvl.-rouge { background: color-mix(in srgb, var(--vig-rouge) 16%, transparent); border-color: color-mix(in srgb, var(--vig-rouge) 45%, transparent); }
+.vig-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-2); }
+.vig-item { display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-s); color: var(--fg-muted); padding: 6px 10px; border-radius: var(--radius-s); background: var(--surface); border: 1px solid var(--border); }
+.vig-item .ico { width: 15px; height: 15px; color: var(--fg-faint); }
+.vig-item::after { content: ""; margin-left: auto; width: 10px; height: 10px; border-radius: 50%; background: var(--vig-vert); flex: none; }
+.vig-item.-jaune::after { background: var(--vig-jaune); } .vig-item.-orange::after { background: var(--vig-orange); box-shadow: 0 0 8px var(--vig-orange); } .vig-item.-rouge::after { background: var(--vig-rouge); box-shadow: 0 0 8px var(--vig-rouge); }
+.vig-item.-orange, .vig-item.-rouge { color: var(--fg); }
+.alert.is-vig-orange .pict { color: var(--vig-orange); background: color-mix(in srgb, var(--vig-orange) 16%, transparent); border-color: color-mix(in srgb, var(--vig-orange) 45%, transparent); }
+.alert.is-vig-orange { border-color: color-mix(in srgb, var(--vig-orange) 45%, transparent); }
+.alert.is-vig-rouge .pict { color: var(--vig-rouge); background: color-mix(in srgb, var(--vig-rouge) 16%, transparent); border-color: color-mix(in srgb, var(--vig-rouge) 5%, transparent); box-shadow: 0 0 20px color-mix(in srgb, var(--vig-rouge) 35%, transparent); }
+.alert.is-vig-rouge { background: color-mix(in srgb, var(--vig-rouge) 14%, transparent); border-color: color-mix(in srgb, var(--vig-rouge) 5%, transparent); }
+
+/* ---------- 11. Dedans / dehors ---------- */
+.inout { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: var(--sp-3); min-width: 0; }
+.inout-side { display: grid; gap: 2px; justify-items: start; }
+.inout-side:last-child { justify-items: end; text-align: end; }
+.inout-l { font-size: var(--fs-xs); color: var(--fg-muted); text-transform: uppercase; letter-spacing: .06em; display: inline-flex; gap: 5px; align-items: center; }
+.inout-l .ico { width: 13px; height: 13px; }
+.inout-d { display: grid; justify-items: center; gap: 2px; padding: 6px 12px; border-radius: var(--radius-pill); background: var(--surface-2); font-size: var(--fs-s); color: var(--fg-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.inout-d b { color: var(--fg); font-family: var(--font-display); font-weight: 500; }
+.inout-d.-warm b { color: var(--wx-hot); } .inout-d.-cold b { color: var(--wx-cold); }
+
+/* ---------- 12. Pilule / tuile météo ---------- */
+.chip .wx-glyph.-xs { width: 22px; height: 22px; font-size: 22px; margin-left: -4px; }
+.tile .wx-glyph.-s { justify-self: end; }
+.tile.-wx { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.tile.-wx .tile-v { font-size: var(--fs-2xl); }
+.tile.-night { background: linear-gradient(135deg, #2a3350, #151a2a); color: var(--fg); }
+.tile.-night .tile-l, .tile.-night .tile-v small { color: var(--fg-muted); }
+.tile.-day { background: linear-gradient(135deg, #f3d7b4, #d9e6f3); }
+
+/* ---------- 13. Bandeau de pluie / météo compacte dans un en-tête ---------- */
+.wx-line { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; font-size: var(--fs-s); color: var(--fg-muted); }
+.wx-line b { color: var(--fg); font-weight: 500; }
+.wx-line .sep { color: var(--fg-faint); }
+
+/* ---------- 14. Qualité de l'air (indice ATMO, polluants, pollens) ---------- */
+.air { display: grid; gap: var(--sp-3); }
+.air-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--sp-3); align-items: center; }
+.air-lvl { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-xl); color: var(--bg); background: var(--atmo-1); box-shadow: 0 0 20px color-mix(in srgb, var(--atmo-1) 45%, transparent); }
+.air-lvl.lv2 { background: var(--atmo-2); box-shadow: 0 0 20px color-mix(in srgb, var(--atmo-2) 45%, transparent); }
+.air-lvl.lv3 { background: var(--atmo-3); box-shadow: 0 0 20px color-mix(in srgb, var(--atmo-3) 45%, transparent); }
+.air-lvl.lv4 { background: var(--atmo-4); box-shadow: 0 0 20px color-mix(in srgb, var(--atmo-4) 45%, transparent); color: #fff; }
+.air-lvl.lv5 { background: var(--atmo-5); box-shadow: 0 0 20px color-mix(in srgb, var(--atmo-5) 45%, transparent); color: #fff; }
+.air-lvl.lv6 { background: var(--atmo-6); box-shadow: 0 0 20px color-mix(in srgb, var(--atmo-6) 45%, transparent); color: #fff; }
+.air-lvl.is-none { background: var(--surface-3); box-shadow: none; color: var(--fg-faint); }
+.air-t { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-xl); letter-spacing: -.01em; }
+.air-s { font-size: var(--fs-s); color: var(--fg-muted); }
+.air-scale { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; }
+.air-scale i { position: relative; height: 8px; border-radius: var(--radius-pill); background: var(--surface-2); }
+.air-scale i:nth-child(1).is-on { background: var(--atmo-1); } .air-scale i:nth-child(2).is-on { background: var(--atmo-2); } .air-scale i:nth-child(3).is-on { background: var(--atmo-3); }
+.air-scale i:nth-child(4).is-on { background: var(--atmo-4); } .air-scale i:nth-child(5).is-on { background: var(--atmo-5); } .air-scale i:nth-child(6).is-on { background: var(--atmo-6); }
+.air-scale i.is-now::after { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; border-radius: 50%; background: var(--fg); border: 3px solid var(--bg); transform: translate(-50%, -50%); }
+.air-ends { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--fg-faint); }
+/* polluants : sous-indice 1–6 par barre + concentration */
+.pollu { display: grid; gap: var(--sp-2); }
+.pollu-row { display: grid; grid-template-columns: 5ch minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; font-size: var(--fs-s); color: var(--fg-muted); }
+.pollu-row b { font-family: var(--font-display); font-weight: 500; color: var(--fg); font-size: var(--fs-m); }
+.pollu-row b sub { font-size: .7em; vertical-align: -.2em; }
+.pollu-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; }
+.pollu-bar i { height: 6px; border-radius: var(--radius-pill); background: var(--surface-2); }
+.pollu-bar i:nth-child(1).is-on { background: var(--atmo-1); } .pollu-bar i:nth-child(2).is-on { background: var(--atmo-2); } .pollu-bar i:nth-child(3).is-on { background: var(--atmo-3); }
+.pollu-bar i:nth-child(4).is-on { background: var(--atmo-4); } .pollu-bar i:nth-child(5).is-on { background: var(--atmo-5); } .pollu-bar i:nth-child(6).is-on { background: var(--atmo-6); }
+.pollu-v { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: end; }
+.pollu-v small { color: var(--fg-faint); }
+.pollu-row.is-main b { color: var(--fg); } .pollu-row.is-main::after { content: ""; }
+/* pollens : espèce + niveau 0–6 en points */
+.pollen { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-2); }
+.pollen-item { display: grid; gap: 6px; padding: 8px 10px; border-radius: var(--radius-s); background: var(--surface); border: 1px solid var(--border); font-size: var(--fs-s); color: var(--fg-muted); }
+.pollen-item b { color: var(--fg); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.pollen-item b .ico { width: 14px; height: 14px; color: var(--fg-faint); }
+.pollen-item .dots { gap: 3px; } .pollen-item .dots i { width: 7px; height: 7px; }
+.pollen-item .dots i.is-on { background: var(--atmo-2); box-shadow: none; }
+.pollen-item.lv3 .dots i.is-on { background: var(--atmo-3); } .pollen-item.lv4 .dots i.is-on, .pollen-item.lv5 .dots i.is-on { background: var(--atmo-4); } .pollen-item.lv6 .dots i.is-on { background: var(--atmo-6); }
+.pollen-item.is-off { opacity: .6; }
+.chip.is-air-1 .ico { color: var(--atmo-1); } .chip.is-air-2 .ico { color: var(--atmo-2); } .chip.is-air-3 .ico { color: var(--atmo-3); } .chip.is-air-4 .ico { color: var(--atmo-4); } .chip.is-air-5 .ico { color: var(--atmo-5); } .chip.is-air-6 .ico { color: var(--atmo-6); }
+.alert.is-air .pict { color: var(--atmo-4); background: color-mix(in srgb, var(--atmo-4) 16%, transparent); border-color: color-mix(in srgb, var(--atmo-4) 45%, transparent); }
+.alert.is-air { border-color: color-mix(in srgb, var(--atmo-4) 45%, transparent); }
+.tile.-air .pict { color: var(--tile-fg); }
