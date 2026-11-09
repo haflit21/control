@@ -18,14 +18,6 @@ globals:
     latitude: 45.697
     longitude: 4.886
     place: Vénissieux
-  # Agenda partagé : entités calendar.* de HA (Google, iCloud, CalDAV…). À adapter — `make check` dit ce qui manque.
-  calendars:
-    - entity: calendar.famille
-      name: Famille
-      color: "#ec9b74"
-    - entity: calendar.poubelles
-      name: Poubelles
-      color: "#6fcf9a"
   presence:
     - { entity: person.abdelhak, name: Abdelhak }
     - { entity: person.marion, name: Marion }
@@ -310,3 +302,24 @@ ignore:
   - media_player.bbox_miami
   - switch.desk_pc
   - input_button.turn_on_pc
+
+# Agenda familial, tenu par l'app (state/agenda/events.json). Le premier calendrier est celui par défaut.
+agenda:
+  calendars:
+    - { id: famille, name: Famille, color: "#ec9b74" }
+    - { id: poubelles, name: Poubelles, color: "#6fcf9a", hint: "poubelles, tri, verre, encombrants, déchetterie" }
+  # Saisie rapide : une phrase (tapée ou dictée) devient un formulaire pré-rempli.
+  voice:
+    # parole → texte : Whisper sur le NAS (deploy/whisper-stack.yml), API compatible OpenAI
+    transcribe:
+      url: http://192.168.10.10:8000
+      model: Systran/faster-whisper-small
+      language: fr
+    # texte → événement : Claude (clé ANTHROPIC_API_KEY dans .env).
+    # Pour un modèle local plus tard (Ollama, llama.cpp…), remplacer par :
+    #   provider: openai
+    #   url: http://192.168.10.11:11434/v1
+    #   model: qwen2.5:3b
+    understand:
+      provider: anthropic
+      model: claude-haiku-5-5

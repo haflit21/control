@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -24,7 +25,12 @@ import (
 type pushState struct {
 	seen  map[string]struct{}
 	ready bool // false until the first rebuild after start: existing alerts are not notified
+	// HA lost: notified only if still down after HALostAfter (a reconnect takes seconds)
+	haTimer *time.Timer
 }
+
+// HALostAfter: how long HA must stay unreachable before the phone is told.
+var HALostAfter = time.Minute
 
 func (s *Server) pushKey(w http.ResponseWriter, r *http.Request) {
 	if s.Push == nil {
@@ -126,8 +132,20 @@ func (s *Server) notifyAlerts(prev, cur model.Home) {
 	if cur.Globals.Alarm.Triggered && !prev.Globals.Alarm.Triggered {
 		msgs = append(msgs, push.Message{Title: "Alarme déclenchée", Body: "Un capteur ou une caméra a déclenché l’alarme.", Tag: "alarm", Level: "crit", URL: "/securite"})
 	}
-	if !cur.Connected && prev.Connected {
-		msgs = append(msgs, push.Message{Title: "Home Assistant injoignable", Body: "Maison n’a plus de nouvelles de la maison.", Tag: "ha", Level: "warn", URL: "/"})
+	if !cur.Connected && prev.Connected && !cur.Demo && st.haTimer == nil {
+		st.haTimer = time.AfterFunc(HALostAfter, func() {
+			if s.Src.Connected() {
+				return
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+			defer cancel()
+			n := s.Push.Broadcast(ctx, push.Message{Title: "Home Assistant injoignable", Body: fmt.Sprintf("Maison n’a plus de nouvelles de la maison depuis %s.", HALostAfter.Round(time.Second)), Tag: "ha", Level: "warn", URL: "/"})
+			log.Printf("push : « Home Assistant injoignable » envoyé à %d appareil(s)", n)
+		})
+	}
+	if cur.Connected && st.haTimer != nil {
+		st.haTimer.Stop()
+		st.haTimer = nil
 	}
 	if len(msgs) == 0 {
 		return

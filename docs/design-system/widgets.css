@@ -539,3 +539,65 @@ button.pwr::before, .stepper button::before { content: ""; position: absolute; i
 .slider input[type="range"] { height: 44px; }
 .theme-row .seg button { position: relative; }
 .theme-row .seg button::before { content: ""; position: absolute; inset: -6px 0; }
+
+/* 24. Formulaire — champs, saisie rapide (texte ou voix), micro
+   Une feuille de formulaire (`.sheet.-form`) défile dans l'écran ; les champs font 44 px ;
+   la barre de saisie rapide prend une phrase (« dentiste jeudi 10h ») et pré-remplit le reste. */
+.sheet.-form { max-width: 520px; max-height: calc(100dvh - 2 * var(--sp-4)); overflow-y: auto; overscroll-behavior: contain; gap: var(--sp-4); }
+.form { display: grid; gap: var(--sp-4); }
+.field { display: grid; gap: 6px; min-width: 0; }
+.field-l { font-size: var(--fs-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--fg-muted); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+/* date + heures : la date sur sa ligne au téléphone, les trois côte à côte quand la feuille est large */
+.field-row.-when > :first-child { grid-column: 1 / -1; }
+@media (min-width: 560px) { .field-row.-when { grid-template-columns: 1.4fr 1fr 1fr; } .field-row.-when > :first-child { grid-column: auto; } }
+.input { appearance: none; -webkit-appearance: none; width: 100%; min-width: 0; height: 44px; padding: 0 14px; border-radius: var(--radius-s); border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--fg); font: inherit; font-size: 16px; /* 16 px : pas de zoom iOS */ font-variant-numeric: tabular-nums; color-scheme: inherit; }
+.input::placeholder { color: var(--fg-faint); }
+.input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+.input[aria-invalid="true"] { border-color: var(--crit-fg); }
+.input::-webkit-date-and-time-value { text-align: left; }
+.field-inline { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); min-height: 44px; }
+.field-inline .field-l { font-size: var(--fs-m); letter-spacing: 0; text-transform: none; color: var(--fg); font-family: var(--font-display); font-weight: 500; }
+.form-err { padding: 10px 14px; border-radius: var(--radius-s); background: var(--crit-bg); color: var(--crit-fg); border: 1px solid var(--crit-bd); font-size: var(--fs-s); }
+.form-note { font-size: var(--fs-s); color: var(--fg-muted); }
+.form-acts { display: grid; grid-template-columns: auto 1fr 1fr; gap: var(--sp-3); align-items: center; }
+.form-acts .btn.-icon { width: 44px; padding: 0; display: inline-grid; place-items: center; }
+/* choix du calendrier : pastilles colorées, une seule active */
+.cal-pick { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.cal-pick button { appearance: none; position: relative; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 12px; border-radius: var(--radius-pill); border: 1px solid var(--border-strong); background: var(--surface); color: var(--fg-muted); font: inherit; font-family: var(--font-display); font-weight: 500; cursor: pointer; }
+.cal-pick button i { width: 10px; height: 10px; border-radius: 50%; background: var(--cal, var(--fg-muted)); }
+.cal-pick button[aria-pressed="true"] { color: var(--fg); border-color: var(--cal, var(--accent)); background: color-mix(in srgb, var(--cal, var(--accent)) 16%, transparent); }
+.cal-pick button::before { content: ""; position: absolute; inset: -2px 0; }
+/* répétition : segment compact qui passe à la ligne sur téléphone */
+.form .seg { flex-wrap: wrap; border-radius: var(--radius-m, 18px); }
+.form .seg button { height: 36px; padding: 0 12px; font-size: var(--fs-s); position: relative; }
+.form .seg button::before { content: ""; position: absolute; inset: -4px 0; }
+/* saisie rapide */
+.quick { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--sp-2); align-items: center; padding: 6px; border-radius: var(--radius-pill); background: var(--surface); border: 1px solid var(--border); }
+.quick .input { border: 0; background: transparent; height: 44px; padding: 0 10px; }
+.quick .input:focus-visible { outline: none; }
+.quick:focus-within { border-color: var(--accent); box-shadow: var(--accent-glow); }
+.heard { display: flex; gap: var(--sp-2); align-items: baseline; font-size: var(--fs-s); color: var(--fg-muted); }
+.heard q { color: var(--fg); font-style: italic; }
+.heard q::before { content: "« "; } .heard q::after { content: " »"; }
+/* micro : rond, terracotta au repos, rouge qui respire pendant l'écoute */
+.mic { appearance: none; position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-fg); cursor: pointer; flex: none; box-shadow: var(--accent-glow); transition: transform var(--dur-press) var(--ease-out); }
+.mic .ico { width: 20px; height: 20px; }
+.mic:active { transform: scale(.94); }
+.mic:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.mic:disabled { opacity: .45; cursor: default; box-shadow: none; }
+.mic.-ghost { background: var(--surface-2); color: var(--fg); box-shadow: none; border: 1px solid var(--border-strong); }
+.mic.is-rec { background: var(--crit-fg); color: #fff; box-shadow: 0 0 0 calc(4px + var(--lvl, 0) * 14px) color-mix(in srgb, var(--crit-fg) 28%, transparent); transition: box-shadow 90ms linear; }
+.mic.-l { width: 72px; height: 72px; } .mic.-l .ico { width: 28px; height: 28px; }
+/* écoute en cours / réflexion */
+.listen { display: grid; justify-items: center; gap: var(--sp-3); padding: var(--sp-4) 0 var(--sp-2); text-align: center; }
+.listen-t { font-family: var(--font-display); font-size: var(--fs-l); font-weight: 500; }
+.listen-s { font-size: var(--fs-s); color: var(--fg-muted); font-variant-numeric: tabular-nums; }
+.thinking { display: inline-flex; gap: 6px; }
+.thinking i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: think 1s ease-in-out infinite; }
+.thinking i:nth-child(2) { animation-delay: .15s; } .thinking i:nth-child(3) { animation-delay: .3s; }
+@keyframes think { 0%, 100% { opacity: .25; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .thinking i { animation: none; opacity: .7; } .mic.is-rec { transition: none; } }
+/* barre d'outils de l'agenda : ajouter + micro */
+.agenda-tools { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; justify-content: flex-end; }
+.agenda-tools .btn { height: 44px; display: inline-flex; align-items: center; gap: 8px; }

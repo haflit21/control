@@ -82,6 +82,9 @@ func DialWS(ctx context.Context, rawURL string, insecure bool) (*WSConn, error) 
 		c.Close()
 		return nil, fmt.Errorf("websocket refusé : HTTP %d", resp.StatusCode)
 	}
+	// the ctx deadline was for the handshake only: a long-lived connection must not inherit it
+	// (otherwise every read fails with "i/o timeout" once it passes)
+	_ = c.SetDeadline(time.Time{})
 	return &WSConn{conn: c, r: r}, nil
 }
 

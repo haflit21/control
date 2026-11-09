@@ -1,26 +1,31 @@
-# Stack Portainer « maison » sur le NAS : réseau macvlan, IP dédiée (proposition 192.168.10.6),
-# .env (HA_URL, HA_TOKEN, MAISON_TOKEN) ajouté dans les variables d'environnement de la stack.
+# Stack Portainer « control » (l'app Maison) sur le NAS : réseau macvlan, IP dédiée (proposition 192.168.10.6).
+# Nom d'image = nom du dépôt (ahomelab/control) pour que Sentinel rapproche déploiements et commits.
+# Variables de la stack : HA_URL, HA_TOKEN, MAISON_TOKEN, ANTHROPIC_API_KEY. Le tag de l'image est réécrit par la CI à chaque déploiement.
 services:
-  maison:
-    image: 192.168.10.157:5011/maison:latest
-    container_name: maison
+  control:
+    image: 192.168.10.157:5011/control:latest
+    container_name: control
     restart: unless-stopped
     environment:
       HA_URL: ${HA_URL}
       HA_TOKEN: ${HA_TOKEN}
       MAISON_TOKEN: ${MAISON_TOKEN}
-      MAISON_LISTEN: ":80"
+      # agenda : compréhension des phrases par Claude (vide = formulaire seul)
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # l'image tourne en utilisateur non-root : pas de port < 1024 (le noyau du NAS n'a pas
+      # ip_unprivileged_port_start) → http://<ip>:8080
+      MAISON_LISTEN: ":8080"
       TZ: Europe/Paris
     volumes:
-      - maison_state:/data/state
+      - control_state:/data/state
       # tes propres photos à la place de celles de l'image : décommente et dépose rooms/*.jpg, devices/*.jpg
-      # - /volume1/docker/maison/media:/media:ro
+      # - /volume1/docker/control/media:/media:ro
     networks:
       lan:
         ipv4_address: 192.168.10.6
 volumes:
-  maison_state:
+  control_state:
 networks:
   lan:
     external: true
-    name: macvlan_lan   # le réseau macvlan déjà utilisé par Sentinel
+    name: lan_macvlan   # le réseau macvlan déjà utilisé par Sentinel

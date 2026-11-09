@@ -192,7 +192,7 @@ export interface Pollutant { key: PollutantKey; index: number; value: number }
 export type PollenKey = 'grass' | 'birch' | 'alder' | 'mugwort' | 'olive' | 'ragweed';
 export interface Pollen { key: PollenKey; level: number; value: number }
 
-/** Shared calendar: events of the coming weeks from HA calendar entities. */
+/** Family calendar kept by the app: occurrences of the weeks shown, and what quick entry can do. */
 export interface Agenda {
   available: boolean;
   calendars: Calendar[];
@@ -200,9 +200,34 @@ export interface Agenda {
   from: string;
   to: string;
   updatedAt: string;
+  /** quick entry: typed sentence (text) and voice (audio) */
+  input: { text: boolean; audio: boolean };
 }
 export interface Calendar { id: string; name: string; color?: string }
-export interface CalEvent { id: string; calendar: string; title: string; start: string; end: string; allDay: boolean; location?: string }
+/** One occurrence. `eventId` is the event to edit (the whole series when `repeats`). */
+export interface CalEvent { id: string; eventId: string; repeats?: boolean; calendar: string; title: string; start: string; end: string; allDay: boolean; location?: string }
+
+export type RepeatFreq = 'weekly' | 'biweekly' | 'monthly' | 'yearly';
+export interface Repeat { freq: RepeatFreq; until?: string }
+/** An event as stored: wall-clock date and times in the house's time zone. */
+export interface AgendaEvent {
+  id?: string;
+  calendar: string;
+  title: string;
+  location?: string;
+  allDay: boolean;
+  /** YYYY-MM-DD */
+  date: string;
+  /** last day (inclusive) of a multi-day all-day event */
+  endDate?: string;
+  /** HH:MM */
+  start?: string;
+  end?: string;
+  repeat?: Repeat;
+  createdBy?: string;
+}
+/** What a sentence was understood as (pre-fills the form; nothing is saved). */
+export interface EventDraft extends Omit<AgendaEvent, 'id' | 'createdBy'> { transcript?: string }
 
 export interface Home {
   name: string;
@@ -294,7 +319,7 @@ export type JournalEntry = {
   at: string;
   user: string;
   via?: string;
-  scope: 'device' | 'house' | 'security' | 'push';
+  scope: 'device' | 'house' | 'security' | 'push' | 'agenda';
   target?: string;
   action: string;
   params?: string;

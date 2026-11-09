@@ -28,12 +28,14 @@ import (
 	"syscall"
 	"time"
 
+	"ahomelab.io/maison/internal/agenda"
 	"ahomelab.io/maison/internal/config"
 	"ahomelab.io/maison/internal/demo"
 	"ahomelab.io/maison/internal/ha"
 	"ahomelab.io/maison/internal/journal"
 	"ahomelab.io/maison/internal/push"
 	"ahomelab.io/maison/internal/server"
+	"ahomelab.io/maison/internal/voice"
 )
 
 func main() {
@@ -43,7 +45,18 @@ func main() {
 	if len(os.Args) > 1 {
 		cmd = os.Args[1]
 	}
-	cfgPath := env("MAISON_CONFIG", "maison.yaml")
+	// maison.yaml : MAISON_CONFIG, sinon ./maison.yaml, sinon ../maison.yaml (lancé depuis server/)
+	cfgPath := os.Getenv("MAISON_CONFIG")
+	if cfgPath == "" {
+		cfgPath = "maison.yaml"
+		if _, err := os.Stat(cfgPath); err != nil {
+			if _, err := os.Stat(filepath.Join("..", "maison.yaml")); err == nil {
+				cfgPath = filepath.Join("..", "maison.yaml")
+			}
+		}
+	}
+	// .env à côté de maison.yaml aussi (sans écraser ce qui est déjà défini)
+	loadDotEnv(filepath.Join(filepath.Dir(cfgPath), ".env"))
 	cfg, err := config.Load(cfgPath)
 	if err != nil {
 		log.Fatalf("configuration : %v", err)
@@ -122,6 +135,21 @@ func serve(cfg *config.Config, cfgPath string) {
 		srv.Push = ps
 		log.Printf("notifications : %d appareil(s) abonné(s)", ps.Count())
 	}
+	// agenda : events.json dans state_dir ; en démo, en mémoire avec une semaine type
+	if demoMode {
+		st, _ := agenda.Open("")
+		demo.SeedAgenda(st, cfg.Agenda.CalendarIDs(), time.Now())
+		srv.Agenda = st
+	} else if st, err := agenda.Open(filepath.Join(stateDir, "agenda")); err != nil {
+		log.Printf("agenda : désactivé (%v)", err)
+	} else {
+		srv.Agenda = st
+		log.Printf("agenda : %d événement(s)", st.Count())
+	}
+	if srv.Agenda != nil {
+		srv.Agenda.OnChange = srv.AgendaChanged
+	}
+	srv.Transcriber, srv.Understander = voiceFrom(cfg)
 	if js, err := journal.Open(filepath.Join(stateDir, "journal")); err != nil {
 		log.Printf("journal : désactivé (%v)", err)
 	} else {
@@ -205,8 +233,47 @@ func check(cfg *config.Config) {
 		}
 	}
 	if len(missing) == 0 {
-		fmt.Println("\nTout est câblé.")
+		fmt.Println("\nToutes les entités sont câblées.")
 	}
+
+	// what HA has that maison.yaml could use, and the services the app calls
+	rctx, rcancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer rcancel()
+	checkVoice(rctx, cfg)
+	if svc, err := c.Services(rctx); err != nil {
+		fmt.Printf("\n(liste des services HA indisponible : %v)\n", err)
+	} else {
+		need := []string{"light.turn_on", "light.turn_off", "climate.set_temperature", "climate.set_hvac_mode", "cover.open_cover", "cover.close_cover", "cover.set_cover_position", "switch.turn_on", "media_player.media_play_pause", "media_player.volume_set", "script.turn_on"}
+		if cfgUsesTado(cfg) {
+			need = append(need, "tado.set_climate_timer")
+		}
+		var absent []string
+		for _, n := range need {
+			if !svc[n] {
+				absent = append(absent, n)
+			}
+		}
+		if len(absent) == 0 {
+			fmt.Printf("\nServices utilisés par l'app : tous présents (%d).\n", len(need))
+		} else {
+			fmt.Printf("\nServices absents de HA (les actions correspondantes échoueront) :\n")
+			for _, n := range absent {
+				fmt.Printf("  - %s\n", n)
+			}
+		}
+	}
+}
+
+// cfgUsesTado: heating devices on Tado (the manual-with-duration mode calls tado.set_climate_timer).
+func cfgUsesTado(cfg *config.Config) bool {
+	for _, r := range cfg.Rooms {
+		for _, d := range r.Devices {
+			if d.Kind == "heating" && strings.HasPrefix(d.Entities["climate"], "climate.") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func env(k, def string) string {
@@ -239,4 +306,67 @@ func loadDotEnv(path string) {
 			_ = os.Setenv(k, v)
 		}
 	}
+}
+
+// voiceFrom builds the quick-entry chain from maison.yaml (agenda.voice) and .env.
+// Swapping Claude for a local model = provider: openai + url + model, nothing else.
+func voiceFrom(cfg *config.Config) (voice.Transcriber, voice.Understander) {
+	v := cfg.Agenda.Voice
+	var tr voice.Transcriber
+	var un voice.Understander
+	switch v.Understand.Provider {
+	case "anthropic":
+		if os.Getenv("ANTHROPIC_API_KEY") == "" {
+			log.Printf("agenda : saisie rapide désactivée, ANTHROPIC_API_KEY absente de .env")
+		} else {
+			model := v.Understand.Model
+			if model == "" {
+				model = "claude-haiku-5-5"
+			}
+			un = &voice.Anthropic{APIKey: os.Getenv("ANTHROPIC_API_KEY"), Model: model, URL: v.Understand.URL}
+			log.Printf("agenda : phrases comprises par Claude (%s)", model)
+		}
+	case "openai":
+		un = &voice.OpenAIChat{URL: v.Understand.URL, Model: v.Understand.Model, APIKey: os.Getenv("LLM_API_KEY")}
+		log.Printf("agenda : phrases comprises par %s sur %s", v.Understand.Model, v.Understand.URL)
+	}
+	if v.Transcribe.URL != "" {
+		model := v.Transcribe.Model
+		if model == "" {
+			model = "Systran/faster-whisper-small"
+		}
+		tr = &voice.OpenAITranscriber{URL: v.Transcribe.URL, Model: model, Language: v.Transcribe.Language, APIKey: os.Getenv("STT_API_KEY")}
+		log.Printf("agenda : voix transcrite par %s (%s)", v.Transcribe.URL, model)
+	}
+	return tr, un
+}
+
+// checkVoice says whether the quick entry can work (never prints a key).
+func checkVoice(ctx context.Context, cfg *config.Config) {
+	v := cfg.Agenda.Voice
+	fmt.Printf("\nAgenda : %d calendrier(s) (%s)\n", len(cfg.Agenda.Calendars), strings.Join(cfg.Agenda.CalendarIDs(), ", "))
+	switch v.Understand.Provider {
+	case "":
+		fmt.Println("  saisie rapide : non configurée (agenda.voice.understand)")
+	case "anthropic":
+		if os.Getenv("ANTHROPIC_API_KEY") == "" {
+			fmt.Println("  saisie rapide : Claude, mais ANTHROPIC_API_KEY manque dans .env")
+		} else {
+			fmt.Println("  saisie rapide : Claude, clé présente")
+		}
+	case "openai":
+		fmt.Printf("  saisie rapide : %s sur %s\n", v.Understand.Model, v.Understand.URL)
+	}
+	if v.Transcribe.URL == "" {
+		fmt.Println("  micro : non configuré (agenda.voice.transcribe)")
+		return
+	}
+	req, _ := http.NewRequestWithContext(ctx, "GET", strings.TrimRight(v.Transcribe.URL, "/")+"/health", nil)
+	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
+	if err != nil {
+		fmt.Printf("  micro : Whisper injoignable sur %s (%v)\n", v.Transcribe.URL, err)
+		return
+	}
+	resp.Body.Close()
+	fmt.Printf("  micro : Whisper répond sur %s (HTTP %d)\n", v.Transcribe.URL, resp.StatusCode)
 }

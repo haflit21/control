@@ -19,6 +19,50 @@ type Config struct {
 	Globals Globals  `yaml:"globals"`
 	Ignore  []string `yaml:"ignore"` // entities never shown (documentation only)
 	Serve   Serve    `yaml:"serve"`
+	Agenda  Agenda   `yaml:"agenda"`
+}
+
+// Agenda: the family calendar kept by the app itself (state_dir/agenda), and
+// how a spoken or typed sentence becomes an event.
+type Agenda struct {
+	// Calendars group events by colour (Famille, Poubelles…). The first one is the default.
+	Calendars []Calendar `yaml:"calendars"`
+	Voice     Voice      `yaml:"voice"`
+}
+
+type Calendar struct {
+	ID    string `yaml:"id"`
+	Name  string `yaml:"name"`
+	Color string `yaml:"color"` // CSS colour, optional
+	// Hint helps the language model choose this calendar ("poubelles, tri, verre, encombrants").
+	Hint string `yaml:"hint"`
+}
+
+// Voice: speech → text (Whisper behind an OpenAI-compatible endpoint), then
+// text → event (a language model). Each part is optional: without `transcribe`
+// there is no mic button, without `understand` no quick entry at all.
+type Voice struct {
+	Transcribe struct {
+		URL      string `yaml:"url"`      // base URL, e.g. http://192.168.10.10:8000 (…/v1/audio/transcriptions is appended)
+		Model    string `yaml:"model"`    // e.g. Systran/faster-whisper-small
+		Language string `yaml:"language"` // default "fr"
+	} `yaml:"transcribe"`
+	Understand struct {
+		// Provider: "anthropic" (Messages API, key in ANTHROPIC_API_KEY) or "openai"
+		// (any OpenAI-compatible chat endpoint: Ollama, llama.cpp, vLLM… key in LLM_API_KEY if needed).
+		Provider string `yaml:"provider"`
+		URL      string `yaml:"url"`   // openai: base URL ending in /v1 ; anthropic: optional
+		Model    string `yaml:"model"` // e.g. claude-haiku-5-5, qwen2.5:3b
+	} `yaml:"understand"`
+}
+
+// CalendarIDs lists the agenda calendar ids, default first.
+func (a Agenda) CalendarIDs() []string {
+	ids := make([]string, 0, len(a.Calendars))
+	for _, c := range a.Calendars {
+		ids = append(ids, c.ID)
+	}
+	return ids
 }
 
 type Serve struct {
@@ -94,14 +138,6 @@ type Globals struct {
 		Longitude float64 `yaml:"longitude"`
 		Place     string  `yaml:"place"`
 	} `yaml:"air"`
-	// Calendars: HA calendar entities shown in the Agenda tab.
-	Calendars []CalendarConfig `yaml:"calendars"`
-}
-
-type CalendarConfig struct {
-	Entity string `yaml:"entity"`
-	Name   string `yaml:"name"`
-	Color  string `yaml:"color"` // CSS colour, optional
 }
 
 // AirEnabled says whether the air-quality poller runs (default yes).
@@ -143,6 +179,35 @@ func (c *Config) Validate() error {
 	}
 	if c.Serve.StateDir == "" {
 		c.Serve.StateDir = "state"
+	}
+	if len(c.Agenda.Calendars) == 0 {
+		c.Agenda.Calendars = []Calendar{{ID: "famille", Name: "Famille", Color: "#ec9b74"}}
+	}
+	calSeen := map[string]bool{}
+	for i := range c.Agenda.Calendars {
+		cal := &c.Agenda.Calendars[i]
+		if cal.ID == "" || strings.ContainsAny(cal.ID, " ./@") {
+			return fmt.Errorf("agenda : calendrier %q : id manquant ou invalide", cal.Name)
+		}
+		if calSeen[cal.ID] {
+			return fmt.Errorf("agenda : calendrier %q en double", cal.ID)
+		}
+		calSeen[cal.ID] = true
+		if cal.Name == "" {
+			cal.Name = strings.ToUpper(cal.ID[:1]) + cal.ID[1:]
+		}
+	}
+	v := &c.Agenda.Voice
+	if v.Transcribe.Language == "" {
+		v.Transcribe.Language = "fr"
+	}
+	switch v.Understand.Provider {
+	case "", "anthropic", "openai":
+	default:
+		return fmt.Errorf("agenda.voice.understand.provider : %q inconnu (anthropic ou openai)", v.Understand.Provider)
+	}
+	if v.Understand.Provider == "openai" && v.Understand.URL == "" {
+		return fmt.Errorf("agenda.voice.understand.url est requis avec le fournisseur openai")
 	}
 	seen := map[string]bool{}
 	for ri := range c.Rooms {
@@ -218,9 +283,6 @@ func (c *Config) Entities() []string {
 	add(g.Heating.Off)
 	add(g.Heating.Boost)
 	add(g.Heating.Presence)
-	for _, cal := range g.Calendars {
-		add(cal.Entity)
-	}
 	if g.AirEnabled() && (g.Air.Latitude == 0 || g.Air.Longitude == 0) {
 		add("zone.home")
 	}

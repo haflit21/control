@@ -46,18 +46,6 @@ type Source interface {
 	CameraSnapshot(ctx context.Context, entity string) (body []byte, contentType string, err error)
 	// CameraStream copies the MJPEG stream to w until ctx ends.
 	CameraStream(ctx context.Context, entity string, w io.Writer, setHeader func(contentType string)) error
-	// CalendarEvents lists the events of a calendar entity between from and to.
-	CalendarEvents(ctx context.Context, entity string, from, to time.Time) ([]CalendarEvent, error)
-}
-
-// CalendarEvent is one event as HA's REST API returns it (GET /api/calendars/{entity}).
-type CalendarEvent struct {
-	UID      string
-	Summary  string
-	Location string
-	Start    time.Time
-	End      time.Time
-	AllDay   bool
 }
 
 // Store is the shared in-memory state used by both sources.

@@ -216,7 +216,8 @@ type Pollen struct {
 	Value float64 `json:"value"` // grains/m³
 }
 
-// Agenda is the shared calendar: the events of the coming weeks, from HA calendar entities.
+// Agenda is the family calendar kept by the app: the occurrences of the weeks
+// shown (current week → +5 weeks), and what the quick entry can do.
 type Agenda struct {
 	Available bool       `json:"available"`
 	Calendars []Calendar `json:"calendars"`
@@ -224,6 +225,13 @@ type Agenda struct {
 	From      time.Time  `json:"from"`
 	To        time.Time  `json:"to"`
 	UpdatedAt time.Time  `json:"updatedAt"`
+	// Input: quick entry by typed sentence (Text) and by voice (Audio).
+	Input AgendaInput `json:"input"`
+}
+
+type AgendaInput struct {
+	Text  bool `json:"text"`
+	Audio bool `json:"audio"`
 }
 
 type Calendar struct {
@@ -233,7 +241,9 @@ type Calendar struct {
 }
 
 type CalEvent struct {
-	ID       string    `json:"id"`
+	ID       string    `json:"id"`      // occurrence: "<eventId>@<date>"
+	EventID  string    `json:"eventId"` // the event to edit (the whole series when it repeats)
+	Repeats  bool      `json:"repeats,omitempty"`
 	Calendar string    `json:"calendar"`
 	Title    string    `json:"title"`
 	Start    time.Time `json:"start"`

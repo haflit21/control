@@ -48,7 +48,7 @@ function calColor(cals: Calendar[], id: string): string | undefined {
   return cals.find((c) => c.id === id)?.color;
 }
 
-export function EventItem({ ev, day, cals, now, withDay, compact }: { ev: CalEvent; day?: Date; cals: Calendar[]; now: Date; withDay?: boolean; compact?: boolean }) {
+export function EventItem({ ev, day, cals, now, withDay, compact, onOpen }: { ev: CalEvent; day?: Date; cals: Calendar[]; now: Date; withDay?: boolean; compact?: boolean; onOpen?: (ev: CalEvent) => void }) {
   const start = new Date(ev.start);
   const end = new Date(ev.end);
   const past = end.getTime() <= now.getTime();
@@ -66,17 +66,21 @@ export function EventItem({ ev, day, cals, now, withDay, compact }: { ev: CalEve
   }
   if (compact && !ev.allDay) time = hm(start);
   const sub = compact ? time : [time, ev.location].filter(Boolean).join(' · ');
-  return (
-    <div className={cx('ev', ev.allDay && '-allday', past && 'is-past', live && 'is-now')} style={color ? ({ ['--cal' as string]: color } as CSSProperties) : undefined} title={ev.title}>
-      <span className="ev-t">{ev.title}</span>
+  const cls = cx('ev', ev.allDay && '-allday', past && 'is-past', live && 'is-now', ev.repeats && 'is-repeat');
+  const style = color ? ({ ['--cal' as string]: color } as CSSProperties) : undefined;
+  const inner = (
+    <>
+      <span className="ev-t">{ev.title}{ev.repeats && <Icon name="repeat" size="s" className="ev-r" label="répété" />}</span>
       {!ev.allDay || ev.location ? <span className="ev-s">{ev.allDay ? ev.location : sub}</span> : null}
       {withDay && <span className="ev-d">{sameDay(start, now) ? 'aujourd’hui' : sameDay(start, addDays(now, 1)) ? 'demain' : start.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</span>}
-    </div>
+    </>
   );
+  if (onOpen) return <button type="button" className={cls} style={style} title={ev.title} onClick={() => onOpen(ev)} aria-label={`${ev.title}, ${ev.allDay ? 'journée' : sub} · modifier`}>{inner}</button>;
+  return <div className={cls} style={style} title={ev.title}>{inner}</div>;
 }
 
 /** Seven columns, Monday to Sunday. */
-export function WeekView({ agenda, monday, now }: { agenda: Agenda; monday: Date; now: Date }) {
+export function WeekView({ agenda, monday, now, onOpen }: { agenda: Agenda; monday: Date; now: Date; onOpen?: (ev: CalEvent) => void }) {
   return (
     <div className="week">
       {Array.from({ length: 7 }, (_, i) => {
@@ -87,7 +91,7 @@ export function WeekView({ agenda, monday, now }: { agenda: Agenda; monday: Date
         return (
           <div key={i} className={cx('day', today && 'is-today', past && 'is-past')}>
             <div className="day-head"><span className="day-name">{DAY_NAMES[day.getDay()]}</span><span className="day-num">{day.getDate()}</span></div>
-            {evs.length === 0 ? <span className="day-empty">Rien de prévu</span> : evs.map((e) => <EventItem key={e.id} ev={e} day={day} cals={agenda.calendars} now={now} />)}
+            {evs.length === 0 ? <span className="day-empty">Rien de prévu</span> : evs.map((e) => <EventItem key={e.id} ev={e} day={day} cals={agenda.calendars} now={now} onOpen={onOpen} />)}
           </div>
         );
       })}
@@ -96,7 +100,7 @@ export function WeekView({ agenda, monday, now }: { agenda: Agenda; monday: Date
 }
 
 /** One block per day with events (phone). Days without events are skipped except today. */
-export function DayList({ agenda, monday, now }: { agenda: Agenda; monday: Date; now: Date }) {
+export function DayList({ agenda, monday, now, onOpen }: { agenda: Agenda; monday: Date; now: Date; onOpen?: (ev: CalEvent) => void }) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
   return (
     <div className="daylist">
@@ -107,7 +111,7 @@ export function DayList({ agenda, monday, now }: { agenda: Agenda; monday: Date;
         return (
           <div key={day.toISOString()} className={cx('day', today && 'is-today')}>
             <div className="day-head"><span className="day-num">{day.getDate()}</span><span className="day-name">{today ? 'aujourd’hui' : DAY_LONG[day.getDay()]}</span></div>
-            {evs.length === 0 ? <span className="day-empty">Rien de prévu</span> : evs.map((e) => <EventItem key={e.id} ev={e} day={day} cals={agenda.calendars} now={now} />)}
+            {evs.length === 0 ? <span className="day-empty">Rien de prévu</span> : evs.map((e) => <EventItem key={e.id} ev={e} day={day} cals={agenda.calendars} now={now} onOpen={onOpen} />)}
           </div>
         );
       })}

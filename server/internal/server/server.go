@@ -23,17 +23,18 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"ahomelab.io/maison/internal/agenda"
 	"ahomelab.io/maison/internal/build"
 	"ahomelab.io/maison/internal/config"
 	"ahomelab.io/maison/internal/ha"
 	"ahomelab.io/maison/internal/journal"
 	"ahomelab.io/maison/internal/model"
 	"ahomelab.io/maison/internal/push"
+	"ahomelab.io/maison/internal/voice"
 )
 
 //go:embed all:ui/dist
@@ -57,6 +58,12 @@ type Server struct {
 	Push *push.Store
 	// Journal records every action (nil disables).
 	Journal *journal.Store
+	// Agenda is the family calendar (nil disables the Agenda tab's data).
+	Agenda *agenda.Store
+	// Transcriber / Understander: voice and typed quick entry (nil = not offered).
+	Transcriber  voice.Transcriber
+	Understander voice.Understander
+	agendaKick   chan struct{}
 
 	air    *model.Air
 	agenda *model.Agenda
@@ -83,7 +90,7 @@ func (s *Server) Run(ctx context.Context) {
 	ch, cancel := s.Src.Subscribe()
 	defer cancel()
 	go s.pollAir(ctx)
-	go s.pollAgenda(ctx)
+	go s.runAgenda(ctx)
 	for {
 		select {
 		case <-ctx.Done():
@@ -156,68 +163,6 @@ func (s *Server) pollAir(ctx context.Context) {
 
 // pollAgenda refreshes the shared calendars every 10 min: from the Monday of
 // the current week to five weeks later.
-func (s *Server) pollAgenda(ctx context.Context) {
-	cals := s.Cfg.Globals.Calendars
-	if len(cals) == 0 {
-		return
-	}
-	wait := time.Second
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-time.After(wait):
-		}
-		now := time.Now().In(s.Loc)
-		from := now
-		for from.Weekday() != time.Monday {
-			from = from.AddDate(0, 0, -1)
-		}
-		from = time.Date(from.Year(), from.Month(), from.Day(), 0, 0, 0, 0, s.Loc)
-		to := from.AddDate(0, 0, 35)
-		ag := model.Agenda{Available: true, From: from, To: to, UpdatedAt: now, Calendars: []model.Calendar{}, Events: []model.CalEvent{}}
-		failed := 0
-		for _, c := range cals {
-			name := c.Name
-			if name == "" {
-				name = c.Entity
-			}
-			ag.Calendars = append(ag.Calendars, model.Calendar{ID: c.Entity, Name: name, Color: c.Color})
-			fctx, cancel := context.WithTimeout(ctx, 20*time.Second)
-			evs, err := s.Src.CalendarEvents(fctx, c.Entity, from, to)
-			cancel()
-			if err != nil {
-				log.Printf("agenda %s : %v", c.Entity, err)
-				failed++
-				continue
-			}
-			for _, e := range evs {
-				id := e.UID
-				if id == "" {
-					id = c.Entity + "/" + e.Start.Format(time.RFC3339) + "/" + e.Summary
-				}
-				ag.Events = append(ag.Events, model.CalEvent{ID: c.Entity + ":" + id, Calendar: c.Entity, Title: e.Summary, Start: e.Start, End: e.End, AllDay: e.AllDay, Location: e.Location})
-			}
-		}
-		if failed == len(cals) {
-			ag.Available = false
-		}
-		sort.Slice(ag.Events, func(i, j int) bool { return ag.Events[i].Start.Before(ag.Events[j].Start) })
-		s.mu.Lock()
-		changed := s.agenda == nil || !reflect.DeepEqual(s.agenda.Events, ag.Events) || s.agenda.Available != ag.Available
-		s.agenda = &ag
-		s.mu.Unlock()
-		if changed {
-			s.rebuild(s.publish)
-			s.publishHome()
-		}
-		wait = 10 * time.Minute
-		if failed > 0 {
-			wait = 2 * time.Minute
-		}
-	}
-}
-
 // publishHome sends the whole house to every client (after air / agenda changes,
 // which the device/summary diff does not carry).
 func (s *Server) publishHome() {
@@ -314,6 +259,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/security/alarm", s.auth(s.mutating(s.alarm)))
 	mux.HandleFunc("POST /api/security/alarm/ack", s.auth(s.mutating(s.alarmAck)))
 	mux.HandleFunc("GET /api/journal", s.auth(s.apiJournal))
+	mux.HandleFunc("GET /api/agenda/events/{id}", s.auth(s.agendaGet))
+	mux.HandleFunc("POST /api/agenda/events", s.auth(s.mutating(s.agendaCreate)))
+	mux.HandleFunc("PUT /api/agenda/events/{id}", s.auth(s.mutating(s.agendaUpdate)))
+	mux.HandleFunc("DELETE /api/agenda/events/{id}", s.auth(s.mutating(s.agendaDelete)))
+	mux.HandleFunc("POST /api/agenda/parse", s.auth(s.mutating(s.agendaParse)))
+	mux.HandleFunc("POST /api/agenda/voice", s.auth(s.mutating(s.agendaVoice)))
 	mux.HandleFunc("GET /api/push/key", s.auth(s.pushKey))
 	mux.HandleFunc("POST /api/push/subscribe", s.auth(s.mutating(s.pushSubscribe)))
 	mux.HandleFunc("POST /api/push/unsubscribe", s.auth(s.mutating(s.pushUnsubscribe)))

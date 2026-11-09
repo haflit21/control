@@ -63,3 +63,9 @@
   .week { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .week .day:nth-child(n+5) { grid-column: span 1; }
 }
+/* événement cliquable (ouvre le formulaire) */
+button.ev { appearance: none; border: 0; width: 100%; text-align: left; font: inherit; cursor: pointer; }
+button.ev:hover { background: var(--surface-3); }
+button.ev.-allday:hover { background: color-mix(in srgb, var(--cal, var(--fg-muted)) 26%, transparent); }
+button.ev:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ev-r { width: 11px; height: 11px; margin-left: 4px; vertical-align: -1px; color: var(--fg-faint); }

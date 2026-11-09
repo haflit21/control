@@ -85,7 +85,7 @@ export function SecurityPage({ home, now, stale }: { home: Home; now: Date; stal
   );
 }
 
-const SCOPE_ICON: Record<JournalEntry['scope'], IconName> = { device: 'power', house: 'home', security: 'shield', push: 'bell' };
+const SCOPE_ICON: Record<JournalEntry['scope'], IconName> = { device: 'power', house: 'home', security: 'shield', push: 'bell', agenda: 'calendar' };
 
 function journalIcon(e: JournalEntry, home: Home): IconName {
   if (e.scope === 'device' && e.target) {
@@ -102,7 +102,7 @@ function journalWhere(e: JournalEntry, home: Home): string {
     const room = home.rooms.find((r) => r.devices.some((d) => d.id === e.target));
     if (room) return room.name;
   }
-  return { device: 'Appareil', house: 'Maison', security: 'Sécurité', push: 'Notifications' }[e.scope];
+  return { device: 'Appareil', house: 'Maison', security: 'Sécurité', push: 'Notifications', agenda: 'Agenda' }[e.scope];
 }
 
 function hhmm(iso: string, now: Date): string {

@@ -2,20 +2,28 @@ package server
 
 import (
 	"bufio"
+	"bytes"
+	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"ahomelab.io/maison/internal/agenda"
 	"ahomelab.io/maison/internal/config"
 	"ahomelab.io/maison/internal/demo"
 	"ahomelab.io/maison/internal/ha"
+	"ahomelab.io/maison/internal/journal"
 	"ahomelab.io/maison/internal/model"
 	"ahomelab.io/maison/internal/push"
+	"ahomelab.io/maison/internal/voice"
 )
 
 func newTestServer(t *testing.T) (*Server, *demo.Source) {
@@ -285,13 +293,17 @@ func TestMedia(t *testing.T) {
 
 func TestPush(t *testing.T) {
 	// a fake push service: "/dead" answers 410, everything else 201
+	var gotMu sync.Mutex
 	var got []string
+	nGot := func() int { gotMu.Lock(); defer gotMu.Unlock(); return len(got) }
 	ps := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/dead") {
 			w.WriteHeader(410)
 			return
 		}
+		gotMu.Lock()
 		got = append(got, r.URL.Path)
+		gotMu.Unlock()
 		w.WriteHeader(201)
 	}))
 	defer ps.Close()
@@ -351,7 +363,9 @@ func TestPush(t *testing.T) {
 		t.Fatalf("unsubscribe : %d count=%d", w.Code, st.Count())
 	}
 	st.Add(a)
+	gotMu.Lock()
 	got = nil
+	gotMu.Unlock()
 
 	// notifyAlerts: the first pass only records, then new warn/crit alerts notify, info and batteries do not
 	base := model.Home{Alerts: []model.Alert{{ID: "old", Level: "crit", Kind: "smoke", Title: "Déjà là"}}}
@@ -367,23 +381,162 @@ func TestPush(t *testing.T) {
 	trig.Globals.Alarm.Triggered = true
 	s.notifyAlerts(cur, trig)
 	deadline := time.Now().Add(3 * time.Second)
-	for len(got) < 2 && time.Now().Before(deadline) {
+	for nGot() < 2 && time.Now().Before(deadline) {
 		time.Sleep(20 * time.Millisecond)
 	}
-	if len(got) != 2 {
-		t.Fatalf("notifications envoyées : %d (attendu 2 : fenêtre + alarme)", len(got))
+	if nGot() != 2 {
+		t.Fatalf("notifications envoyées : %d (attendu 2 : fenêtre + alarme)", nGot())
 	}
 	// resolved then back: notifies again
 	s.notifyAlerts(trig, base)
 	s.notifyAlerts(base, cur)
 	deadline = time.Now().Add(3 * time.Second)
-	for len(got) < 3 && time.Now().Before(deadline) {
+	for nGot() < 3 && time.Now().Before(deadline) {
 		time.Sleep(20 * time.Millisecond)
 	}
-	if len(got) != 3 {
-		t.Fatalf("après retour de l'alerte : %d", len(got))
+	if nGot() != 3 {
+		t.Fatalf("après retour de l'alerte : %d", nGot())
 	}
 	if shortUA("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/120.0 Safari/537.36") != "Mac · Chrome" {
 		t.Fatal("shortUA")
+	}
+}
+
+type fakeTr struct{ text string }
+
+func (f fakeTr) Transcribe(ctx context.Context, audio io.Reader, ct string) (string, error) {
+	b, _ := io.ReadAll(audio)
+	if len(b) < 200 || !strings.HasPrefix(ct, "audio/") {
+		return "", fmt.Errorf("audio inattendu")
+	}
+	return f.text, nil
+}
+
+type fakeUn struct{ err error }
+
+func (f fakeUn) Understand(ctx context.Context, text string, c voice.Context) (voice.Draft, error) {
+	if f.err != nil {
+		return voice.Draft{}, f.err
+	}
+	if len(c.Calendars) == 0 || c.Now.IsZero() {
+		return voice.Draft{}, fmt.Errorf("contexte vide")
+	}
+	return voice.Draft{Title: "Dentiste · Marion", Date: c.Now.AddDate(0, 0, 3).Format("2006-01-02"), Start: "10h", Calendar: "inconnu"}, nil
+}
+
+func TestAgendaAPI(t *testing.T) {
+	s, _ := newTestServer(t)
+	st, _ := agenda.Open(t.TempDir())
+	s.Agenda = st
+	st.OnChange = s.AgendaChanged
+	js, _ := journal.Open(t.TempDir())
+	s.Journal = js
+	h := s.Handler()
+	call := func(method, path string, body io.Reader, ct string) *httptest.ResponseRecorder {
+		req := httptest.NewRequest(method, path, body)
+		req.AddCookie(&http.Cookie{Name: cookieName, Value: s.Token})
+		req.Header.Set("X-Maison", "1")
+		if ct != "" {
+			req.Header.Set("Content-Type", ct)
+		}
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		return w
+	}
+	today := time.Now().In(s.Loc).Format("2006-01-02")
+	// create
+	w := call("POST", "/api/agenda/events", strings.NewReader(`{"title":"Poubelle jaune","calendar":"poubelles","date":"`+today+`","allDay":true,"repeat":{"freq":"weekly"}}`), "application/json")
+	if w.Code != 201 {
+		t.Fatalf("création : %d %s", w.Code, w.Body)
+	}
+	var created struct{ Event agenda.Event }
+	_ = json.Unmarshal(w.Body.Bytes(), &created)
+	if created.Event.ID == "" || created.Event.CreatedBy == "" {
+		t.Fatalf("créé : %+v", created.Event)
+	}
+	// invalid
+	if w := call("POST", "/api/agenda/events", strings.NewReader(`{"title":"","date":"`+today+`","allDay":true}`), "application/json"); w.Code != 400 || !strings.Contains(w.Body.String(), "Le titre est obligatoire") {
+		t.Fatalf("titre vide : %d %s", w.Code, w.Body)
+	}
+	if w := call("POST", "/api/agenda/events", strings.NewReader(`{"title":"x","calendar":"boulot","date":"`+today+`","allDay":true}`), "application/json"); w.Code != 400 {
+		t.Fatalf("calendrier inconnu : %d", w.Code)
+	}
+	// the home model carries the occurrences (5 weeks of a weekly event)
+	ag := s.AgendaModel(time.Now().In(s.Loc))
+	if len(ag.Events) != 5 || ag.Events[0].EventID != created.Event.ID || !ag.Events[0].Repeats || ag.Input.Text || ag.Input.Audio {
+		t.Fatalf("modèle : %d événements, %+v", len(ag.Events), ag.Input)
+	}
+	// get / update / delete
+	if w := call("GET", "/api/agenda/events/"+created.Event.ID, nil, ""); w.Code != 200 || !strings.Contains(w.Body.String(), "Poubelle jaune") {
+		t.Fatalf("lecture : %d", w.Code)
+	}
+	if w := call("PUT", "/api/agenda/events/"+created.Event.ID, strings.NewReader(`{"title":"Poubelle jaune et verre","calendar":"poubelles","date":"`+today+`","allDay":true}`), "application/json"); w.Code != 200 {
+		t.Fatalf("modification : %d %s", w.Code, w.Body)
+	}
+	if e, _ := st.Get(created.Event.ID); e.Title != "Poubelle jaune et verre" || e.Repeat != nil {
+		t.Fatalf("modifié : %+v", e)
+	}
+	if w := call("PUT", "/api/agenda/events/nope", strings.NewReader(`{"title":"x","date":"`+today+`","allDay":true}`), "application/json"); w.Code != 404 {
+		t.Fatalf("modification inconnue : %d", w.Code)
+	}
+	if w := call("DELETE", "/api/agenda/events/"+created.Event.ID, nil, ""); w.Code != 200 || st.Count() != 0 {
+		t.Fatalf("suppression : %d", w.Code)
+	}
+	// journal: add, update, delete
+	var texts []string
+	for _, e := range js.Recent(0) {
+		if e.Scope == "agenda" {
+			texts = append(texts, e.Text)
+		}
+	}
+	if len(texts) != 3 || !strings.HasPrefix(texts[0], "Événement supprimé : Poubelle jaune et verre") || !strings.Contains(texts[2], "chaque semaine") {
+		t.Fatalf("journal : %v", texts)
+	}
+	// quick entry: not configured
+	if w := call("POST", "/api/agenda/parse", strings.NewReader(`{"text":"x"}`), "application/json"); w.Code != 501 {
+		t.Fatalf("sans compréhension : %d", w.Code)
+	}
+	s.Understander = fakeUn{}
+	w = call("POST", "/api/agenda/parse", strings.NewReader(`{"text":"dentiste de Marion jeudi à 10h"}`), "application/json")
+	var res struct {
+		Draft   voice.Draft
+		Warning string
+	}
+	_ = json.Unmarshal(w.Body.Bytes(), &res)
+	if w.Code != 200 || res.Draft.Start != "10:00" || res.Draft.End != "11:00" && res.Draft.End != "" || res.Draft.Calendar != "famille" || res.Draft.Transcript != "dentiste de Marion jeudi à 10h" {
+		t.Fatalf("phrase : %d %+v", w.Code, res.Draft)
+	}
+	if st.Count() != 0 {
+		t.Fatal("la saisie rapide ne doit rien enregistrer")
+	}
+	// voice
+	if w := call("POST", "/api/agenda/voice", bytes.NewReader(make([]byte, 500)), "audio/mp4"); w.Code != 501 {
+		t.Fatalf("voix sans transcription : %d", w.Code)
+	}
+	s.Transcriber = fakeTr{text: "dentiste de Marion jeudi à 10h"}
+	if ag := s.AgendaModel(time.Now()); !ag.Input.Text || !ag.Input.Audio {
+		t.Fatalf("modes de saisie : %+v", ag.Input)
+	}
+	if w := call("POST", "/api/agenda/voice", bytes.NewReader(make([]byte, 500)), "text/plain"); w.Code != 415 {
+		t.Fatalf("type : %d", w.Code)
+	}
+	if w := call("POST", "/api/agenda/voice", bytes.NewReader(make([]byte, 10)), "audio/webm"); w.Code != 400 {
+		t.Fatalf("vide : %d", w.Code)
+	}
+	w = call("POST", "/api/agenda/voice", bytes.NewReader(make([]byte, 500)), "audio/mp4")
+	_ = json.Unmarshal(w.Body.Bytes(), &res)
+	if w.Code != 200 || res.Draft.Title != "Dentiste · Marion" || res.Draft.Transcript == "" {
+		t.Fatalf("voix : %d %s", w.Code, w.Body)
+	}
+	// understood failed but heard: the transcript comes back as the title, with a warning
+	s.Understander = fakeUn{err: fmt.Errorf("HTTP 529 overloaded")}
+	w = call("POST", "/api/agenda/voice", bytes.NewReader(make([]byte, 500)), "audio/webm")
+	res = struct {
+		Draft   voice.Draft
+		Warning string
+	}{}
+	_ = json.Unmarshal(w.Body.Bytes(), &res)
+	if w.Code != 200 || res.Draft.Title != "dentiste de Marion jeudi à 10h" || !strings.Contains(res.Warning, "overloaded") {
+		t.Fatalf("voix non comprise : %d %s", w.Code, w.Body)
 	}
 }

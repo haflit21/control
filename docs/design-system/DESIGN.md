@@ -153,8 +153,18 @@ Règles transversales inchangées : valeur absente = « — » + raison dans `ti
 - Carte lampe : plus de bouton dans un bouton. `.dev-open` (bouton transparent qui couvre la carte, « réglages ») et le bouton marche sont frères ; le doigt ne voit pas de différence.
 - Cibles ≥ 44 px sans grossir le dessin : zone de toucher étendue par un `::before` transparent (bascules, puces, marche, pas à pas, navigation de l'agenda, segment d'apparence), curseurs à 44 px de haut, lien « Semaine » avec marge négative.
 
+## 6k. Agenda en écriture et saisie vocale — décisions
+
+- L'agenda appartient à l'app (plus de calendriers HA) ; la saisie se fait dans une feuille `.sheet.-form` qui défile, champs de 44 px en 16 px (pas de zoom iOS), sélecteurs natifs de date et d'heure.
+- En tête de la feuille, une **saisie rapide** (`.quick`) : une phrase tapée ou dictée pré-remplit le formulaire, la transcription est rappelée (`.heard`, « Compris : … — vérifie avant d'enregistrer »). Jamais d'enregistrement sans « Enregistrer ».
+- Le micro (`.mic`) est terracotta au repos et **rouge qui respire** à l'écoute : l'anneau suit le niveau sonore (`--lvl`). L'écoute s'arrête seule après une pause (1,6 s après la parole) ou au toucher du carré ; « Je comprends ta phrase… » (`.thinking`) pendant l'aller-retour.
+- Le micro de la page démarre l'enregistrement dans le toucher même (Safari n'autorise l'audio que là), puis la feuille s'ouvre en mode écoute.
+- Calendrier : pastilles colorées (`.cal-pick`) ; répétition : segment de cinq choix qui passe à la ligne ; un événement répété porte une petite icône `repeat` et la feuille prévient que la modification vaut pour toute la série. Suppression en deux temps (icône poubelle → « Supprimer ? »).
+- Date et heures : la date sur sa ligne au téléphone, les trois côte à côte dès 560 px.
+
 ## 7. Journal
 
+- **2026-11-09 · v2.14** — section 24 Formulaire (`.sheet.-form`, `.field`, `.input`, `.quick`, `.heard`, `.mic`, `.listen`, `.thinking`, `.cal-pick`, `.agenda-tools`), `button.ev` cliquable, icônes `repeat`, `mic`, `trash`, `stop`.
 - **2026-11-09 · v2.13** — apparence par appareil (`.theme-row`, `.sheet-sec`), section 23 Accessibilité (`.dev-open`, zones de toucher), `.sec h2`, `.sec-link` hors des sections.
 - **2026-11-09 · v2.12** — journal des actions (carte en bas de Sécurité, lignes sur 2–3 colonnes, heure tabulaire `.jr-time`, « Voir plus »).
 - **2026-11-09 · v2.11** — notifications push (ligne dans la cloche, cloche sur téléphone, `sw.js` `push`/`notificationclick`, badge monochrome `icons/badge.png`).

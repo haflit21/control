@@ -18,7 +18,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -27,6 +26,8 @@ import (
 )
 
 type Client struct {
+	// DialTimeout bounds the WebSocket handshake (default 15 s).
+	DialTimeout time.Duration
 	*Store
 	URL      string // http://192.168.10.242:8123
 	Token    string
@@ -54,10 +55,14 @@ func NewClient(url, token string, entities []string, weather string) *Client {
 func (c *Client) Run(ctx context.Context) {
 	backoff := time.Second
 	for {
+		started := time.Now()
 		err := c.session(ctx)
 		c.SetConnected(false)
 		if ctx.Err() != nil {
 			return
+		}
+		if time.Since(started) > time.Minute {
+			backoff = time.Second // the connection had been fine: retry quickly
 		}
 		log.Printf("home assistant : déconnecté (%v) ; nouvel essai dans %s", err, backoff)
 		select {
@@ -86,13 +91,33 @@ type wsMsg struct {
 
 func (c *Client) session(ctx context.Context) error {
 	wsURL := strings.Replace(strings.Replace(c.URL, "https://", "wss://", 1), "http://", "ws://", 1) + "/api/websocket"
-	dctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	dt := c.DialTimeout
+	if dt == 0 {
+		dt = 15 * time.Second
+	}
+	dctx, cancel := context.WithTimeout(ctx, dt)
 	conn, err := httpx.DialWS(dctx, wsURL, c.Insecure)
 	cancel()
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
+	// when the session ends, forget the connection and fail the requests still waiting,
+	// so callers wait for the next connection instead of writing to a closed socket
+	defer func() {
+		c.mu.Lock()
+		if c.conn == conn {
+			c.conn = nil
+		}
+		for id, ch := range c.pending {
+			select {
+			case ch <- json.RawMessage(`{"__error":"connexion à Home Assistant coupée"}`):
+			default:
+			}
+			delete(c.pending, id)
+		}
+		c.mu.Unlock()
+	}()
 	var m wsMsg
 	if err := conn.ReadJSON(&m); err != nil || m.Type != "auth_required" {
 		return fmt.Errorf("auth_required attendu : %v %s", err, m.Type)
@@ -183,7 +208,7 @@ func (c *Client) session(ctx context.Context) error {
 	c.SetConnected(true)
 	log.Printf("home assistant : connecté, %d entités suivies", len(keep))
 
-	ping := time.NewTicker(30 * time.Second)
+	ping := time.NewTicker(20 * time.Second)
 	defer ping.Stop()
 	for {
 		select {
@@ -242,21 +267,27 @@ func (c *Client) send(cmd map[string]any) (int, error) {
 }
 
 // request sends a command and waits for its result.
+// errNotSent: the command never left (no connection, or the write failed) — safe to retry.
+var errNotSent = errors.New("home assistant : non connecté")
+
 func (c *Client) request(ctx context.Context, cmd map[string]any) (json.RawMessage, error) {
 	ch := make(chan json.RawMessage, 1)
 	c.mu.Lock()
 	if c.conn == nil {
 		c.mu.Unlock()
-		return nil, errors.New("home assistant : non connecté")
+		return nil, errNotSent
 	}
 	id := c.nextID
 	c.nextID++
 	c.pending[id] = ch
 	cmd["id"] = id
 	err := c.conn.WriteJSON(cmd)
+	if err != nil {
+		delete(c.pending, id)
+	}
 	c.mu.Unlock()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w (%v)", errNotSent, err)
 	}
 	select {
 	case <-ctx.Done():
@@ -283,8 +314,38 @@ func (c *Client) CallService(ctx context.Context, domain, service string, data m
 	if len(data) > 0 {
 		cmd["service_data"] = data
 	}
-	_, err := c.request(ctx, cmd)
-	return err
+	// during a reconnection (a few seconds), wait for HA rather than failing the tap;
+	// a command that was never sent is retried once, one that was sent never is
+	for attempt := 0; ; attempt++ {
+		if err := c.waitConnected(ctx, 8*time.Second); err != nil {
+			return err
+		}
+		_, err := c.request(ctx, cmd)
+		if err == nil || !errors.Is(err, errNotSent) || attempt == 1 {
+			return err
+		}
+	}
+}
+
+// waitConnected returns once the session is up (or after max / ctx).
+func (c *Client) waitConnected(ctx context.Context, max time.Duration) error {
+	deadline := time.Now().Add(max)
+	for {
+		c.mu.Lock()
+		up := c.conn != nil
+		c.mu.Unlock()
+		if up && c.Connected() {
+			return nil
+		}
+		if time.Now().After(deadline) {
+			return errors.New("home assistant injoignable (reconnexion en cours)")
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(150 * time.Millisecond):
+		}
+	}
 }
 
 func (c *Client) rest(ctx context.Context, path string) (*http.Response, error) {
@@ -309,64 +370,6 @@ func (c *Client) CameraSnapshot(ctx context.Context, entity string) ([]byte, str
 	return b, resp.Header.Get("Content-Type"), err
 }
 
-// CalendarEvents calls GET /api/calendars/{entity}?start=…&end=… . Dates are
-// either {"dateTime": RFC3339} or {"date": "YYYY-MM-DD"} (all-day).
-func (c *Client) CalendarEvents(ctx context.Context, entity string, from, to time.Time) ([]CalendarEvent, error) {
-	q := url.Values{}
-	q.Set("start", from.UTC().Format(time.RFC3339))
-	q.Set("end", to.UTC().Format(time.RFC3339))
-	resp, err := c.rest(ctx, "/api/calendars/"+url.PathEscape(entity)+"?"+q.Encode())
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("calendrier %s : HTTP %d", entity, resp.StatusCode)
-	}
-	var raw []struct {
-		UID         string            `json:"uid"`
-		Summary     string            `json:"summary"`
-		Location    string            `json:"location"`
-		Description string            `json:"description"`
-		Start       map[string]string `json:"start"`
-		End         map[string]string `json:"end"`
-	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(&raw); err != nil {
-		return nil, fmt.Errorf("calendrier %s : %w", entity, err)
-	}
-	out := make([]CalendarEvent, 0, len(raw))
-	for _, e := range raw {
-		ev := CalendarEvent{UID: e.UID, Summary: e.Summary, Location: e.Location}
-		var ok bool
-		if ev.Start, ev.AllDay, ok = parseCalDate(e.Start, from.Location()); !ok {
-			continue
-		}
-		if ev.End, _, ok = parseCalDate(e.End, from.Location()); !ok {
-			ev.End = ev.Start
-		}
-		out = append(out, ev)
-	}
-	return out, nil
-}
-
-func parseCalDate(m map[string]string, loc *time.Location) (time.Time, bool, bool) {
-	if v := m["dateTime"]; v != "" {
-		t, err := time.Parse(time.RFC3339, v)
-		if err != nil {
-			return time.Time{}, false, false
-		}
-		return t.In(loc), false, true
-	}
-	if v := m["date"]; v != "" {
-		t, err := time.ParseInLocation("2006-01-02", v, loc)
-		if err != nil {
-			return time.Time{}, false, false
-		}
-		return t, true, true
-	}
-	return time.Time{}, false, false
-}
-
 func (c *Client) CameraStream(ctx context.Context, entity string, w io.Writer, setHeader func(string)) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.URL+"/api/camera_proxy_stream/"+entity, nil)
 	if err != nil {
@@ -384,4 +387,55 @@ func (c *Client) CameraStream(ctx context.Context, entity string, w io.Writer, s
 	setHeader(resp.Header.Get("Content-Type"))
 	_, err = io.Copy(w, resp.Body)
 	return err
+}
+
+// EntityIDs lists every entity HA knows (REST /api/states), for `maison check`.
+func (c *Client) EntityIDs(ctx context.Context) (map[string]string, error) {
+	resp, err := c.rest(ctx, "/api/states")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("états : HTTP %d", resp.StatusCode)
+	}
+	var raw []struct {
+		EntityID   string         `json:"entity_id"`
+		Attributes map[string]any `json:"attributes"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 32<<20)).Decode(&raw); err != nil {
+		return nil, err
+	}
+	out := make(map[string]string, len(raw))
+	for _, s := range raw {
+		name, _ := s.Attributes["friendly_name"].(string)
+		out[s.EntityID] = name
+	}
+	return out, nil
+}
+
+// Services lists "domain.service" known to HA (REST /api/services), for `maison check`.
+func (c *Client) Services(ctx context.Context) (map[string]bool, error) {
+	resp, err := c.rest(ctx, "/api/services")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("services : HTTP %d", resp.StatusCode)
+	}
+	var raw []struct {
+		Domain   string                     `json:"domain"`
+		Services map[string]json.RawMessage `json:"services"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 32<<20)).Decode(&raw); err != nil {
+		return nil, err
+	}
+	out := map[string]bool{}
+	for _, d := range raw {
+		for s := range d.Services {
+			out[d.Domain+"."+s] = true
+		}
+	}
+	return out, nil
 }

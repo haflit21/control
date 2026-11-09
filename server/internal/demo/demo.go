@@ -5,6 +5,7 @@
 package demo
 
 import (
+	"ahomelab.io/maison/internal/agenda"
 	"ahomelab.io/maison/internal/air"
 	"ahomelab.io/maison/internal/model"
 	"context"
@@ -561,54 +562,6 @@ func (s *Source) CameraStream(ctx context.Context, entity string, w io.Writer, s
 	return fmt.Errorf("mode démo : pas de flux vidéo")
 }
 
-// CalendarEvents invents a plausible family week: a few recurring things,
-// anchored on the current week so the agenda is never empty.
-func (s *Source) CalendarEvents(ctx context.Context, entity string, from, to time.Time) ([]ha.CalendarEvent, error) {
-	loc := from.Location()
-	// Monday of the week containing `from`
-	d := from
-	for d.Weekday() != time.Monday {
-		d = d.AddDate(0, 0, -1)
-	}
-	monday := time.Date(d.Year(), d.Month(), d.Day(), 0, 0, 0, 0, loc)
-	at := func(day, h, m int) time.Time {
-		return monday.AddDate(0, 0, day).Add(time.Duration(h)*time.Hour + time.Duration(m)*time.Minute)
-	}
-	var out []ha.CalendarEvent
-	add := func(uid, title, where string, start, end time.Time, allDay bool) {
-		out = append(out, ha.CalendarEvent{UID: uid, Summary: title, Location: where, Start: start, End: end, AllDay: allDay})
-	}
-	for w := 0; w < 5; w++ {
-		off := w * 7
-		switch entity {
-		case "calendar.famille", "calendar.demo":
-			add(fmt.Sprintf("creche-%d", w), "Crèche · dépôt", "Crèche des Lilas", at(off+0, 8, 15), at(off+0, 8, 45), false)
-			add(fmt.Sprintf("piscine-%d", w), "Bébé nageur", "Piscine de Vénissieux", at(off+2, 17, 30), at(off+2, 18, 15), false)
-			add(fmt.Sprintf("courses-%d", w), "Courses", "", at(off+5, 10, 0), at(off+5, 11, 30), false)
-			add(fmt.Sprintf("dej-%d", w), "Déjeuner chez les parents", "Lyon 8e", at(off+6, 12, 0), at(off+6, 15, 0), false)
-			if w == 0 {
-				add("pediatre", "Pédiatre · vaccin", "Cabinet Dr Martin", at(3, 9, 30), at(3, 10, 0), false)
-				add("anniv", "Anniversaire de Nora", "", at(4, 0, 0), at(5, 0, 0), true)
-			}
-			if w == 1 {
-				add("plombier", "Plombier · chaudière", "Maison", at(off+1, 14, 0), at(off+1, 16, 0), false)
-			}
-		default:
-			add(fmt.Sprintf("tri-%d", w), "Poubelle jaune", "", at(off+1, 0, 0), at(off+2, 0, 0), true)
-			if w%2 == 0 {
-				add(fmt.Sprintf("verre-%d", w), "Verre", "", at(off+4, 0, 0), at(off+5, 0, 0), true)
-			}
-		}
-	}
-	var in []ha.CalendarEvent
-	for _, e := range out {
-		if e.End.After(from) && e.Start.Before(to) {
-			in = append(in, e)
-		}
-	}
-	return in, nil
-}
-
 // Air is the demo air-quality fetcher: a plausible autumn day in the Lyon area.
 type Air struct{}
 
@@ -628,4 +581,42 @@ func (Air) Fetch(ctx context.Context, lat, lon float64) (model.Air, error) {
 	a := air.FromOpenMeteo(cur, times, []float64{28, 45, 38}, now)
 	a.Source = "démo"
 	return a, nil
+}
+
+// SeedAgenda fills an in-memory agenda with a plausible family life around
+// `now`: weekly routines, a fortnightly lunch, the bins, a birthday.
+func SeedAgenda(st *agenda.Store, calendars []string, now time.Time) {
+	fam, bins := "", ""
+	for i, c := range calendars {
+		if i == 0 {
+			fam = c
+		}
+		if c == "poubelles" {
+			bins = c
+		}
+	}
+	if bins == "" {
+		bins = fam
+	}
+	monday := now
+	for monday.Weekday() != time.Monday {
+		monday = monday.AddDate(0, 0, -1)
+	}
+	d := func(off int) string { return monday.AddDate(0, 0, off).Format("2006-01-02") }
+	weekly := &agenda.Repeat{Freq: agenda.Weekly}
+	for _, e := range []agenda.Event{
+		{Calendar: fam, Title: "Crèche · dépôt", Location: "Crèche des Lilas", Date: d(0), Start: "08:15", End: "08:45", Repeat: weekly},
+		{Calendar: fam, Title: "Bébé nageur", Location: "Piscine de Vénissieux", Date: d(2), Start: "17:30", End: "18:15", Repeat: weekly},
+		{Calendar: fam, Title: "Courses", Date: d(5), Start: "10:00", End: "11:30", Repeat: weekly},
+		{Calendar: fam, Title: "Déjeuner chez les parents", Location: "Lyon 8e", Date: d(6), Start: "12:00", End: "15:00", Repeat: &agenda.Repeat{Freq: agenda.Biweekly}},
+		{Calendar: fam, Title: "Pédiatre · vaccin", Location: "Cabinet Dr Martin", Date: d(3), Start: "09:30", End: "10:00"},
+		{Calendar: fam, Title: "Anniversaire de Nora", Date: d(4), AllDay: true, Repeat: &agenda.Repeat{Freq: agenda.Yearly}},
+		{Calendar: fam, Title: "Plombier · chaudière", Location: "Maison", Date: d(8), Start: "14:00", End: "16:00"},
+		{Calendar: bins, Title: "Poubelle jaune", Date: d(1), AllDay: true, Repeat: weekly},
+		{Calendar: bins, Title: "Verre", Date: d(4), AllDay: true, Repeat: &agenda.Repeat{Freq: agenda.Biweekly}},
+	} {
+		if err := e.Validate(calendars); err == nil {
+			_, _ = st.Add(e, "Démo")
+		}
+	}
 }

@@ -24,6 +24,7 @@ type fakeHA struct {
 	token  string
 	states []Entity
 	push   chan Entity
+	kick   chan struct{} // closes the current connection (simulates a network drop)
 }
 
 func (f *fakeHA) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +67,8 @@ func (f *fakeHA) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 	for {
 		select {
+		case <-f.kick:
+			return
 		case e := <-f.push:
 			send(map[string]any{"id": subID, "type": "event", "event": map[string]any{"event_type": "state_changed", "data": map[string]any{"entity_id": e.EntityID, "new_state": e}}})
 		case m, ok := <-msgs:
@@ -205,31 +208,94 @@ func TestClientBadToken(t *testing.T) {
 	}
 }
 
-func TestCalendarEvents(t *testing.T) {
+func TestEntityIDsAndServices(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/calendars/calendar.famille" || r.Header.Get("Authorization") != "Bearer tok" {
-			t.Errorf("requête : %s %s", r.URL.Path, r.Header.Get("Authorization"))
+		switch r.URL.Path {
+		case "/api/states":
+			_, _ = w.Write([]byte(`[{"entity_id":"calendar.maison","attributes":{"friendly_name":"Maison"}},{"entity_id":"light.x","attributes":{}}]`))
+		case "/api/services":
+			_, _ = w.Write([]byte(`[{"domain":"light","services":{"turn_on":{},"turn_off":{}}},{"domain":"tado","services":{"set_climate_timer":{}}}]`))
+		default:
+			w.WriteHeader(404)
 		}
-		if r.URL.Query().Get("start") == "" || r.URL.Query().Get("end") == "" {
-			t.Errorf("start/end manquants : %s", r.URL.RawQuery)
-		}
-		_, _ = w.Write([]byte(`[{"uid":"a","summary":"Pédiatre","location":"Lyon","start":{"dateTime":"2026-11-12T09:30:00+01:00"},"end":{"dateTime":"2026-11-12T10:00:00+01:00"}},{"uid":"b","summary":"Anniversaire","start":{"date":"2026-11-13"},"end":{"date":"2026-11-14"}},{"summary":"cassé","start":{}}]`))
 	}))
 	defer srv.Close()
-	c := NewClient(srv.URL, "tok", []string{"calendar.famille"}, "")
-	loc, _ := time.LoadLocation("Europe/Paris")
-	from := time.Date(2026, 11, 9, 0, 0, 0, 0, loc)
-	evs, err := c.CalendarEvents(context.Background(), "calendar.famille", from, from.AddDate(0, 0, 7))
-	if err != nil {
-		t.Fatal(err)
+	c := NewClient(srv.URL, "tok", nil, "")
+	ids, err := c.EntityIDs(context.Background())
+	if err != nil || len(ids) != 2 || ids["calendar.maison"] != "Maison" {
+		t.Fatalf("états : %v %v", ids, err)
 	}
-	if len(evs) != 2 {
-		t.Fatalf("%d événements : %+v", len(evs), evs)
+	svc, err := c.Services(context.Background())
+	if err != nil || !svc["light.turn_off"] || !svc["tado.set_climate_timer"] || svc["cover.open_cover"] {
+		t.Fatalf("services : %v %v", svc, err)
 	}
-	if evs[0].Summary != "Pédiatre" || evs[0].AllDay || evs[0].Start.Hour() != 9 || evs[0].Start.Location() != loc {
-		t.Errorf("événement 1 : %+v", evs[0])
+}
+
+// The handshake deadline must not stay on the connection: with a 300 ms dial
+// timeout, the session must still be the same one and receive events 1 s later.
+// (Bug seen on the real HA: "read … i/o timeout" 15 s after each connection.)
+func TestSessionOutlivesDialTimeout(t *testing.T) {
+	now := time.Now().Truncate(time.Second)
+	f := &fakeHA{t: t, token: "secret", push: make(chan Entity, 4), states: []Entity{{EntityID: "light.a", State: "off", Attributes: map[string]any{}, LastChanged: now, LastUpdated: now}}}
+	ts := httptest.NewServer(f)
+	defer ts.Close()
+	c := NewClient(ts.URL, "secret", []string{"light.a"}, "")
+	c.DialTimeout = 300 * time.Millisecond
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	go c.Run(ctx)
+	ch, stop := c.Subscribe()
+	defer stop()
+	for !c.Connected() {
+		select {
+		case <-ctx.Done():
+			t.Fatal("pas connecté")
+		case <-ch:
+		}
 	}
-	if !evs[1].AllDay || evs[1].Start.Day() != 13 || evs[1].End.Day() != 14 {
-		t.Errorf("événement 2 : %+v", evs[1])
+	drops := 0
+	go func() {
+		for range ch {
+			if !c.Connected() {
+				drops++
+			}
+		}
+	}()
+	time.Sleep(time.Second)
+	f.push <- Entity{EntityID: "light.a", State: "on", Attributes: map[string]any{}, LastChanged: now, LastUpdated: now}
+	deadline := time.Now().Add(2 * time.Second)
+	for c.Snapshot()["light.a"].State != "on" {
+		if time.Now().After(deadline) {
+			t.Fatal("événement non reçu après le délai de connexion : la connexion a expiré")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if drops > 0 {
+		t.Fatalf("%d déconnexion(s) pendant la session", drops)
+	}
+}
+
+// A tap during a reconnection waits for HA instead of failing.
+func TestCallServiceAcrossReconnect(t *testing.T) {
+	f := &fakeHA{t: t, token: "secret", push: make(chan Entity), kick: make(chan struct{}, 1)}
+	ts := httptest.NewServer(f)
+	defer ts.Close()
+	c := NewClient(ts.URL, "secret", nil, "")
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	go c.Run(ctx)
+	for !c.Connected() {
+		select {
+		case <-ctx.Done():
+			t.Fatal("pas connecté")
+		case <-time.After(20 * time.Millisecond):
+		}
+	}
+	f.kick <- struct{}{} // the server drops the connection
+	for c.Connected() {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if err := c.CallService(ctx, "light", "turn_on", map[string]any{"entity_id": "light.a"}); err != nil {
+		t.Fatalf("commande pendant la reconnexion : %v", err)
 	}
 }
