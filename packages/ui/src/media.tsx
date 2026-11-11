@@ -126,10 +126,10 @@ function clock(sec: number): string {
  * title, artist; the progress bar to seek in a track, or « En direct » for a
  * radio; previous / play-pause / next; the volume.
  */
-export function MediaPlayer({ title, sub, app, cover, radio, playing, pending, elapsed, elapsedAt, duration, canPrev, canNext, canSeek, volume, onToggle, onPrev, onNext, onSeek, onVolume }: {
-  title: string; sub?: string; app?: string; cover?: string; radio?: Radio; playing: boolean; pending?: boolean;
+export function MediaPlayer({ title, sub, app, cover, radio, playing, off, pending, elapsed, elapsedAt, duration, canPrev, canNext, canSeek, volume, onToggle, onPrev, onNext, onSeek, onVolume, onPowerOff }: {
+  title: string; sub?: string; app?: string; cover?: string; radio?: Radio; playing: boolean; off?: boolean; pending?: boolean;
   elapsed?: number; elapsedAt?: string; duration?: number; canPrev?: boolean; canNext?: boolean; canSeek?: boolean; volume?: number;
-  onToggle: () => void; onPrev?: () => void; onNext?: () => void; onSeek?: (sec: number) => void; onVolume?: (pct: number) => void;
+  onToggle: () => void; onPrev?: () => void; onNext?: () => void; onSeek?: (sec: number) => void; onVolume?: (pct: number) => void; onPowerOff?: () => void;
 }) {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [cover]);
@@ -147,14 +147,27 @@ export function MediaPlayer({ title, sub, app, cover, radio, playing, pending, e
     if (!Number.isNaN(at)) pos += Math.max(0, (now - at) / 1000);
   }
   if (pos != null && duration != null) pos = Math.min(pos, duration);
+  // While the finger is on the bar: the value under it. After a seek: the asked
+  // position, until the speaker reports one near it (it keeps sending the old
+  // one for a moment), at most 8 s.
   const [draft, setDraft] = useState<number | undefined>(undefined);
-  const dragging = useRef(false);
-  useEffect(() => { if (!dragging.current) setDraft(undefined); }, [elapsed, elapsedAt]);
+  const hold = useRef<{ target: number; at: number; playing: boolean } | null>(null);
+  if (hold.current) {
+    const h = hold.current;
+    const expected = h.target + (h.playing ? (now - h.at) / 1000 : 0);
+    if ((pos != null && Math.abs(pos - expected) < 3) || Date.now() - h.at > 8000) hold.current = null;
+    else pos = duration != null ? Math.min(expected, duration) : expected;
+  }
   const shown = draft ?? pos ?? 0;
-  const commit = (v: number) => { dragging.current = false; setDraft(v); onSeek?.(v); };
+  const commit = (v: number) => {
+    setDraft(undefined);
+    hold.current = { target: v, at: Date.now(), playing };
+    setNow(Date.now());
+    onSeek?.(v);
+  };
   const live = !!radio;
   return (
-    <div className={cx('mp', !playing && 'is-idle', pending && 'is-pending')}>
+    <div className={cx('mp', !playing && 'is-idle', off && 'is-off', pending && 'is-pending')}>
       <div className="mp-head">
         {radio ? <StationLogo radio={radio} className="mp-cover" />
           : cover && !failed ? <img className="mp-cover" src={cover} alt="" onError={() => setFailed(true)} />
@@ -164,6 +177,7 @@ export function MediaPlayer({ title, sub, app, cover, radio, playing, pending, e
           <span className="mp-t">{title}</span>
           {sub && <span className="mp-s">{sub}</span>}
         </span>
+        {onPowerOff && <button type="button" className="mp-btn -power" aria-label="Éteindre l’enceinte" disabled={off} onClick={onPowerOff}><Icon name="power" /></button>}
       </div>
       {live ? (
         <div className="mp-prog -live"><span className="mp-live"><i className="dot" />En direct</span></div>
@@ -173,8 +187,9 @@ export function MediaPlayer({ title, sub, app, cover, radio, playing, pending, e
           <input type="range" className="mp-seek" min={0} max={Math.round(duration)} step={1} value={Math.round(shown)} disabled={!canSeek || !onSeek}
             aria-label="Position dans le titre" aria-valuetext={`${clock(shown)} sur ${clock(duration)}`}
             style={{ ['--v' as string]: `${(shown / duration) * 100}%` } as CSSProperties}
-            onChange={(e) => { dragging.current = true; setDraft(Number(e.target.value)); }}
+            onChange={(e) => setDraft(Number(e.target.value))}
             onPointerUp={(e) => commit(Number((e.target as HTMLInputElement).value))}
+            onPointerCancel={() => setDraft(undefined)}
             onKeyUp={(e) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) commit(Number((e.target as HTMLInputElement).value)); }} />
           <span>{clock(duration)}</span>
         </div>

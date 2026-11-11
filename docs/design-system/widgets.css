@@ -683,7 +683,7 @@ button.pwr::before, .stepper button::before { content: ""; position: absolute; i
 @media (max-width: 480px) {
   .track-d { display: none; }
   .track-hit { grid-template-columns: 44px minmax(0, 1fr); }
-  .mp-head { grid-template-columns: 64px minmax(0, 1fr); gap: var(--sp-3); }
+  .mp-head { grid-template-columns: 64px minmax(0, 1fr) auto; gap: var(--sp-3); }
   .mp-cover { width: 64px; height: 64px; }
 }
 .search { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 8px 0 16px; border-radius: var(--radius-pill); background: var(--surface-2); border: 1px solid var(--border); color: var(--fg-muted); }
@@ -700,7 +700,10 @@ button.pwr::before, .stepper button::before { content: ""; position: absolute; i
 
 /* ---------- 23b. Lecteur d'une enceinte : pochette, progression, commandes, volume ---------- */
 .mp { display: grid; gap: var(--sp-3); padding: var(--sp-4); border-radius: var(--radius-m); background: var(--surface); border: 1px solid var(--border); }
-.mp-head { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: var(--sp-4); align-items: center; }
+.mp-head { display: grid; grid-template-columns: 76px minmax(0, 1fr) auto; gap: var(--sp-4); align-items: center; }
+.mp-btn.-power { align-self: start; width: 40px; height: 40px; margin: -4px -4px 0 0; color: var(--fg-muted); }
+.mp-btn.-power .ico { width: 20px; height: 20px; }
+.mp.is-off .mp-btn.-power { opacity: .3; }
 .mp-cover { width: 76px; height: 76px; border-radius: var(--radius-s); object-fit: cover; background: linear-gradient(135deg, #3a2a40, #8a3b4c 50%, #e08a5a); box-shadow: 0 8px 20px rgba(0, 0, 0, .4); }
 .mp-cover.-empty { display: grid; place-items: center; color: rgba(255, 255, 255, .75); }
 .mp-cover.-empty .ico { width: 30px; height: 30px; }

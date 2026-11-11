@@ -465,6 +465,13 @@ func (s *Source) CallService(ctx context.Context, domain, service string, data m
 				}
 			}
 			s.recomputeHeating(&e)
+		case "media_player.turn_off":
+			e.State = "off"
+			delete(e.Attributes, "app_name")
+		case "media_player.turn_on":
+			if e.State == "off" {
+				e.State = "idle"
+			}
 		case "media_player.media_next_track", "media_player.media_previous_track":
 			by := 1
 			if service == "media_previous_track" {

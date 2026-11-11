@@ -44,7 +44,7 @@ export function usePending(): Record<string, number> {
 /** What the device state will look like once HA applies the action. */
 export function predict(d: Device, a: DeviceAction): Partial<State> {
   switch (a.action) {
-    case 'power': return d.kind === 'ac' ? { on: a.params.on, mode: a.params.on ? 'cool' : 'off' } : { on: a.params.on };
+    case 'power': return d.kind === 'ac' ? { on: a.params.on, mode: a.params.on ? 'cool' : 'off' } : d.kind === 'media' ? { on: a.params.on, playing: a.params.on ? 'idle' : 'off' } : { on: a.params.on };
     case 'set_brightness': return a.params.pct <= 0 ? { on: false } : { on: true, brightness: a.params.pct };
     case 'set_color_temp': return { on: true, colorTemp: a.params.kelvin, color: undefined };
     case 'set_color': return { on: true, color: a.params.hs };

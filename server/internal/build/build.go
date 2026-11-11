@@ -349,10 +349,12 @@ func device(roomID string, dc config.Device, st map[string]ha.Entity, now time.T
 			s.Privacy = model.B(p.State == "on")
 		}
 	case model.KindMedia:
-		d.Capabilities = []string{"play", "pause", "set_volume"}
+		d.Capabilities = []string{"play", "pause", "set_volume", "power"}
 		switch main.State {
 		case "playing", "paused", "idle":
 			s.Playing = main.State
+		case "buffering":
+			s.Playing = "playing"
 		case "on", "standby":
 			s.Playing = "idle"
 		default:
@@ -759,6 +761,8 @@ func mediaExtras(d *model.Device, cfg *config.Config, dc config.Device, st map[s
 		switch e.State {
 		case "playing", "paused":
 			d.State.Playing = e.State
+		case "buffering": // a seek, the next track loading
+			d.State.Playing = "playing"
 		case "idle", "on", "standby":
 			if d.State.Playing != "off" {
 				d.State.Playing = "idle"

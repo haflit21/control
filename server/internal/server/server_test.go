@@ -627,6 +627,15 @@ func TestMusic(t *testing.T) {
 	if e := src.Snapshot()["media_player.salon_salon"]; e.State != "paused" || e.Attributes["media_position"].(float64) < 90 {
 		t.Fatalf("pause : %s %+v", e.State, e.Attributes)
 	}
+	// off: Music Assistant then the speaker
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"power","params":{"on":false}}`); w.Code != 202 {
+		t.Fatalf("extinction : %d %s", w.Code, w.Body)
+	}
+	time.Sleep(450 * time.Millisecond)
+	s.rebuild(nil)
+	if st := src.Snapshot(); st["media_player.salon"].State != "off" || st["media_player.salon_salon"].State != "off" || s.devices["salon.enceinte"].State.Playing != "off" {
+		t.Fatalf("extinction : %s %s %+v", st["media_player.salon"].State, st["media_player.salon_salon"].State, s.devices["salon.enceinte"].State)
+	}
 	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_track","params":{"uri":"spotify://track/inconnu"}}`); w.Code != 502 {
 		t.Fatalf("titre inconnu : %d", w.Code)
 	}

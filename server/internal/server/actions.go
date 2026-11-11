@@ -308,6 +308,22 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 			return []call{{"media_player", "media_play", target(act, nil)}}, dc.Name + " · lecture", nil
 		case "pause":
 			return []call{{"media_player", "media_pause", target(act, nil)}}, dc.Name + " · pause", nil
+		case "power":
+			var q struct{ On bool }
+			if err := p(&q); err != nil {
+				return nil, "", err
+			}
+			if q.On {
+				return []call{{"media_player", "turn_on", target(e, nil)}}, dc.Name + " · allumée", nil
+			}
+			// Music Assistant first (it stops streaming), then the speaker itself
+			calls := []call{}
+			if m := ent["music"]; m != "" {
+				if st, ok := snap[m]; ok && st.State != "off" && st.State != "unavailable" {
+					calls = append(calls, call{"media_player", "turn_off", target(m, nil)})
+				}
+			}
+			return append(calls, call{"media_player", "turn_off", target(e, nil)}), dc.Name + " · éteinte", nil
 		case "next":
 			return []call{{"media_player", "media_next_track", target(act, nil)}}, dc.Name + " · titre suivant", nil
 		case "previous":

@@ -33,7 +33,7 @@ func TestActiveMedia(t *testing.T) {
 	if len(s.Cover) < 30 || s.Cover[:30] != "/api/media/salon.enceinte/cove" {
 		t.Fatalf("pochette : %q", s.Cover)
 	}
-	if len(d.Capabilities) != 6 {
+	if len(d.Capabilities) != 6 { // play, pause, set_volume + previous, next, seek
 		t.Fatalf("commandes : %v", d.Capabilities)
 	}
 	// a radio started by Control on the speaker: no queue, no position

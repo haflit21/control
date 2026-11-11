@@ -21,6 +21,7 @@ export function MediaCard({ d, media, act, pending }: { d: Device; media?: Media
   const music = !!media?.music;
   const [tab, setTab] = useState<Tab>(() => (music && ((!d.state.radio && d.state.playing === 'playing' && !!d.state.title) || radios.length === 0) ? 'music' : 'radio'));
   const playing = d.state.playing === 'playing';
+  const off = d.state.playing === 'off';
   const radio = radios.find((r) => r.id === d.state.radio);
   const caps = new Set(d.capabilities ?? []);
   const send = (a: Parameters<Act['device']>[1]) => act.device(d, a, { quiet: true }).catch(() => {});
@@ -29,15 +30,16 @@ export function MediaCard({ d, media, act, pending }: { d: Device; media?: Media
     ...(radios.length > 0 ? [{ id: 'radio', label: 'Radio' }] : []),
     ...(music ? [{ id: 'music', label: 'Musique' }, { id: 'favs', label: 'Favoris' }] : []),
   ];
-  const title = radio ? radio.name : d.state.title || d.name;
-  const sub = radio ? [radio.genre, d.state.title && d.state.title !== radio.name ? d.state.title : ''].filter(Boolean).join(' · ')
+  const title = off ? d.name : radio ? radio.name : d.state.title || d.name;
+  const sub = off ? 'Éteinte' : radio ? [radio.genre, d.state.title && d.state.title !== radio.name ? d.state.title : ''].filter(Boolean).join(' · ')
     : [d.state.artist, d.state.album].filter(Boolean).join(' · ');
   return (
     <Card tight unavailable={!d.available} className="media-card">
       <div className="stack">
-        <MediaPlayer title={title} sub={sub || undefined} app={radio ? 'Radio' : appLabel(d.state.app)} cover={radio ? undefined : d.state.cover} radio={radio}
-          playing={playing} pending={pending} elapsed={d.state.elapsed} elapsedAt={d.state.elapsedAt} duration={d.state.duration}
-          canPrev={caps.has('previous')} canNext={caps.has('next')} canSeek={caps.has('seek')} volume={d.available ? d.state.volume : undefined}
+        <MediaPlayer title={title} sub={sub || undefined} app={off ? undefined : radio ? 'Radio' : appLabel(d.state.app)} cover={off || radio ? undefined : d.state.cover} radio={off ? undefined : radio}
+          playing={playing} off={off} pending={pending} elapsed={off ? undefined : d.state.elapsed} elapsedAt={d.state.elapsedAt} duration={off ? undefined : d.state.duration}
+          onPowerOff={d.available && caps.has('power') ? () => send({ action: 'power', params: { on: false } }) : undefined}
+          canPrev={caps.has('previous')} canNext={caps.has('next')} canSeek={caps.has('seek')} volume={d.available && !off ? d.state.volume : undefined}
           onToggle={toggle} onPrev={() => send({ action: 'previous' })} onNext={() => send({ action: 'next' })}
           onSeek={(position) => send({ action: 'seek', params: { position } })}
           onVolume={(pct) => send({ action: 'set_volume', params: { pct } })} />
