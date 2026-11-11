@@ -310,11 +310,13 @@ agenda:
     - { id: poubelles, name: Poubelles, color: "#6fcf9a", hint: "poubelles, tri, verre, encombrants, déchetterie" }
   # Saisie rapide : une phrase (tapée ou dictée) devient un formulaire pré-rempli.
   voice:
-    # parole → texte : service whisper du homelab (dépôt ahomelab/whisper, modèle français),
-    # API compatible OpenAI, jeton STT_API_KEY dans les secrets. À décommenter quand il tourne.
-    # transcribe:
-    #   url: http://whisper.home.arpa
-    #   language: fr
+    # parole → texte : service stt du homelab (dépôt ahomelab/stt, Parakeet TDT 0.6B v3 sur le
+    # CPU du NAS, ~1,5 s par phrase), API compatible OpenAI, jeton STT_API_KEY dans les secrets
+    # (= CONTROL_TOKEN des secrets de stt). Le micro du navigateur exige HTTPS.
+    transcribe:
+      url: http://stt.home.arpa
+      model: parakeet-tdt-0.6b-v3
+      language: fr
     # texte → événement : claude-gateway (abonnement Claude, profil calendar : Haiku),
     # jeton CLAUDE_GATEWAY_TOKEN dans les secrets. Autres fournisseurs : anthropic (clé
     # ANTHROPIC_API_KEY), openai (modèle local : url …/v1 + model).

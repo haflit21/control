@@ -25,6 +25,9 @@ func ctxNow() Context {
 
 func TestSystemPrompt(t *testing.T) {
 	p := SystemPrompt(ctxNow())
+	if !strings.Contains(p, "reconnaissance vocale") || !strings.Contains(p, "« Marty prochain » = mardi prochain") {
+		t.Error("la consigne doit dire que la phrase peut sortir de la reconnaissance vocale, avec des erreurs")
+	}
 	for _, want := range []string{"lundi 9 novembre 2026", "15:20", "jeudi 12 novembre 2026 = 2026-11-12", "mardi 10 novembre 2026 = 2026-11-10 (demain)", "poubelles : Poubelles (tri, verre)", "Abdelhak, Marion"} {
 		if !strings.Contains(p, want) {
 			t.Errorf("prompt sans %q", want)

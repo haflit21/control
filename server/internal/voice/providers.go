@@ -16,7 +16,7 @@ import (
 // ---------- speech → text ----------
 
 // OpenAITranscriber calls an OpenAI-compatible /v1/audio/transcriptions
-// (speaches / faster-whisper on the NAS by default).
+// (the homelab's stt service: Parakeet TDT 0.6B v3 on the NAS).
 type OpenAITranscriber struct {
 	URL      string // base URL (http://host:8000) or the full …/audio/transcriptions URL
 	Model    string // e.g. Systran/faster-whisper-small

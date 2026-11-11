@@ -24,7 +24,7 @@ make dev-ha                     # pareil, branché sur le vrai Home Assistant (s
 
 Production locale : `make build && ./server/bin/control serve` (lit `.env` et `control.yaml` dans le dossier courant). Le serveur affiche au démarrage `control : http://…/login?token=…` : ouvrir ce lien une fois par appareil pose le cookie de session (30 jours). Sur iPhone, ajouter ensuite à l'écran d'accueil.
 
-`make check` liste les entités de `control.yaml` que Home Assistant ne connaît pas, les services HA dont l'app a besoin qui manqueraient, et l'état de la saisie rapide (clé Claude présente, Whisper joignable). `control.yaml` et `.env` sont trouvés depuis la racine comme depuis `server/`.
+`make check` liste les entités de `control.yaml` que Home Assistant ne connaît pas, les services HA dont l'app a besoin qui manqueraient, et l'état de la saisie rapide (clé Claude présente, service stt joignable). `control.yaml` et `.env` sont trouvés depuis la racine comme depuis `server/`.
 
 ## État (étapes 1 et 2 du brief)
 
@@ -35,9 +35,9 @@ Qualité de l'air : Open-Meteo (sans clé) aux coordonnées de `globals.air` ou 
 Agenda : tenu par l'app (`state/agenda/events.json`, écrit de façon atomique), calendriers `agenda.calendars` de `control.yaml` (couleur, et un indice pour le modèle : « poubelles, tri, verre »). Événements ponctuels ou répétés (chaque semaine, toutes les 2 semaines, chaque mois, chaque année, avec date de fin), en heure locale : un rendez-vous hebdomadaire à 9 h 30 reste à 9 h 30 au changement d'heure. API : `GET/POST /api/agenda/events`, `GET/PUT/DELETE /api/agenda/events/{id}` (une série se modifie en entier), journalisé ; les écrans reçoivent la semaine courante + 5 semaines par SSE. Onglet Agenda : « Ajouter », micro, toucher un événement pour le modifier.
 
 Saisie rapide : une phrase tapée (`POST /api/agenda/parse {text}`) ou dictée (`POST /api/agenda/voice`, corps = l'enregistrement) ouvre le formulaire pré-rempli ; rien n'est enregistré sans « Enregistrer ». Deux étapes indépendantes, configurées dans `agenda.voice` :
-- **parole → texte** : le service whisper du homelab (dépôt `ahomelab/whisper`, modèle entraîné pour le français, API compatible OpenAI `/v1/audio/transcriptions`, jeton `STT_API_KEY`). L'audio n'est jamais stocké.
+- **parole → texte** : le service stt du homelab (dépôt `ahomelab/stt`, NVIDIA Parakeet TDT 0.6B v3 sur le CPU du NAS, ~1,5 s par phrase, API compatible OpenAI `/v1/audio/transcriptions`, jeton `STT_API_KEY` = `CONTROL_TOKEN` des secrets de stt). L'audio n'est jamais stocké. La consigne de Claude prévient que la phrase dictée peut contenir des erreurs de reconnaissance.
 - **texte → événement** : `provider: gateway` (claude-gateway, l'abonnement Claude du homelab, profil `calendar` : Haiku ; jeton `CLAUDE_GATEWAY_TOKEN`, réponse structurée par le schéma), ou `provider: anthropic` (clé `ANTHROPIC_API_KEY`), ou `provider: openai` + `url` + `model` pour n'importe quel modèle local compatible OpenAI (Ollama, llama.cpp…) : changer de fournisseur = ces trois lignes. Même consigne et même validation pour tous (`server/internal/voice`).
-Le micro du navigateur exige HTTPS (ou `localhost`) ; sans clé ou sans Whisper, le bouton correspondant n'apparaît pas et le formulaire reste. `make check` dit ce qui est configuré et si Whisper répond.
+Le micro du navigateur exige HTTPS (ou `localhost`) ; sans clé ou sans service stt, le bouton correspondant n'apparaît pas et le formulaire reste. `make check` dit ce qui est configuré et si stt répond.
 
 Photos : chaque pièce a `image:` dans `control.yaml` (relatif à `serve.media_dir`, défaut `media/`, ou `CONTROL_MEDIA`) ; l'image par type d'appareil est choisie par l'interface, `image:` sur un appareil la remplace. Les pièces avec caméra montrent la caméra et retombent sur la photo quand elle est privée ou injoignable ; en démo, la photo tient lieu de caméra.
 

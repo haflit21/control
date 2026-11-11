@@ -371,7 +371,7 @@ func voiceFrom(cfg *config.Config) (voice.Transcriber, voice.Understander) {
 	if v.Transcribe.URL != "" {
 		model := v.Transcribe.Model
 		if model == "" {
-			model = "Systran/faster-whisper-small"
+			model = "parakeet-tdt-0.6b-v3"
 		}
 		tr = &voice.OpenAITranscriber{URL: v.Transcribe.URL, Model: model, Language: v.Transcribe.Language, APIKey: os.Getenv("STT_API_KEY")}
 		log.Printf("agenda : voix transcrite par %s (%s)", v.Transcribe.URL, model)
@@ -408,9 +408,9 @@ func checkVoice(ctx context.Context, cfg *config.Config) {
 	req, _ := http.NewRequestWithContext(ctx, "GET", strings.TrimRight(v.Transcribe.URL, "/")+"/health", nil)
 	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
 	if err != nil {
-		fmt.Printf("  micro : Whisper injoignable sur %s (%v)\n", v.Transcribe.URL, err)
+		fmt.Printf("  micro : service stt injoignable sur %s (%v)\n", v.Transcribe.URL, err)
 		return
 	}
 	resp.Body.Close()
-	fmt.Printf("  micro : Whisper répond sur %s (HTTP %d)\n", v.Transcribe.URL, resp.StatusCode)
+	fmt.Printf("  micro : service stt sur %s : HTTP %d (200 = modèle prêt)\n", v.Transcribe.URL, resp.StatusCode)
 }

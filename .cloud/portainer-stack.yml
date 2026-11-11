@@ -23,7 +23,7 @@ services:
       lan_macvlan:
         ipv4_address: 192.168.10.6
     dns:
-      - 192.168.10.3           # Pi-hole : claude.home.arpa, whisper.home.arpa
+      - 192.168.10.3           # Pi-hole : claude.home.arpa, stt.home.arpa
 
 volumes:
   control_state:

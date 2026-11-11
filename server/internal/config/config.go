@@ -39,13 +39,14 @@ type Calendar struct {
 	Hint string `yaml:"hint"`
 }
 
-// Voice: speech → text (Whisper behind an OpenAI-compatible endpoint), then
+// Voice: speech → text (the homelab's stt service, or any OpenAI-compatible
+// /v1/audio/transcriptions endpoint: Whisper, speaches…), then
 // text → event (a language model). Each part is optional: without `transcribe`
 // there is no mic button, without `understand` no quick entry at all.
 type Voice struct {
 	Transcribe struct {
-		URL      string `yaml:"url"`      // base URL, e.g. http://192.168.10.10:8000 (…/v1/audio/transcriptions is appended)
-		Model    string `yaml:"model"`    // e.g. Systran/faster-whisper-small
+		URL      string `yaml:"url"`      // base URL, e.g. http://stt.home.arpa (…/v1/audio/transcriptions is appended)
+		Model    string `yaml:"model"`    // e.g. parakeet-tdt-0.6b-v3 (stt), Systran/faster-whisper-small
 		Language string `yaml:"language"` // default "fr"
 	} `yaml:"transcribe"`
 	Understand struct {
