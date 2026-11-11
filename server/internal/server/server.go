@@ -30,6 +30,7 @@ import (
 	"ahomelab.io/control/internal/agenda"
 	"ahomelab.io/control/internal/build"
 	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/favorites"
 	"ahomelab.io/control/internal/ha"
 	"ahomelab.io/control/internal/journal"
 	"ahomelab.io/control/internal/model"
@@ -58,6 +59,8 @@ type Server struct {
 	Push *push.Store
 	// Journal records every action (nil disables).
 	Journal *journal.Store
+	// Favorites: the household's favourite tracks and albums (nil disables).
+	Favorites *favorites.Store
 	// Agenda is the family calendar (nil disables the Agenda tab's data).
 	Agenda *agenda.Store
 	// Transcriber / Understander: voice and typed quick entry (nil = not offered).
@@ -264,6 +267,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/security/alarm/ack", s.auth(s.mutating(s.alarmAck)))
 	mux.HandleFunc("GET /api/journal", s.auth(s.apiJournal))
 	mux.HandleFunc("GET /api/media/search", s.auth(s.mediaSearch))
+	mux.HandleFunc("GET /api/media/favorites", s.auth(s.favoritesList))
+	mux.HandleFunc("POST /api/media/favorites", s.auth(s.mutating(s.favoritesSet)))
+	mux.HandleFunc("GET /api/media/{id}/cover", s.auth(s.mediaCover))
 	mux.HandleFunc("GET /api/agenda/events/{id}", s.auth(s.agendaGet))
 	mux.HandleFunc("POST /api/agenda/events", s.auth(s.mutating(s.agendaCreate)))
 	mux.HandleFunc("PUT /api/agenda/events/{id}", s.auth(s.mutating(s.agendaUpdate)))

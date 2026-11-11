@@ -14,6 +14,8 @@ import (
 	"math"
 	"math/rand"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"ahomelab.io/control/internal/config"
@@ -25,6 +27,36 @@ type Source struct {
 	cfg  *config.Config
 	rnd  *rand.Rand
 	tick int
+
+	// delayed answers land in the order the calls were made
+	seq     atomic.Uint64
+	seqMu   sync.Mutex
+	applied map[string]uint64
+}
+
+// later applies changed after the demo's answer delay, unless a newer call
+// already changed the same entity.
+func (s *Source) later(ctx context.Context, changed []ha.Entity) {
+	seq := s.seq.Add(1)
+	go func() {
+		select {
+		case <-time.After(350 * time.Millisecond):
+		case <-ctx.Done():
+		}
+		s.seqMu.Lock()
+		defer s.seqMu.Unlock()
+		if s.applied == nil {
+			s.applied = map[string]uint64{}
+		}
+		keep := []ha.Entity{}
+		for _, e := range changed {
+			if s.applied[e.EntityID] < seq {
+				s.applied[e.EntityID] = seq
+				keep = append(keep, e)
+			}
+		}
+		s.Set(keep...)
+	}()
 }
 
 func New(cfg *config.Config) *Source {
@@ -189,6 +221,9 @@ func (s *Source) seed(now time.Time) {
 					attrs["media_title"], attrs["media_content_id"] = s.cfg.Media.Radios[0].Name, s.cfg.Media.Radios[0].URL
 				}
 				add(ent(d.Entities["media_player"], "playing", attrs, now.Add(-80*time.Minute)))
+				if e := d.Entities["music"]; e != "" {
+					add(ent(e, "idle", map[string]any{"mass_player_type": "player", "supported_features": float64(massFeatures), "volume_level": 0.35}, now.Add(-80*time.Minute)))
+				}
 			case "smoke":
 				add(ent(d.Entities["smoke"], "off", nil, now.Add(-200*time.Hour)))
 				if e := d.Entities["co"]; e != "" {
@@ -384,7 +419,7 @@ func (s *Source) CallService(ctx context.Context, domain, service string, data m
 					e.State = "open"
 				}
 			}
-		case "climate.set_temperature", "tado.set_climate_timer":
+		case "climate.set_temperature":
 			if v, ok := num(data["temperature"]); ok {
 				e.Attributes["temperature"] = v
 			}
@@ -395,6 +430,25 @@ func (s *Source) CallService(ctx context.Context, domain, service string, data m
 			}
 			s.setZoneMode(id, st, "manual", &changed, now)
 			s.recomputeHeating(&e)
+		case "tado_hijack.set_mode":
+			// e is the zone's mode sensor; the thermostat follows
+			m, _ := data["hvac_mode"].(string)
+			if c, ok := s.climateOf(id, st); ok {
+				if v, ok := num(data["temperature"]); ok {
+					c.Attributes["temperature"] = v
+				}
+				c.State = map[string]string{"heat": "heat", "off": "off", "auto": "auto"}[m]
+				if c.State == "" {
+					c.State = "heat"
+				}
+				s.recomputeHeating(&c)
+				c.LastChanged, c.LastUpdated = now, now
+				changed = append(changed, c)
+			}
+			e.State = map[string]string{"off": "off", "auto": "smart_schedule"}[m]
+			if e.State == "" {
+				e.State = "manual"
+			}
 		case "climate.set_hvac_mode":
 			if m, ok := data["hvac_mode"].(string); ok {
 				e.State = m
@@ -411,9 +465,32 @@ func (s *Source) CallService(ctx context.Context, domain, service string, data m
 				}
 			}
 			s.recomputeHeating(&e)
+		case "media_player.media_next_track", "media_player.media_previous_track":
+			by := 1
+			if service == "media_previous_track" {
+				by = -1
+			}
+			if !s.skipTrack(id, st, by) {
+				return fmt.Errorf("mode démo : rien à passer sur %s", id)
+			}
+			continue
+		case "media_player.media_seek":
+			if v, ok := num(data["seek_position"]); ok {
+				e.Attributes["media_position"] = v
+				e.Attributes["media_position_updated_at"] = now.UTC().Format(time.RFC3339Nano)
+			}
 		case "media_player.media_play":
 			e.State = "playing"
+			if _, ok := e.Attributes["media_position"]; ok {
+				e.Attributes["media_position_updated_at"] = now.UTC().Format(time.RFC3339Nano)
+			}
 		case "media_player.media_pause":
+			if p, ok := num(e.Attributes["media_position"]); ok && e.State == "playing" {
+				if at, err := time.Parse(time.RFC3339Nano, fmt.Sprint(e.Attributes["media_position_updated_at"])); err == nil {
+					e.Attributes["media_position"] = math.Round((p+now.Sub(at).Seconds())*10) / 10
+				}
+				e.Attributes["media_position_updated_at"] = now.UTC().Format(time.RFC3339Nano)
+			}
 			e.State = "paused"
 		case "media_player.volume_set":
 			if v, ok := num(data["volume_level"]); ok {
@@ -439,14 +516,7 @@ func (s *Source) CallService(ctx context.Context, domain, service string, data m
 		changed = append(changed, e)
 	}
 	// a real device answers after a moment
-	go func() {
-		select {
-		case <-time.After(350 * time.Millisecond):
-			s.Set(changed...)
-		case <-ctx.Done():
-			s.Set(changed...)
-		}
-	}()
+	s.later(ctx, changed)
 	return nil
 }
 
@@ -490,6 +560,20 @@ func (s *Source) recomputeHeating(e *ha.Entity) {
 	default:
 		e.Attributes["hvac_action"] = "idle"
 	}
+}
+
+// climateOf: the thermostat of the device whose zone mode sensor is zone.
+func (s *Source) climateOf(zone string, st map[string]ha.Entity) (ha.Entity, bool) {
+	for _, r := range s.cfg.Rooms {
+		for _, d := range r.Devices {
+			if d.Entities["zone_mode"] == zone {
+				if c, ok := st[d.Entities["climate"]]; ok && c.Attributes != nil {
+					return c, true
+				}
+			}
+		}
+	}
+	return ha.Entity{}, false
 }
 
 // setZoneMode updates the Tado "zone mode" sensor of the device owning this climate.
@@ -636,42 +720,124 @@ func SeedAgenda(st *agenda.Store, calendars []string, now time.Time) {
 	}
 }
 
-// Music is the demo music search: a small catalogue, searched on title and artist.
-// Nothing leaves the machine.
-type Music struct{}
+// Music is the demo music search: a small catalogue, searched on title,
+// artist and album, played like Music Assistant would (the speaker's
+// entities.music player gets the queue). Nothing leaves the machine.
+type Music struct{ Src *Source }
 
 var catalogue = []model.Track{
-	{URI: "spotify:track:demo1", Title: "One More Time", Artists: "Daft Punk", Album: "Discovery", Duration: 320000},
-	{URI: "spotify:track:demo2", Title: "Get Lucky", Artists: "Daft Punk, Pharrell Williams", Album: "Random Access Memories", Duration: 369000},
-	{URI: "spotify:track:demo3", Title: "Harder, Better, Faster, Stronger", Artists: "Daft Punk", Album: "Discovery", Duration: 224000},
-	{URI: "spotify:track:demo4", Title: "Around the World", Artists: "Daft Punk", Album: "Homework", Duration: 429000},
-	{URI: "spotify:track:demo5", Title: "Instant Crush", Artists: "Daft Punk, Julian Casablancas", Album: "Random Access Memories", Duration: 337000},
-	{URI: "spotify:track:demo6", Title: "Alors on danse", Artists: "Stromae", Album: "Cheese", Duration: 206000},
-	{URI: "spotify:track:demo7", Title: "La Javanaise", Artists: "Serge Gainsbourg", Album: "Gainsbourg Confidentiel", Duration: 147000},
-	{URI: "spotify:track:demo8", Title: "Nightcall", Artists: "Kavinsky", Album: "OutRun", Duration: 258000},
+	{URI: "spotify://track/demo1", Title: "One More Time", Artists: "Daft Punk", Album: "Discovery", Duration: 320000},
+	{URI: "spotify://track/demo3", Title: "Harder, Better, Faster, Stronger", Artists: "Daft Punk", Album: "Discovery", Duration: 224000},
+	{URI: "spotify://track/demo2", Title: "Get Lucky", Artists: "Daft Punk, Pharrell Williams", Album: "Random Access Memories", Duration: 369000},
+	{URI: "spotify://track/demo5", Title: "Instant Crush", Artists: "Daft Punk, Julian Casablancas", Album: "Random Access Memories", Duration: 337000},
+	{URI: "spotify://track/demo4", Title: "Around the World", Artists: "Daft Punk", Album: "Homework", Duration: 429000},
+	{URI: "spotify://track/demo6", Title: "Alors on danse", Artists: "Stromae", Album: "Cheese", Duration: 206000},
+	{URI: "spotify://track/demo7", Title: "La Javanaise", Artists: "Serge Gainsbourg", Album: "Gainsbourg Confidentiel", Duration: 147000},
+	{URI: "spotify://track/demo8", Title: "Nightcall", Artists: "Kavinsky", Album: "OutRun", Duration: 258000},
 }
 
-func (Music) Search(ctx context.Context, q string, limit int) ([]model.Track, error) {
+var albums = []model.Album{
+	{URI: "spotify://album/discovery", Title: "Discovery", Artists: "Daft Punk", Year: 2001},
+	{URI: "spotify://album/ram", Title: "Random Access Memories", Artists: "Daft Punk", Year: 2013},
+	{URI: "spotify://album/homework", Title: "Homework", Artists: "Daft Punk", Year: 1997},
+	{URI: "spotify://album/cheese", Title: "Cheese", Artists: "Stromae", Year: 2010},
+	{URI: "spotify://album/outrun", Title: "OutRun", Artists: "Kavinsky", Year: 2013},
+}
+
+func (Music) Search(ctx context.Context, q string, limit int) (model.Results, error) {
 	q = strings.ToLower(strings.TrimSpace(q))
-	out := []model.Track{}
+	out := model.Results{Tracks: []model.Track{}, Albums: []model.Album{}}
 	if q == "" {
 		return out, nil
 	}
 	for _, t := range catalogue {
-		if strings.Contains(strings.ToLower(t.Title+" "+t.Artists+" "+t.Album), q) && len(out) < limit {
-			out = append(out, t)
+		if strings.Contains(strings.ToLower(t.Title+" "+t.Artists+" "+t.Album), q) && len(out.Tracks) < limit {
+			out.Tracks = append(out.Tracks, t)
+		}
+	}
+	for _, a := range albums {
+		if strings.Contains(strings.ToLower(a.Title+" "+a.Artists), q) && len(out.Albums) < (limit+1)/2 {
+			out.Albums = append(out.Albums, a)
 		}
 	}
 	return out, nil
 }
 
-func (Music) Source() string { return "Spotify (démo)" }
+func (Music) Source() string { return "Music Assistant (démo)" }
 
-func (Music) Play(ctx context.Context, room config.Room, dev config.Device, uri string) error {
-	for _, t := range catalogue {
+func (m Music) Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string) error {
+	i := -1
+	for j, t := range catalogue {
 		if t.URI == uri {
-			return nil
+			i = j
 		}
 	}
-	return fmt.Errorf("mode démo : titre inconnu %s", uri)
+	if kind == "album" {
+		for _, a := range albums {
+			if a.URI == uri {
+				for j, t := range catalogue {
+					if t.Album == a.Title {
+						i = j
+						break
+					}
+				}
+			}
+		}
+	}
+	if i < 0 {
+		return fmt.Errorf("mode démo : titre inconnu %s", uri)
+	}
+	if m.Src == nil || dev.Entities["music"] == "" {
+		return nil
+	}
+	return m.Src.playTrack(dev, i)
+}
+
+// massFeatures: pause, seek, volume, previous, next, play_media, play, stop…
+const massFeatures = 1 | 2 | 4 | 16 | 32 | 512 | 4096 | 16384
+
+// playTrack puts catalogue[i] on the speaker's Music Assistant player, like
+// MA streaming to a Cast speaker (whose app becomes "Music Assistant").
+func (s *Source) playTrack(dev config.Device, i int) error {
+	now := time.Now()
+	st := s.Snapshot()
+	mp, ok := st[dev.Entities["music"]]
+	if !ok {
+		return fmt.Errorf("mode démo : %s inconnu", dev.Entities["music"])
+	}
+	t := catalogue[(i+len(catalogue))%len(catalogue)]
+	mp.State = "playing"
+	mp.Attributes = map[string]any{"mass_player_type": "player", "supported_features": float64(massFeatures), "volume_level": 0.35,
+		"media_title": t.Title, "media_artist": t.Artists, "media_album_name": t.Album, "media_content_id": t.URI, "media_content_type": "music",
+		"media_duration": float64(t.Duration / 1000), "media_position": 0.0, "media_position_updated_at": now.UTC().Format(time.RFC3339Nano)}
+	mp.LastChanged, mp.LastUpdated = now, now
+	changed := []ha.Entity{mp}
+	if c, ok := st[dev.Entities["media_player"]]; ok {
+		c.State = "playing"
+		vol := c.Attributes["volume_level"]
+		c.Attributes = map[string]any{"app_name": "Music Assistant", "media_title": t.Title, "volume_level": vol}
+		c.LastChanged, c.LastUpdated = now, now
+		changed = append(changed, c)
+	}
+	s.later(context.Background(), changed)
+	return nil
+}
+
+// skipTrack: the previous / next catalogue track on a Music Assistant player.
+func (s *Source) skipTrack(id string, st map[string]ha.Entity, by int) bool {
+	cur, _ := st[id].Attributes["media_content_id"].(string)
+	for _, r := range s.cfg.Rooms {
+		for _, d := range r.Devices {
+			if d.Entities["music"] != id {
+				continue
+			}
+			for j, t := range catalogue {
+				if t.URI == cur {
+					_ = s.playTrack(d, j+by)
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

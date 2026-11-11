@@ -5,6 +5,8 @@
 package build
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
 	"math"
 	"path"
@@ -39,7 +41,11 @@ func Build(in Input) model.Home {
 	if len(cfg.Media.Radios) > 0 || in.Music != "" {
 		h.Media = &model.Media{Radios: []model.Radio{}, Music: in.Music != "", MusicSource: in.Music}
 		for _, r := range cfg.Media.Radios {
-			h.Media.Radios = append(h.Media.Radios, model.Radio{ID: r.ID, Name: r.Name, Genre: r.Genre, Short: r.Short, Color: r.Color})
+			rd := model.Radio{ID: r.ID, Name: r.Name, Genre: r.Genre, Short: r.Short, Color: r.Color}
+			if r.Logo != "" {
+				rd.Logo = "/" + r.Logo
+			}
+			h.Media.Radios = append(h.Media.Radios, rd)
 		}
 	}
 	var allAlerts []model.Alert
@@ -52,7 +58,7 @@ func Build(in Input) model.Home {
 		for _, dc := range rc.Devices {
 			d := device(rc.ID, dc, st, in.Now)
 			if d.Kind == model.KindMedia {
-				mediaExtras(&d, cfg, st[dc.Entities["media_player"]])
+				mediaExtras(&d, cfg, dc, st)
 			}
 			if !d.Available {
 				since := in.Now
@@ -721,30 +727,95 @@ func mediaURL(rel string) string {
 
 // mediaExtras adds what needs the configuration to a speaker's state: the
 // radio it plays (matched on the stream URL), the app and the album.
-func mediaExtras(d *model.Device, cfg *config.Config, e ha.Entity) {
-	if e.Attributes == nil {
+// ActiveMedia is the entity that holds what a speaker plays: its Music
+// Assistant player (entities.music) while Music Assistant streams to it (the
+// queue, the track, the artwork live there), else the speaker itself.
+func ActiveMedia(dc config.Device, st map[string]ha.Entity) string {
+	main, mus := dc.Entities["media_player"], dc.Entities["music"]
+	m, ok := st[mus]
+	if mus == "" || !ok || !available(m) {
+		return main
+	}
+	c := st[main]
+	if strings.Contains(strings.ToLower(str(c.Attributes["app_name"])), "music assistant") {
+		return mus
+	}
+	busy := func(s string) bool { return s == "playing" || s == "paused" }
+	if !busy(c.State) && busy(m.State) {
+		return mus
+	}
+	return main
+}
+
+// mediaExtras: what a speaker plays (track, album, position, artwork, the
+// radio it is on) and the controls it offers (previous, next, seek).
+func mediaExtras(d *model.Device, cfg *config.Config, dc config.Device, st map[string]ha.Entity) {
+	id := ActiveMedia(dc, st)
+	e, ok := st[id]
+	if !ok || e.Attributes == nil {
 		return
 	}
-	d.State.App = str(e.Attributes["app_name"])
+	if id != dc.Entities["media_player"] {
+		switch e.State {
+		case "playing", "paused":
+			d.State.Playing = e.State
+		case "idle", "on", "standby":
+			if d.State.Playing != "off" {
+				d.State.Playing = "idle"
+			}
+		}
+		d.State.Title = str(e.Attributes["media_title"])
+		d.State.Artist = str(e.Attributes["media_artist"])
+		d.State.App = "Music Assistant"
+	} else {
+		d.State.App = str(e.Attributes["app_name"])
+	}
 	d.State.Album = str(e.Attributes["media_album_name"])
-	id := str(e.Attributes["media_content_id"])
-	if id == "" {
-		return
+	uri := str(e.Attributes["media_content_id"])
+	if len(uri) <= 400 {
+		d.State.URI = uri
 	}
-	base := func(u string) string {
-		b, _, _ := strings.Cut(u, "?")
-		return strings.TrimPrefix(strings.TrimPrefix(b, "https://"), "http://")
+	if uri != "" {
+		base := func(u string) string {
+			b, _, _ := strings.Cut(u, "?")
+			return strings.TrimPrefix(strings.TrimPrefix(b, "https://"), "http://")
+		}
+		for _, r := range cfg.Media.Radios {
+			if base(r.URL) == base(uri) {
+				d.State.Radio = r.ID
+				if d.State.Title == "" || d.State.Title == uri {
+					d.State.Title = r.Name
+				}
+				if d.State.App == "" || strings.Contains(strings.ToLower(d.State.App), "receiver") {
+					d.State.App = "Radio"
+				}
+				return // a live stream: no position, no queue
+			}
+		}
 	}
-	for _, r := range cfg.Media.Radios {
-		if base(r.URL) == base(id) {
-			d.State.Radio = r.ID
-			if d.State.Title == "" || d.State.Title == id {
-				d.State.Title = r.Name
-			}
-			if d.State.App == "" {
-				d.State.App = "Radio"
-			}
-			return
+	if dur := attrNum(e, "media_duration"); dur != nil && *dur > 0 {
+		d.State.Duration = round0(dur)
+		if pos := attrNum(e, "media_position"); pos != nil {
+			d.State.Elapsed = round1(pos)
+			d.State.ElapsedAt = str(e.Attributes["media_position_updated_at"])
+		}
+	}
+	if pic := str(e.Attributes["entity_picture"]); strings.HasPrefix(pic, "https://i.scdn.co/") {
+		d.State.Cover = pic
+	} else if pic != "" {
+		sum := sha1.Sum([]byte(pic))
+		d.State.Cover = "/api/media/" + d.ID + "/cover?v=" + hex.EncodeToString(sum[:6])
+	}
+	if f := attrNum(e, "supported_features"); f != nil && d.State.Title != "" {
+		feat := int(*f)
+		if feat&16 != 0 {
+			d.Capabilities = append(d.Capabilities, "previous")
+		}
+		if feat&32 != 0 {
+			d.Capabilities = append(d.Capabilities, "next")
+		}
+		if feat&2 != 0 && d.State.Duration != nil {
+			d.Capabilities = append(d.Capabilities, "seek")
 		}
 	}
 }

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"strings"
 	"time"
 
+	"ahomelab.io/control/internal/build"
 	"ahomelab.io/control/internal/config"
 	"ahomelab.io/control/internal/journal"
 	"ahomelab.io/control/internal/model"
@@ -112,8 +114,8 @@ func (s *Server) deviceAction(w http.ResponseWriter, r *http.Request) {
 	if !s.decode(w, r, &body) {
 		return
 	}
-	if dc.Kind == model.KindMedia && body.Action == "play_track" {
-		s.playTrack(w, r, id, rc, dc, body.Params)
+	if dc.Kind == model.KindMedia && (body.Action == "play_music" || body.Action == "play_track") {
+		s.playMusic(w, r, id, rc, dc, body.Action, body.Params)
 		return
 	}
 	calls, msg, err := s.planDevice(dc, body)
@@ -221,30 +223,29 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 			case "schedule":
 				return []call{{"climate", "set_hvac_mode", target(e, map[string]any{"hvac_mode": "auto"})}}, dc.Name + " · planning", nil
 			case "manual":
-				// Tado: an overlay with a termination; other climates just switch to heat.
+				// Tado through Tado Hijack (the zone's zone_mode sensor): an overlay
+				// with a termination. Other climates just switch to heat.
 				data := map[string]any{"hvac_mode": "heat"}
 				if cur, ok := s.currentTarget(e); ok {
 					data["temperature"] = cur
 				}
-				if strings.Contains(e, "tado") {
-					tdata := target(e, nil)
+				if zone := ent["zone_mode"]; zone != "" {
+					hd := map[string]any{"entity_id": zone, "hvac_mode": "heat", "overlay": "next_block", "refresh_after": true}
 					if t, ok := data["temperature"]; ok {
-						tdata["temperature"] = t
+						hd["temperature"] = t
 					}
 					switch string(q.Duration) {
 					case `"next_block"`, "":
-						tdata["requested_overlay"] = "NEXT_TIME_BLOCK"
 					case `"forever"`:
-						tdata["requested_overlay"] = "MANUAL"
+						hd["overlay"] = "manual"
 					default:
 						var mins int
 						if err := json.Unmarshal(q.Duration, &mins); err == nil && mins > 0 {
-							tdata["time_period"] = fmt.Sprintf("%02d:%02d:00", mins/60, mins%60)
-						} else {
-							tdata["requested_overlay"] = "NEXT_TIME_BLOCK"
+							hd["overlay"] = "manual"
+							hd["duration"] = min(mins, 1440)
 						}
 					}
-					return []call{{"tado", "set_climate_timer", tdata}}, dc.Name + " · manuel", nil
+					return []call{{"tado_hijack", "set_mode", hd}}, dc.Name + " · manuel", nil
 				}
 				return []call{{"climate", "set_temperature", target(e, data)}}, dc.Name + " · manuel", nil
 			}
@@ -289,21 +290,37 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 		}
 	case model.KindMedia:
 		e := ent["media_player"]
+		snap := s.Src.Snapshot()
+		// what plays: the Music Assistant player while it streams to the speaker
+		act := build.ActiveMedia(dc, snap)
 		switch body.Action {
 		case "play":
 			// A Cast speaker can only resume a paused session; idle or off,
 			// media_play fails ("Failed to execute play"). Start the last radio instead.
-			if st, ok := s.Src.Snapshot()[e]; ok && st.State != "paused" && st.State != "playing" {
-				rd, ok := s.resumeRadio(e, st)
+			if st, ok := snap[act]; ok && st.State != "paused" && st.State != "playing" {
+				rd, ok := s.resumeRadio(e, snap[e])
 				if !ok {
 					return nil, "", fmt.Errorf("rien à reprendre sur %s : choisir une radio ou un titre", dc.Name)
 				}
 				s.lastRadio.Store(e, rd.ID)
 				return []call{radioCall(e, rd)}, dc.Name + " · " + rd.Name, nil
 			}
-			return []call{{"media_player", "media_play", target(e, nil)}}, dc.Name + " · lecture", nil
+			return []call{{"media_player", "media_play", target(act, nil)}}, dc.Name + " · lecture", nil
 		case "pause":
-			return []call{{"media_player", "media_pause", target(e, nil)}}, dc.Name + " · pause", nil
+			return []call{{"media_player", "media_pause", target(act, nil)}}, dc.Name + " · pause", nil
+		case "next":
+			return []call{{"media_player", "media_next_track", target(act, nil)}}, dc.Name + " · titre suivant", nil
+		case "previous":
+			return []call{{"media_player", "media_previous_track", target(act, nil)}}, dc.Name + " · titre précédent", nil
+		case "seek":
+			var q struct{ Position float64 }
+			if err := p(&q); err != nil {
+				return nil, "", err
+			}
+			if q.Position < 0 || q.Position > 24*3600 {
+				return nil, "", fmt.Errorf("position hors limites")
+			}
+			return []call{{"media_player", "media_seek", target(act, map[string]any{"seek_position": math.Round(q.Position)})}}, fmt.Sprintf("%s · %s", dc.Name, minSec(q.Position)), nil
 		case "set_volume":
 			var q struct{ Pct float64 }
 			if err := p(&q); err != nil {
@@ -332,6 +349,11 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 		}
 	}
 	return nil, "", fmt.Errorf("action %q impossible sur %s", body.Action, dc.Name)
+}
+
+func minSec(sec float64) string {
+	n := int(math.Round(sec))
+	return fmt.Sprintf("%d:%02d", n/60, n%60)
 }
 
 // privacyCalls toggles the cameras' private mode via the configured script

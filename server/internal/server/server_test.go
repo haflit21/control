@@ -19,6 +19,7 @@ import (
 	"ahomelab.io/control/internal/agenda"
 	"ahomelab.io/control/internal/config"
 	"ahomelab.io/control/internal/demo"
+	"ahomelab.io/control/internal/favorites"
 	"ahomelab.io/control/internal/ha"
 	"ahomelab.io/control/internal/journal"
 	"ahomelab.io/control/internal/model"
@@ -556,7 +557,7 @@ func TestMusic(t *testing.T) {
 		return w
 	}
 	// without a music source: no Musique tab, search refused
-	if s.Home().Media == nil || len(s.Home().Media.Radios) != 5 || s.Home().Media.Music {
+	if s.Home().Media == nil || len(s.Home().Media.Radios) != 6 || s.Home().Media.Music || s.Home().Media.Radios[0].Logo != "/radios/nova.webp" {
 		t.Fatalf("médias sans Spotify : %+v", s.Home().Media)
 	}
 	if w := req("GET", "/api/media/search?q=daft", ""); w.Code != 404 {
@@ -566,46 +567,98 @@ func TestMusic(t *testing.T) {
 		t.Fatalf("lecture sans Spotify : %d", w.Code)
 	}
 	// radios
-	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_radio","params":{"id":"fip"}}`); w.Code != 202 {
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_radio","params":{"id":"culture"}}`); w.Code != 202 {
 		t.Fatalf("radio : %d %s", w.Code, w.Body)
 	}
-	if e := src.Snapshot()["media_player.salon"]; e.Attributes["media_content_id"] != "https://icecast.radiofrance.fr/fip-midfi.mp3?id=radiofrance" || e.Attributes["media_title"] != "FIP" {
+	if e := src.Snapshot()["media_player.salon"]; e.Attributes["media_content_id"] != "https://icecast.radiofrance.fr/franceculture-midfi.mp3?id=radiofrance" || e.Attributes["media_title"] != "France Culture" {
 		t.Fatalf("radio dans HA : %+v", e.Attributes)
 	}
 	s.rebuild(nil)
-	if d := s.devices["salon.enceinte"]; d.State.Radio != "fip" || d.State.Title != "FIP" || d.State.App != "Radio" {
+	if d := s.devices["salon.enceinte"]; d.State.Radio != "culture" || d.State.Title != "France Culture" || d.State.App != "Radio" || d.State.Duration != nil || hasCap(d, "next") {
 		t.Fatalf("radio reconnue : %+v", d.State)
 	}
 	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_radio","params":{"id":"nrj"}}`); w.Code != 400 {
 		t.Fatalf("radio inconnue : %d", w.Code)
 	}
-	// Spotify (catalogue de démo)
-	s.Music = demo.Music{}
+	// Music Assistant (catalogue de démo)
+	s.Music = demo.Music{Src: src}
 	s.rebuild(nil)
 	if !s.Home().Media.Music {
 		t.Fatal("musique absente du modèle")
 	}
 	w = req("GET", "/api/media/search?q=daft", "")
-	var res struct{ Tracks []model.Track }
-	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &res) != nil || len(res.Tracks) != 5 {
+	var res model.Results
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &res) != nil || len(res.Tracks) != 5 || len(res.Albums) != 3 {
 		t.Fatalf("recherche : %d %s", w.Code, w.Body)
 	}
 	if w := req("GET", "/api/media/search?q="+strings.Repeat("a", 101), ""); w.Code != 400 {
 		t.Fatalf("recherche trop longue : %d", w.Code)
 	}
-	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_track","params":{"uri":"spotify:track:demo2","title":"Get Lucky","artists":"Daft Punk"}}`); w.Code != 202 {
-		t.Fatalf("lecture : %d %s", w.Code, w.Body)
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_music","params":{"uri":"spotify://album/ram","kind":"album","title":"Random Access Memories"}}`); w.Code != 202 {
+		t.Fatalf("lecture album : %d %s", w.Code, w.Body)
 	}
+	time.Sleep(450 * time.Millisecond)
 	s.rebuild(nil)
-	if d := s.devices["salon.enceinte"]; d.State.Title != "Get Lucky" || d.State.Artist != "Daft Punk" || d.State.App != "Spotify" || d.State.Radio != "" || d.State.Playing != "playing" {
-		t.Fatalf("lecture Spotify : %+v", d.State)
+	d := s.devices["salon.enceinte"]
+	if d.State.Title != "Get Lucky" || d.State.Album != "Random Access Memories" || d.State.App != "Music Assistant" || d.State.Radio != "" || d.State.Playing != "playing" || d.State.URI != "spotify://track/demo2" {
+		t.Fatalf("lecture Music Assistant : %+v", d.State)
 	}
-	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_track","params":{"uri":"spotify:track:inconnu"}}`); w.Code != 502 {
+	if d.State.Duration == nil || *d.State.Duration != 369 || d.State.Elapsed == nil || d.State.ElapsedAt == "" || !hasCap(d, "next") || !hasCap(d, "previous") || !hasCap(d, "seek") {
+		t.Fatalf("position, commandes : %+v %v", d.State, d.Capabilities)
+	}
+	// next, seek, pause go to the Music Assistant player
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"next"}`); w.Code != 202 {
+		t.Fatalf("suivant : %d %s", w.Code, w.Body)
+	}
+	time.Sleep(450 * time.Millisecond)
+	if e := src.Snapshot()["media_player.salon_salon"]; e.Attributes["media_title"] != "Instant Crush" {
+		t.Fatalf("suivant : %+v", e.Attributes)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"seek","params":{"position":90}}`); w.Code != 202 {
+		t.Fatalf("seek : %d %s", w.Code, w.Body)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"seek","params":{"position":-3}}`); w.Code != 400 {
+		t.Fatalf("seek négatif : %d", w.Code)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"pause"}`); w.Code != 202 {
+		t.Fatalf("pause : %d", w.Code)
+	}
+	time.Sleep(450 * time.Millisecond)
+	if e := src.Snapshot()["media_player.salon_salon"]; e.State != "paused" || e.Attributes["media_position"].(float64) < 90 {
+		t.Fatalf("pause : %s %+v", e.State, e.Attributes)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_track","params":{"uri":"spotify://track/inconnu"}}`); w.Code != 502 {
 		t.Fatalf("titre inconnu : %d", w.Code)
 	}
-	if w := req("POST", "/api/devices/salon.chauffage/actions", `{"action":"play_track","params":{"uri":"spotify:track:demo2"}}`); w.Code != 400 {
-		t.Fatalf("spotify sur un radiateur : %d", w.Code)
+	if w := req("POST", "/api/devices/salon.chauffage/actions", `{"action":"play_music","params":{"uri":"spotify://track/demo2"}}`); w.Code != 400 {
+		t.Fatalf("musique sur un radiateur : %d", w.Code)
 	}
+	// favourites
+	s.Favorites, _ = favorites.Open("")
+	w = req("POST", "/api/media/favorites", `{"kind":"album","item":{"uri":"spotify://album/ram","title":"Random Access Memories","artists":"Daft Punk"},"on":true}`)
+	if w.Code != 200 {
+		t.Fatalf("favori : %d %s", w.Code, w.Body)
+	}
+	if w := req("POST", "/api/media/favorites", `{"kind":"track","item":{"uri":"javascript:x","title":"x"},"on":true}`); w.Code != 400 {
+		t.Fatalf("favori invalide : %d", w.Code)
+	}
+	w = req("GET", "/api/media/favorites", "")
+	if json.Unmarshal(w.Body.Bytes(), &res) != nil || len(res.Albums) != 1 || len(res.Tracks) != 0 {
+		t.Fatalf("favoris : %s", w.Body)
+	}
+	// artwork: none in the demo (no HA to fetch from)
+	if w := req("GET", "/api/media/salon.enceinte/cover", ""); w.Code != 404 {
+		t.Fatalf("pochette : %d", w.Code)
+	}
+}
+
+func hasCap(d model.Device, c string) bool {
+	for _, x := range d.Capabilities {
+		if x == c {
+			return true
+		}
+	}
+	return false
 }
 
 // An idle Cast speaker cannot "play" (nothing to resume): Control starts a radio instead.
@@ -642,10 +695,10 @@ func TestPlayIdleSpeaker(t *testing.T) {
 	if code := post(`{"action":"play"}`); code != 202 {
 		t.Fatalf("lecture à l'arrêt : %d", code)
 	}
-	if e := settled("playing"); e.State != "playing" || e.Attributes["media_title"] != "France Inter" {
+	if e := settled("playing"); e.State != "playing" || e.Attributes["media_title"] != "Radio Nova" {
 		t.Fatalf("première radio attendue : %s %+v", e.State, e.Attributes)
 	}
-	if code := post(`{"action":"play_radio","params":{"id":"fip"}}`); code != 202 {
+	if code := post(`{"action":"play_radio","params":{"id":"culture"}}`); code != 202 {
 		t.Fatalf("radio : %d", code)
 	}
 	settled("playing")
@@ -654,7 +707,7 @@ func TestPlayIdleSpeaker(t *testing.T) {
 	if code := post(`{"action":"play"}`); code != 202 {
 		t.Fatalf("reprise : %d", code)
 	}
-	if e := settled("playing"); e.Attributes["media_title"] != "FIP" {
+	if e := settled("playing"); e.Attributes["media_title"] != "France Culture" {
 		t.Fatalf("dernière radio attendue : %+v", e.Attributes)
 	}
 	// paused: plain media_play
@@ -662,7 +715,7 @@ func TestPlayIdleSpeaker(t *testing.T) {
 	e := src.Snapshot()["media_player.salon"]
 	e.State = "paused"
 	src.Set(e)
-	if code := post(`{"action":"play"}`); code != 202 || settled("playing").State != "playing" || settled("playing").Attributes["media_title"] != "FIP" {
+	if code := post(`{"action":"play"}`); code != 202 || settled("playing").State != "playing" || settled("playing").Attributes["media_title"] != "France Culture" {
 		t.Fatalf("reprise après pause : %d", code)
 	}
 }
@@ -677,5 +730,54 @@ func TestStreamType(t *testing.T) {
 		if got := streamType(u); got != want {
 			t.Errorf("%s : %s, attendu %s", u, got, want)
 		}
+	}
+}
+
+// Tado manual mode goes through Tado Hijack on the zone's mode sensor.
+func TestTadoHijack(t *testing.T) {
+	s, src := newTestServer(t)
+	_, dc, ok := s.findDevice("salon.chauffage")
+	if !ok {
+		t.Fatal("salon.chauffage absent")
+	}
+	zone := dc.Entities["zone_mode"]
+	cases := []struct {
+		dur      string
+		overlay  string
+		duration any
+	}{
+		{`"next_block"`, "next_block", nil},
+		{`"forever"`, "manual", nil},
+		{`180`, "manual", 180},
+		{`99999`, "manual", 1440},
+	}
+	for _, tc := range cases {
+		calls, _, err := s.planDevice(dc, actionBody{Action: "set_mode", Params: json.RawMessage(`{"mode":"manual","duration":` + tc.dur + `}`)})
+		if err != nil || len(calls) != 1 {
+			t.Fatalf("%s : %v %v", tc.dur, calls, err)
+		}
+		c := calls[0]
+		if c.domain+"."+c.service != "tado_hijack.set_mode" || c.data["entity_id"] != zone || c.data["hvac_mode"] != "heat" || c.data["overlay"] != tc.overlay || c.data["refresh_after"] != true {
+			t.Fatalf("%s : %+v", tc.dur, c)
+		}
+		if d, has := c.data["duration"]; (tc.duration == nil) == has || (has && d != tc.duration) {
+			t.Fatalf("%s durée : %+v", tc.dur, c.data)
+		}
+	}
+	// the demo applies it: the zone goes manual, the thermostat heats
+	if err := src.CallService(context.Background(), "climate", "set_hvac_mode", map[string]any{"entity_id": dc.Entities["climate"], "hvac_mode": "auto"}); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(450 * time.Millisecond)
+	if err := src.CallService(context.Background(), "tado_hijack", "set_mode", map[string]any{"entity_id": zone, "hvac_mode": "heat", "overlay": "manual", "duration": 60, "temperature": 21.5, "refresh_after": true}); err != nil {
+		t.Fatal(err)
+	}
+	time.Sleep(450 * time.Millisecond)
+	st := src.Snapshot()
+	if st[zone].State != "manual" || st[dc.Entities["climate"]].State != "heat" {
+		t.Fatalf("démo : zone %s, thermostat %s", st[zone].State, st[dc.Entities["climate"]].State)
+	}
+	if v, _ := st[dc.Entities["climate"]].Attributes["temperature"].(float64); v != 21.5 {
+		t.Fatalf("consigne : %v", v)
 	}
 }

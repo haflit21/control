@@ -54,16 +54,29 @@ export function predict(d: Device, a: DeviceAction): Partial<State> {
     case 'set_position': return { position: a.params.pct };
     case 'set_target': return { target: a.params.temperature, heating: d.state.temperature != null ? a.params.temperature > d.state.temperature : d.state.heating, mode: d.kind === 'heating' ? 'manual' : d.state.mode };
     case 'set_mode': return d.kind === 'heating' ? { mode: a.params.mode, heating: a.params.mode === 'off' ? false : d.state.heating } : { mode: a.params.mode as State['mode'], on: a.params.mode !== 'off' };
-    case 'play': return { playing: 'playing' };
-    case 'pause': return { playing: 'paused' };
+    case 'play': return { playing: 'playing', elapsed: elapsedNow(d.state), elapsedAt: new Date().toISOString() };
+    case 'pause': return { playing: 'paused', elapsed: elapsedNow(d.state), elapsedAt: new Date().toISOString() };
+    case 'next': case 'previous': return d.state.duration != null ? { elapsed: 0, elapsedAt: new Date().toISOString() } : {};
+    case 'seek': return { elapsed: a.params.position, elapsedAt: new Date().toISOString() };
     case 'set_volume': return { volume: a.params.pct };
     case 'play_radio': return { playing: 'playing', radio: a.params.id };
-    case 'play_track': return { playing: 'playing', radio: undefined, title: a.params.title ?? d.state.title, artist: a.params.artists ?? d.state.artist };
+    case 'play_music': return a.params.kind === 'album'
+      ? { playing: 'playing', radio: undefined, album: a.params.title ?? d.state.album, artist: a.params.artists ?? d.state.artist, elapsed: 0, elapsedAt: new Date().toISOString() }
+      : { playing: 'playing', radio: undefined, uri: a.params.uri, title: a.params.title ?? d.state.title, artist: a.params.artists ?? d.state.artist, elapsed: 0, elapsedAt: new Date().toISOString() };
     case 'set_privacy': return { privacy: a.params.on };
     case 'set_eco': return { eco: a.params.on };
     case 'set_boost': return { boost: a.params.on };
   }
   return {};
+}
+
+/** Seconds played right now: the last known position, plus the time since if it plays. */
+export function elapsedNow(s: State, now = Date.now()): number | undefined {
+  if (s.elapsed == null) return undefined;
+  if (s.playing !== 'playing' || !s.elapsedAt) return s.elapsed;
+  const at = Date.parse(s.elapsedAt);
+  const v = Number.isNaN(at) ? s.elapsed : s.elapsed + Math.max(0, (now - at) / 1000);
+  return s.duration != null ? Math.min(v, s.duration) : v;
 }
 
 function patchDevice(h: Home, id: string, patch: Partial<State>): Home {

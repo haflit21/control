@@ -43,15 +43,23 @@ const golden = `{"artists":[],"albums":[],"tracks":[
  {"media_type":"track","uri":"library://track/9","name":"Golden Brown","version":"Remastered","image":"http://192.168.10.242:8095/imageproxy?x",
   "artists":[{"name":"The Stranglers"}],"album":{"name":"La Folie","image":"https://i.scdn.co/image/c"}},
  {"media_type":"track","uri":"bad uri","name":"Cassé"}
+],"albums":[
+ {"media_type":"album","uri":"spotify://album/k","name":"KPop Demon Hunters","version":"","year":2025,"image":"https://i.scdn.co/image/b","artists":[{"name":"Various Artists"}]},
+ {"media_type":"album","uri":"spotify://album/k","name":"KPop Demon Hunters"},
+ {"media_type":"album","uri":"library://album/3","name":"La Folie","image":"http://192.168.10.242:8095/imageproxy?y","artists":[{"name":"The Stranglers"}]}
 ]}`
 
 func TestSearchAndPlay(t *testing.T) {
 	f := &fakeHA{entry: "e1", response: golden}
 	c := &Client{HA: f}
 	ctx := context.Background()
-	tr, err := c.Search(ctx, " golden ", 5)
+	res, err := c.Search(ctx, " golden ", 5)
 	if err != nil {
 		t.Fatal(err)
+	}
+	tr := res.Tracks
+	if len(res.Albums) != 2 || res.Albums[0].Year != 2025 || res.Albums[0].Artists != "Various Artists" || res.Albums[0].Cover != "https://i.scdn.co/image/b" || res.Albums[1].Cover != "" {
+		t.Fatalf("albums : %+v", res.Albums)
 	}
 	if len(tr) != 2 {
 		t.Fatalf("doublon ou URI invalide gardé : %+v", tr)
@@ -63,20 +71,23 @@ func TestSearchAndPlay(t *testing.T) {
 		t.Fatalf("version, ou image locale (http) gardée : %+v", tr[1])
 	}
 	d := f.calls[0]["data"].(map[string]any)
-	if f.calls[0]["svc"] != "music_assistant.search" || d["config_entry_id"] != "e1" || d["name"] != "golden" || d["limit"] != 5 {
+	if f.calls[0]["svc"] != "music_assistant.search" || d["config_entry_id"] != "e1" || d["name"] != "golden" || d["limit"] != 5 || len(d["media_type"].([]string)) != 2 {
 		t.Fatalf("appel : %+v", f.calls[0])
 	}
-	if err := c.Play(ctx, "media_player.salon_2", tr[0].URI); err != nil {
+	if err := c.Play(ctx, "media_player.salon_2", tr[0].URI, "track"); err != nil {
 		t.Fatal(err)
 	}
 	p := f.calls[1]["data"].(map[string]any)
 	if f.calls[1]["svc"] != "music_assistant.play_media" || p["entity_id"] != "media_player.salon_2" || p["media_id"] != "spotify://track/1" || p["enqueue"] != "replace" {
 		t.Fatalf("lecture : %+v", f.calls[1])
 	}
-	if err := c.Play(ctx, "", tr[0].URI); err == nil || !strings.Contains(err.Error(), "entities.music") {
+	if err := c.Play(ctx, "media_player.salon_2", res.Albums[0].URI, "album"); err != nil || f.calls[2]["data"].(map[string]any)["media_type"] != "album" {
+		t.Fatalf("album : %v %+v", err, f.calls[2])
+	}
+	if err := c.Play(ctx, "", tr[0].URI, "track"); err == nil || !strings.Contains(err.Error(), "entities.music") {
 		t.Fatalf("lecteur manquant : %v", err)
 	}
-	if err := c.Play(ctx, "media_player.x", "javascript:alert(1)"); err == nil {
+	if err := c.Play(ctx, "media_player.x", "javascript:alert(1)", "track"); err == nil {
 		t.Fatal("URI invalide acceptée")
 	}
 }

@@ -370,6 +370,24 @@ func (c *Client) CameraSnapshot(ctx context.Context, entity string) ([]byte, str
 	return b, resp.Header.Get("Content-Type"), err
 }
 
+// Image fetches an image HA serves under /api/ (a media player's artwork
+// proxy), at most 4 MB.
+func (c *Client) Image(ctx context.Context, path string) ([]byte, string, error) {
+	if !strings.HasPrefix(path, "/api/") || strings.Contains(path, "..") {
+		return nil, "", fmt.Errorf("chemin refusé")
+	}
+	resp, err := c.rest(ctx, path)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, "", fmt.Errorf("image : HTTP %d", resp.StatusCode)
+	}
+	b, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
+	return b, resp.Header.Get("Content-Type"), err
+}
+
 func (c *Client) CameraStream(ctx context.Context, entity string, w io.Writer, setHeader func(string)) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", c.URL+"/api/camera_proxy_stream/"+entity, nil)
 	if err != nil {

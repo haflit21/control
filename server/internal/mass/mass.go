@@ -43,45 +43,53 @@ func (c *Client) entry(ctx context.Context) (string, error) {
 	return id, nil
 }
 
-// Search returns up to limit tracks (every provider of Music Assistant:
-// Spotify, library…).
-func (c *Client) Search(ctx context.Context, q string, limit int) ([]model.Track, error) {
+// Search returns up to limit tracks and limit/2 albums (every provider of
+// Music Assistant: Spotify, library…).
+func (c *Client) Search(ctx context.Context, q string, limit int) (model.Results, error) {
 	q = strings.TrimSpace(q)
 	if q == "" {
-		return []model.Track{}, nil
+		return model.Results{Tracks: []model.Track{}, Albums: []model.Album{}}, nil
 	}
 	if limit <= 0 || limit > 25 {
 		limit = 10
 	}
 	id, err := c.entry(ctx)
 	if err != nil {
-		return nil, err
+		return model.Results{}, err
 	}
-	raw, err := c.HA.CallServiceResponse(ctx, "music_assistant", "search", map[string]any{"config_entry_id": id, "name": q, "media_type": []string{"track"}, "limit": limit})
+	raw, err := c.HA.CallServiceResponse(ctx, "music_assistant", "search", map[string]any{"config_entry_id": id, "name": q, "media_type": []string{"track", "album"}, "limit": limit})
 	if err != nil {
 		// the entry may have changed (reinstall): look it up again next time
 		c.mu.Lock()
 		c.EntryID = ""
 		c.mu.Unlock()
-		return nil, errors.New("recherche Music Assistant impossible : " + err.Error())
+		return model.Results{}, errors.New("recherche Music Assistant impossible : " + err.Error())
 	}
-	return Tracks(raw, limit)
+	tracks, err := Tracks(raw, limit)
+	if err != nil {
+		return model.Results{}, err
+	}
+	albums, _ := Albums(raw, (limit+1)/2)
+	return model.Results{Tracks: tracks, Albums: albums}, nil
 }
 
-// Play starts the track (its Music Assistant URI) on a Music Assistant player
-// entity, replacing the queue.
-func (c *Client) Play(ctx context.Context, player, uri string) error {
+// Play starts a track or an album (its Music Assistant URI) on a Music
+// Assistant player entity, replacing the queue.
+func (c *Client) Play(ctx context.Context, player, uri, kind string) error {
 	if player == "" {
 		return errors.New("pas de lecteur Music Assistant pour cette enceinte (entities.music dans control.yaml)")
 	}
-	if !validURI(uri) {
+	if kind != "album" {
+		kind = "track"
+	}
+	if !ValidURI(uri) {
 		return errors.New("titre invalide")
 	}
-	return c.HA.CallService(ctx, "music_assistant", "play_media", map[string]any{"entity_id": player, "media_id": uri, "media_type": "track", "enqueue": "replace"})
+	return c.HA.CallService(ctx, "music_assistant", "play_media", map[string]any{"entity_id": player, "media_id": uri, "media_type": kind, "enqueue": "replace"})
 }
 
-// validURI: provider://type/id or provider:type:id, no spaces.
-func validURI(u string) bool {
+// ValidURI: provider://type/id or provider:type:id, no spaces.
+func ValidURI(u string) bool {
 	if len(u) < 6 || len(u) > 300 || strings.ContainsAny(u, " \n\t\"'<>") {
 		return false
 	}
@@ -95,8 +103,54 @@ type item struct {
 	Version   string  `json:"version"`
 	Image     *string `json:"image"`
 	Duration  float64 `json:"duration"`
+	Year      int     `json:"year"`
 	Artists   []item  `json:"artists"`
 	Album     *item   `json:"album"`
+}
+
+func artistNames(a []item) string {
+	names := make([]string, 0, len(a))
+	for _, x := range a {
+		if x.Name != "" {
+			names = append(names, x.Name)
+		}
+	}
+	return strings.Join(names, ", ")
+}
+
+// cover keeps a public https image only (a local imageproxy URL would not load in the browser).
+func cover(img *string) string {
+	if img != nil && strings.HasPrefix(*img, "https://") && len(*img) <= 500 {
+		return *img
+	}
+	return ""
+}
+
+// Albums reads the "albums" of a music_assistant.search response.
+func Albums(raw json.RawMessage, limit int) ([]model.Album, error) {
+	var res struct {
+		Albums []item `json:"albums"`
+	}
+	if err := json.Unmarshal(raw, &res); err != nil {
+		return nil, errors.New("réponse de Music Assistant illisible")
+	}
+	out := []model.Album{}
+	seen := map[string]bool{}
+	for _, it := range res.Albums {
+		if it.URI == "" || it.Name == "" || !ValidURI(it.URI) || seen[it.URI] {
+			continue
+		}
+		seen[it.URI] = true
+		title := it.Name
+		if v := strings.TrimSpace(it.Version); v != "" && !strings.Contains(strings.ToLower(title), strings.ToLower(v)) {
+			title += " (" + v + ")"
+		}
+		out = append(out, model.Album{URI: it.URI, Title: title, Artists: artistNames(it.Artists), Year: it.Year, Cover: cover(it.Image)})
+		if len(out) >= limit {
+			break
+		}
+	}
+	return out, nil
 }
 
 // Tracks reads the "tracks" of a music_assistant.search response.
@@ -110,7 +164,7 @@ func Tracks(raw json.RawMessage, limit int) ([]model.Track, error) {
 	out := []model.Track{}
 	seen := map[string]bool{}
 	for _, it := range res.Tracks {
-		if it.URI == "" || it.Name == "" || !validURI(it.URI) || seen[it.URI] {
+		if it.URI == "" || it.Name == "" || !ValidURI(it.URI) || seen[it.URI] {
 			continue
 		}
 		seen[it.URI] = true
@@ -118,13 +172,7 @@ func Tracks(raw json.RawMessage, limit int) ([]model.Track, error) {
 		if v := strings.TrimSpace(it.Version); v != "" && !strings.Contains(strings.ToLower(title), strings.ToLower(v)) {
 			title += " (" + v + ")"
 		}
-		names := make([]string, 0, len(it.Artists))
-		for _, a := range it.Artists {
-			if a.Name != "" {
-				names = append(names, a.Name)
-			}
-		}
-		t := model.Track{URI: it.URI, Title: title, Artists: strings.Join(names, ", "), Duration: int(it.Duration * 1000)}
+		t := model.Track{URI: it.URI, Title: title, Artists: artistNames(it.Artists), Duration: int(it.Duration * 1000)}
 		if it.Album != nil {
 			t.Album = it.Album.Name
 		}
@@ -132,9 +180,7 @@ func Tracks(raw json.RawMessage, limit int) ([]model.Track, error) {
 		if (img == nil || *img == "") && it.Album != nil {
 			img = it.Album.Image
 		}
-		if img != nil && strings.HasPrefix(*img, "https://") {
-			t.Cover = *img
-		}
+		t.Cover = cover(img)
 		out = append(out, t)
 		if len(out) >= limit {
 			break

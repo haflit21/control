@@ -121,7 +121,7 @@ Règles transversales inchangées : valeur absente = « — » + raison dans `ti
 - Les bascules et boutons marche deviennent de vrais `<button>` (`role=switch` / `aria-pressed`), même apparence, état pressé (scale .94), état `is-pending` (opacité .7) tant que Home Assistant n'a pas renvoyé l'état.
 - **Optimiste mais honnête** : le contrôle prend la valeur demandée tout de suite ; si rien ne revient en 8 s il reprend l'ancienne et un toast d'erreur le dit ; une erreur HTTP remet l'état précédent immédiatement.
 - Pas à pas (`.stepper`) pour la consigne : demi-degré, envoi 600 ms après le dernier appui ; variante `-heat` et `-l` dans la carte chauffage. Curseur (`.slider`) pour volet, intensité, volume : envoi à la relâche (clavier aussi), variante `-cool` pour le volume.
-- Modes de chauffage : segment Planning / Manuel / Arrêt ; en manuel, pilules de durée (prochain bloc, 1 h, 3 h, sans fin) ; Tado reçoit `set_climate_timer`.
+- Modes de chauffage : segment Planning / Manuel / Arrêt ; en manuel, pilules de durée (prochain bloc, 1 h, 3 h, sans fin) ; Tado reçoit `tado_hijack.set_mode` (overlay next_block / manual + durée).
 - Feuille de confirmation (`.scrim` + `.sheet`, portail sur `body`) pour couper le chauffage d'une pièce ou de la maison, booster, désarmer, tout éteindre ; un seul geste par feuille, bouton danger quand c'est un arrêt.
 - Toasts (`.toasts`) au-dessus de la barre du bas : succès 3,5 s, erreur 8 s avec bouton OK ; un toast par action nommée (« Salon · consigne 21° »), silencieux pour les gestes évidents (allumer une lampe).
 - Barre du bas en colonnes automatiques (quatre onglets avec Agenda).
@@ -179,6 +179,7 @@ Règles transversales inchangées : valeur absente = « — » + raison dans `ti
 - **2026-11-08 · v2.6** — photos : `media/` (6 pièces, 9 appareils), `/media/` côté serveur, `image:` dans `control.yaml`, `has-img` + `.thumb` dans `widgets.css`, catalogue et app passés sur les photos.
 
 - **2026-11-11 · maquettes Figma → app** — d'après le fichier Figma « Projects », page Control : bannière de pièce sur toute la largeur (`.rbanner` : photo basse 240 px caméra éteinte, vidéo 16:9 caméra allumée, bouton sur photo `.chip.-btn`), médias (`.stations` / `.station` avec barres `.eq`, résultats Spotify `.tracks` / `.track`, champ `.search`), mur de caméras (`.camwall`, vignettes `.camthumb`, « À l'écran »), Météo en colonnes à hauteur naturelle, écran de veille (`.sleep` dans `wall.css`). Icônes `search` et `radio` ajoutées au sprite.
+- **2026-11-11 · lecteur d'enceinte** — `.mp` (section 23b) : pochette ou logo de la radio, barre de lecture `.mp-seek` (on y avance) ou « En direct », titre précédent / lecture / suivant `.mp-btn`, volume sous le lecteur sans pourcentage. Résultats : titres `.track` (zone `.track-hit`, étoile `.fav`) et albums en rangée défilante `.albums` / `.album` ; onglet Favoris. Logos de radios `.station-logo.-img`. Icônes `skip-back`, `skip-forward`, `star`, `volume`, `volume-low`, `disc`.
 
 - **2026-11-08 · app étape 1** — portage React (`packages/ui`, `apps/web`) et serveur Go (`server/`) : accueil, pièces, sécurité, météo en lecture temps réel (SSE), mode démo, PWA. Captures vérifiées à 390 et 1440 px sans débordement ni erreur console. Section 6c ci-dessus ; le point 5 du « à faire » est fait (sans Storybook, le catalogue reste la doc vivante).
 

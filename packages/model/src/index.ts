@@ -42,6 +42,15 @@ export interface State {
   app?: string;
   /** media: id of the configured radio being played */
   radio?: string;
+  /** media: what plays (Music Assistant URI, stream URL) */
+  uri?: string;
+  /** media: seconds played at elapsedAt (RFC3339); not for a live stream */
+  elapsed?: number;
+  elapsedAt?: string;
+  /** media: track length, seconds */
+  duration?: number;
+  /** media: artwork URL */
+  cover?: string;
   privacy?: boolean;
   smoke?: boolean;
   co?: boolean;
@@ -272,9 +281,13 @@ export interface Media {
   /** "Music Assistant", "Spotify"… */
   musicSource?: string;
 }
-export interface Radio { id: string; name: string; genre?: string; short: string; color?: string }
+export interface Radio { id: string; name: string; genre?: string; short: string; color?: string; logo?: string }
 /** One music search result (GET /api/media/search?q=…). */
 export interface Track { uri: string; title: string; artists: string; album?: string; durationMs: number; cover?: string }
+/** One album search result; playing it replaces the queue with its tracks. */
+export interface Album { uri: string; title: string; artists: string; year?: number; cover?: string }
+/** A music search, or the favourites (GET /api/media/favorites). */
+export interface MusicResults { tracks: Track[]; albums: Album[] }
 
 // Actions (étape 2) — the shapes the server will accept.
 export type DeviceAction =
@@ -286,10 +299,11 @@ export type DeviceAction =
   | { action: 'set_color'; params: { hs: HS } }
   | { action: 'open' | 'close' | 'stop'; params?: undefined }
   | { action: 'set_position'; params: { pct: number } }
-  | { action: 'play' | 'pause'; params?: undefined }
+  | { action: 'play' | 'pause' | 'next' | 'previous'; params?: undefined }
+  | { action: 'seek'; params: { position: number } }
   | { action: 'set_volume'; params: { pct: number } }
   | { action: 'play_radio'; params: { id: string } }
-  | { action: 'play_track'; params: { uri: string; title?: string; artists?: string } }
+  | { action: 'play_music'; params: { uri: string; kind?: 'track' | 'album'; title?: string; artists?: string } }
   | { action: 'set_privacy'; params: { on: boolean } }
   | { action: 'set_eco' | 'set_boost'; params: { on: boolean } };
 

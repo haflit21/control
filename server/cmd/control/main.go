@@ -36,6 +36,7 @@ import (
 	"ahomelab.io/control/internal/agenda"
 	"ahomelab.io/control/internal/config"
 	"ahomelab.io/control/internal/demo"
+	"ahomelab.io/control/internal/favorites"
 	"ahomelab.io/control/internal/ha"
 	"ahomelab.io/control/internal/journal"
 	"ahomelab.io/control/internal/push"
@@ -166,6 +167,16 @@ func serve(cfg *config.Config, cfgPath string) {
 	}
 	srv.Transcriber, srv.Understander = voiceFrom(cfg)
 	srv.Music = musicFrom(cfg, demoMode, src)
+	// favoris (titres, albums) : favorites.json dans state_dir ; en démo, en mémoire
+	favDir := filepath.Join(stateDir, "favorites")
+	if demoMode {
+		favDir = ""
+	}
+	if fs, err := favorites.Open(favDir); err != nil {
+		log.Printf("favoris : désactivés (%v)", err)
+	} else {
+		srv.Favorites = fs
+	}
 	if js, err := journal.Open(filepath.Join(stateDir, "journal")); err != nil {
 		log.Printf("journal : désactivé (%v)", err)
 	} else {
@@ -262,13 +273,13 @@ func check(cfg *config.Config) {
 	} else {
 		need := []string{"light.turn_on", "light.turn_off", "climate.set_temperature", "climate.set_hvac_mode", "cover.open_cover", "cover.close_cover", "cover.set_cover_position", "switch.turn_on", "media_player.media_play_pause", "media_player.volume_set", "script.turn_on"}
 		if len(cfg.Media.Radios) > 0 {
-			need = append(need, "media_player.play_media")
+			need = append(need, "media_player.play_media", "media_player.media_next_track", "media_player.media_previous_track", "media_player.media_seek")
 		}
 		if cfg.Media.Music.Provider == "music_assistant" {
 			need = append(need, "music_assistant.search", "music_assistant.play_media")
 		}
 		if cfgUsesTado(cfg) {
-			need = append(need, "tado.set_climate_timer")
+			need = append(need, "tado_hijack.set_mode")
 		}
 		var absent []string
 		for _, n := range need {
@@ -287,11 +298,12 @@ func check(cfg *config.Config) {
 	}
 }
 
-// cfgUsesTado: heating devices on Tado (the manual-with-duration mode calls tado.set_climate_timer).
+// cfgUsesTado: heating devices with a Tado Hijack zone (the manual-with-duration
+// mode calls tado_hijack.set_mode on it).
 func cfgUsesTado(cfg *config.Config) bool {
 	for _, r := range cfg.Rooms {
 		for _, d := range r.Devices {
-			if d.Kind == "heating" && strings.HasPrefix(d.Entities["climate"], "climate.") {
+			if d.Kind == "heating" && d.Entities["zone_mode"] != "" {
 				return true
 			}
 		}

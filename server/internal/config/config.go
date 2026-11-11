@@ -41,6 +41,8 @@ type Radio struct {
 	Short string `yaml:"short,omitempty"` // 1-4 letters on the tile (default: initials)
 	URL   string `yaml:"url"`
 	Color string `yaml:"color,omitempty"` // tile colour, CSS
+	// Logo: image of the interface (apps/web/public), e.g. radios/fip.webp; the initials otherwise
+	Logo string `yaml:"logo,omitempty"`
 }
 
 type Music struct {
@@ -310,6 +312,13 @@ func (c *Config) Validate() error {
 		}
 		if rd.Name == "" {
 			rd.Name = rd.ID
+		}
+		if rd.Logo != "" {
+			l := strings.TrimPrefix(rd.Logo, "/")
+			if strings.Contains(l, "..") || strings.Contains(l, "://") || !strings.HasPrefix(l, "radios/") {
+				return fmt.Errorf("media.radios : radio %q : logo attendu sous radios/ (apps/web/public/radios)", rd.ID)
+			}
+			rd.Logo = l
 		}
 		if rd.Short == "" {
 			for _, w := range strings.Fields(rd.Name) {

@@ -313,11 +313,13 @@ ignore:
 # make check essaie chaque flux et liste les lecteurs Music Assistant.
 media:
   radios:
-    - { id: inter, short: FI, name: France Inter, genre: Généraliste, color: "#f3c9b4", url: "https://icecast.radiofrance.fr/franceinter-midfi.mp3?id=radiofrance" }
-    - { id: info, short: Fi, name: franceinfo, genre: Info en continu, color: "#c3d3f0", url: "https://icecast.radiofrance.fr/franceinfo-midfi.mp3?id=radiofrance" }
-    - { id: culture, short: FC, name: France Culture, genre: Culture et idées, color: "#e5cdea", url: "https://icecast.radiofrance.fr/franceculture-midfi.mp3?id=radiofrance" }
-    - { id: fip, short: FIP, name: FIP, genre: Éclectique, color: "#c6ead6", url: "https://icecast.radiofrance.fr/fip-midfi.mp3?id=radiofrance" }
-    - { id: musique, short: FM, name: France Musique, genre: Classique et jazz, color: "#f2e1a8", url: "https://icecast.radiofrance.fr/francemusique-midfi.mp3?id=radiofrance" }
+    # logo : image de l'interface (apps/web/public/radios, logos de Wikimedia Commons)
+    - { id: nova, short: N, name: Radio Nova, genre: Grand mix, color: "#f2f2f2", logo: radios/nova.webp, url: "https://novazz.ice.infomaniak.ch/novazz-128.mp3" }
+    - { id: inter, short: FI, name: France Inter, genre: Généraliste, color: "#f3c9b4", logo: radios/inter.webp, url: "https://icecast.radiofrance.fr/franceinter-midfi.mp3?id=radiofrance" }
+    - { id: culture, short: FC, name: France Culture, genre: Culture et idées, color: "#e5cdea", logo: radios/culture.webp, url: "https://icecast.radiofrance.fr/franceculture-midfi.mp3?id=radiofrance" }
+    - { id: info, short: Fi, name: franceinfo, genre: Info en continu, color: "#c3d3f0", logo: radios/franceinfo.webp, url: "https://icecast.radiofrance.fr/franceinfo-midfi.mp3?id=radiofrance" }
+    - { id: mouv, short: M, name: Mouv', genre: Rap et urbain, color: "#d8d8d8", logo: radios/mouv.webp, url: "https://icecast.radiofrance.fr/mouv-midfi.mp3?id=radiofrance" }
+    - { id: lyon1ere, short: L1, name: Lyon 1ère, genre: Radio de Lyon, color: "#c3d3f0", logo: radios/lyon1ere.webp, url: "https://lyon1ere.ice.infomaniak.ch/lyon1ere-high.mp3" }
   music:
     provider: music_assistant
 

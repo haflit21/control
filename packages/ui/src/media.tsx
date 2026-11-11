@@ -1,9 +1,9 @@
-// Room banner (camera or photo), media picker (radio stations, Spotify search
-// results) and the camera wall of the Sécurité page.
-import { useEffect, useState } from 'react';
+// Room banner (camera or photo), speaker player, media picker (radio
+// stations, music search results, albums) and the camera wall of the Sécurité page.
+import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
-import type { Radio, Track } from '@control/model';
-import { Icon, Tag, cx } from './primitives';
+import type { Album, Radio, Track } from '@control/model';
+import { Icon, Slider, Tag, cx } from './primitives';
 import { Ambience } from './composites';
 import type { IconName } from './sprite';
 
@@ -50,11 +50,18 @@ export function PhotoButton({ icon, children, onClick, pending, label }: { icon:
   );
 }
 
-/** Radio station tile: coloured initials, name, genre; animated bars when it plays. */
+/** A radio's logo, or its initials on its colour. */
+export function StationLogo({ radio, className }: { radio: Radio; className?: string }) {
+  const [failed, setFailed] = useState(false);
+  if (radio.logo && !failed) return <img className={cx('station-logo -img', className)} src={radio.logo} alt="" onError={() => setFailed(true)} />;
+  return <span className={cx('station-logo', className)} style={radio.color ? ({ ['--station' as string]: radio.color } as CSSProperties) : undefined} aria-hidden="true">{radio.short}</span>;
+}
+
+/** Radio station tile: logo, name, genre; animated bars when it plays. */
 export function Station({ radio, playing, pending, onPlay }: { radio: Radio; playing: boolean; pending?: boolean; onPlay: () => void }) {
   return (
     <button type="button" className={cx('station', playing && 'is-on', pending && 'is-pending')} aria-pressed={playing} onClick={onPlay}>
-      <span className="station-logo" style={radio.color ? ({ ['--station' as string]: radio.color } as CSSProperties) : undefined} aria-hidden="true">{radio.short}</span>
+      <StationLogo radio={radio} />
       <span className="station-body"><span className="station-t">{radio.name}</span>{radio.genre && <span className="station-s">{radio.genre}</span>}</span>
       {playing ? <span className="eq" aria-label="En lecture"><i /><i /><i /><i /></span> : <Icon name="play" />}
     </button>
@@ -66,16 +73,125 @@ export function minSec(ms: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-/** One music search result: cover, title, artists · album, duration, play. */
-export function TrackRow({ track, playing, pending, onPlay }: { track: Track; playing: boolean; pending?: boolean; onPlay: () => void }) {
+/** Star toggle: in the favourites or not. */
+export function FavButton({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
+  return (
+    <button type="button" className={cx('fav', on && 'is-on')} aria-pressed={on} aria-label={on ? `Retirer ${label} des favoris` : `Ajouter ${label} aux favoris`}
+      onClick={(e) => { e.stopPropagation(); onToggle(); }}>
+      <Icon name="star" />
+    </button>
+  );
+}
+
+/** One music search result: cover, title, artists · album, duration, favourite, play. */
+export function TrackRow({ track, playing, pending, onPlay, fav, onFav }: { track: Track; playing: boolean; pending?: boolean; onPlay: () => void; fav?: boolean; onFav?: () => void }) {
   const [failed, setFailed] = useState(false);
   return (
-    <button type="button" className={cx('track', playing && 'is-on', pending && 'is-pending')} aria-pressed={playing} onClick={onPlay}>
-      {track.cover && !failed ? <img className="track-cover" src={track.cover} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className="track-cover" aria-hidden="true" />}
-      <span className="track-body"><span className="track-t">{track.title}</span><span className="track-s">{[track.artists, track.album].filter(Boolean).join(' · ')}</span></span>
-      <span className="track-d">{track.durationMs > 0 ? minSec(track.durationMs) : ''}</span>
-      <span className="track-play" aria-hidden="true"><Icon name={playing ? 'pause' : 'play'} /></span>
-    </button>
+    <div className={cx('track', playing && 'is-on', pending && 'is-pending')}>
+      <button type="button" className="track-hit" aria-pressed={playing} aria-label={`${playing ? 'Mettre en pause' : 'Écouter'} ${track.title}`} onClick={onPlay}>
+        {track.cover && !failed ? <img className="track-cover" src={track.cover} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className="track-cover" aria-hidden="true" />}
+        <span className="track-body"><span className="track-t">{track.title}</span><span className="track-s">{[track.artists, track.album].filter(Boolean).join(' · ')}</span></span>
+        <span className="track-d">{track.durationMs > 0 ? minSec(track.durationMs) : ''}</span>
+      </button>
+      {onFav && <FavButton on={!!fav} onToggle={onFav} label={track.title} />}
+      <button type="button" className="track-play" tabIndex={-1} aria-hidden="true" onClick={onPlay}><Icon name={playing ? 'pause' : 'play'} /></button>
+    </div>
+  );
+}
+
+/** Album tile: cover, title, artists · year; a touch plays the album, the star keeps it. */
+export function AlbumTile({ album, playing, pending, onPlay, fav, onFav }: { album: Album; playing: boolean; pending?: boolean; onPlay: () => void; fav?: boolean; onFav?: () => void }) {
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className={cx('album', playing && 'is-on', pending && 'is-pending')}>
+      <button type="button" className="album-hit" aria-pressed={playing} aria-label={`Écouter l’album ${album.title}`} onClick={onPlay}>
+        <span className="album-cover">
+          {album.cover && !failed ? <img src={album.cover} alt="" loading="lazy" onError={() => setFailed(true)} /> : <Icon name="disc" />}
+          <span className="album-play" aria-hidden="true">{playing ? <span className="eq"><i /><i /><i /><i /></span> : <Icon name="play" />}</span>
+        </span>
+        <span className="album-t">{album.title}</span>
+        <span className="album-s">{[album.artists, album.year].filter(Boolean).join(' · ')}</span>
+      </button>
+      {onFav && <FavButton on={!!fav} onToggle={onFav} label={album.title} />}
+    </div>
+  );
+}
+
+function clock(sec: number): string {
+  return minSec(Math.max(0, sec) * 1000);
+}
+
+/**
+ * What a speaker plays and its controls: artwork (or the radio's logo),
+ * title, artist; the progress bar to seek in a track, or « En direct » for a
+ * radio; previous / play-pause / next; the volume.
+ */
+export function MediaPlayer({ title, sub, app, cover, radio, playing, pending, elapsed, elapsedAt, duration, canPrev, canNext, canSeek, volume, onToggle, onPrev, onNext, onSeek, onVolume }: {
+  title: string; sub?: string; app?: string; cover?: string; radio?: Radio; playing: boolean; pending?: boolean;
+  elapsed?: number; elapsedAt?: string; duration?: number; canPrev?: boolean; canNext?: boolean; canSeek?: boolean; volume?: number;
+  onToggle: () => void; onPrev?: () => void; onNext?: () => void; onSeek?: (sec: number) => void; onVolume?: (pct: number) => void;
+}) {
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [cover]);
+  const [now, setNow] = useState(() => Date.now());
+  const ticking = playing && duration != null && elapsed != null;
+  useEffect(() => {
+    if (!ticking) return;
+    setNow(Date.now());
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [ticking, elapsedAt]);
+  let pos = elapsed;
+  if (pos != null && playing && elapsedAt) {
+    const at = Date.parse(elapsedAt);
+    if (!Number.isNaN(at)) pos += Math.max(0, (now - at) / 1000);
+  }
+  if (pos != null && duration != null) pos = Math.min(pos, duration);
+  const [draft, setDraft] = useState<number | undefined>(undefined);
+  const dragging = useRef(false);
+  useEffect(() => { if (!dragging.current) setDraft(undefined); }, [elapsed, elapsedAt]);
+  const shown = draft ?? pos ?? 0;
+  const commit = (v: number) => { dragging.current = false; setDraft(v); onSeek?.(v); };
+  const live = !!radio;
+  return (
+    <div className={cx('mp', !playing && 'is-idle', pending && 'is-pending')}>
+      <div className="mp-head">
+        {radio ? <StationLogo radio={radio} className="mp-cover" />
+          : cover && !failed ? <img className="mp-cover" src={cover} alt="" onError={() => setFailed(true)} />
+            : <span className="mp-cover -empty" aria-hidden="true"><Icon name="music" /></span>}
+        <span className="mp-body">
+          {app && <span className="mp-app">{app}</span>}
+          <span className="mp-t">{title}</span>
+          {sub && <span className="mp-s">{sub}</span>}
+        </span>
+      </div>
+      {live ? (
+        <div className="mp-prog -live"><span className="mp-live"><i className="dot" />En direct</span></div>
+      ) : duration != null && duration > 0 ? (
+        <div className="mp-prog">
+          <span>{clock(shown)}</span>
+          <input type="range" className="mp-seek" min={0} max={Math.round(duration)} step={1} value={Math.round(shown)} disabled={!canSeek || !onSeek}
+            aria-label="Position dans le titre" aria-valuetext={`${clock(shown)} sur ${clock(duration)}`}
+            style={{ ['--v' as string]: `${(shown / duration) * 100}%` } as CSSProperties}
+            onChange={(e) => { dragging.current = true; setDraft(Number(e.target.value)); }}
+            onPointerUp={(e) => commit(Number((e.target as HTMLInputElement).value))}
+            onKeyUp={(e) => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End', 'PageUp', 'PageDown'].includes(e.key)) commit(Number((e.target as HTMLInputElement).value)); }} />
+          <span>{clock(duration)}</span>
+        </div>
+      ) : null}
+      <div className="mp-ctrl">
+        {!live && <button type="button" className="mp-btn" aria-label="Titre précédent" disabled={!canPrev || !onPrev} onClick={onPrev}><Icon name="skip-back" /></button>}
+        <button type="button" className={cx('mp-btn -play', playing && 'is-on')} aria-pressed={playing} aria-label={playing ? 'Mettre en pause' : 'Lecture'} onClick={onToggle}><Icon name={playing ? 'pause' : 'play'} /></button>
+        {!live && <button type="button" className="mp-btn" aria-label="Titre suivant" disabled={!canNext || !onNext} onClick={onNext}><Icon name="skip-forward" /></button>}
+      </div>
+      {volume != null && onVolume && (
+        <div className="mp-vol">
+          <Icon name="volume-low" />
+          <Slider label="Volume" value={volume} cool pending={pending} onCommit={onVolume} />
+          <Icon name="volume" />
+        </div>
+      )}
+    </div>
   );
 }
 

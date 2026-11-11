@@ -56,6 +56,11 @@ type State struct {
 	Album        string   `json:"album,omitempty"`        // media
 	App          string   `json:"app,omitempty"`          // media: the app playing (Spotify, Radio…)
 	Radio        string   `json:"radio,omitempty"`        // media: id of the configured radio being played
+	URI          string   `json:"uri,omitempty"`          // media: what plays (Music Assistant URI, stream URL)
+	Elapsed      *float64 `json:"elapsed,omitempty"`      // media: seconds played at ElapsedAt
+	ElapsedAt    string   `json:"elapsedAt,omitempty"`    // media: RFC3339
+	Duration     *float64 `json:"duration,omitempty"`     // media: seconds (not for a live stream)
+	Cover        string   `json:"cover,omitempty"`        // media: artwork URL (https or /api/media/{id}/cover)
 	Privacy      *bool    `json:"privacy,omitempty"`      // camera private mode
 	Smoke        *bool    `json:"smoke,omitempty"`        // smoke detector
 	CO           *bool    `json:"co,omitempty"`           // smoke detector
@@ -313,6 +318,7 @@ type Radio struct {
 	Genre string `json:"genre,omitempty"`
 	Short string `json:"short"`
 	Color string `json:"color,omitempty"`
+	Logo  string `json:"logo,omitempty"` // /radios/….webp
 }
 
 // Track is one music search result (Music Assistant or Spotify).
@@ -323,4 +329,19 @@ type Track struct {
 	Album    string `json:"album,omitempty"`
 	Duration int    `json:"durationMs"`
 	Cover    string `json:"cover,omitempty"` // https://i.scdn.co/…
+}
+
+// Album is one album search result; playing it replaces the queue with its tracks.
+type Album struct {
+	URI     string `json:"uri"`
+	Title   string `json:"title"`
+	Artists string `json:"artists"`
+	Year    int    `json:"year,omitempty"`
+	Cover   string `json:"cover,omitempty"`
+}
+
+// Results: a music search (or the favourites), tracks and albums.
+type Results struct {
+	Tracks []Track `json:"tracks"`
+	Albums []Album `json:"albums"`
 }

@@ -31,7 +31,8 @@ func musicFrom(cfg *config.Config, demoMode bool, src ha.Source) server.Music {
 	}
 	if demoMode {
 		log.Printf("musique : catalogue de démo (%s simulé)", p)
-		return demo.Music{}
+		d, _ := src.(*demo.Source)
+		return demo.Music{Src: d}
 	}
 	switch p {
 	case "music_assistant":
