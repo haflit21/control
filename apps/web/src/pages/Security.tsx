@@ -1,8 +1,8 @@
 import type { Home } from '@control/model';
-import { Card, CardHead, Chip, Hero, Pict, Row, Status, Tag, Toggle, Who, plural, relative } from '@control/ui';
+import { CamWall, Card, CardHead, Chip, Pict, Row, Status, Tag, Toggle, Who, plural, relative } from '@control/ui';
 import type { IconName } from '@control/ui';
 import { cameras, openings, ROOM_AMBIENCE, roomImage } from '../lib/derive';
-import { snapshotURL, useJournal, useTick } from '../lib/api';
+import { snapshotURL, streamURL, useJournal, useTick } from '../lib/api';
 import { useState } from 'react';
 import type { JournalEntry } from '@control/model';
 import { useActions, usePending } from '../lib/actions';
@@ -26,6 +26,7 @@ export function SecurityPage({ home, now, stale }: { home: Home; now: Date; stal
     else void run();
   };
   const firstCam = cams[0]?.device;
+  const [camId, setCamId] = useState<string | undefined>(undefined);
 
   return (
     <div className="page -security">
@@ -48,18 +49,23 @@ export function SecurityPage({ home, now, stale }: { home: Home; now: Date; stal
         )}
       </Card>
 
-      <div className="sec-cams">
-        {cams.map(({ room, device }) => (
-          <Hero key={device.id} wide
-            image={device.available && !device.state.privacy ? snapshotURL(device.id, tick) : roomImage(room)}
-            ambience={ROOM_AMBIENCE[room.id]}
-            live={device.available && !device.state.privacy}
-            state={device.state.privacy ? 'private' : !device.available ? 'offline' : undefined}
-            center={device.state.privacy ? { icon: 'eye-off', text: 'Mode privé' } : !device.available ? { icon: 'wifi-off', text: 'Injoignable' } : undefined}
-            chips={device.state.motion != null ? <Chip size="s" onPhoto icon="motion">{device.state.motion ? 'Mouvement' : 'Calme'}</Chip> : undefined}
-            pict="camera" title={room.name} sub={device.available ? relative(device.updatedAt, now) : ''} href={`/pieces/${room.id}`} />
-        ))}
-      </div>
+      {cams.length > 0 && (
+        <div className="sec-cams">
+          <CamWall active={camId ?? cams[0].device.id} onSelect={setCamId}
+            items={cams.map(({ room, device }) => {
+              const live = device.available && !device.state.privacy;
+              return {
+                id: device.id, title: room.name, live, href: `/pieces/${room.id}`, ambience: ROOM_AMBIENCE[room.id],
+                sub: device.available ? relative(device.updatedAt, now) : 'Injoignable',
+                image: live ? snapshotURL(device.id, tick) : roomImage(room),
+                video: live ? streamURL(device.id) : undefined,
+                poster: live ? snapshotURL(device.id, tick) : roomImage(room),
+                state: device.state.privacy ? 'private' as const : !device.available ? 'offline' as const : undefined,
+                chips: device.state.motion != null && live ? <Chip size="s" onPhoto icon="motion">{device.state.motion ? 'Mouvement' : 'Calme'}</Chip> : undefined,
+              };
+            })} />
+        </div>
+      )}
 
       <Card tight className="sec-opens">
         <CardHead small pict={<Pict icon="window" state={openNow.length ? 'warn' : 'off'} />} title="Ouvrants" sub={openNow.length === 0 ? 'Tout est fermé' : plural(openNow.length, 'ouvert', 'ouverts')} />

@@ -540,3 +540,70 @@ func TestAgendaAPI(t *testing.T) {
 		t.Fatalf("voix non comprise : %d %s", w.Code, w.Body)
 	}
 }
+
+func TestMusic(t *testing.T) {
+	s, src := newTestServer(t)
+	h := s.Handler()
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/login?token="+s.Token, nil))
+	c := w.Result().Cookies()[0]
+	req := func(method, path, body string) *httptest.ResponseRecorder {
+		r := httptest.NewRequest(method, path, strings.NewReader(body))
+		r.AddCookie(c)
+		r.Header.Set("X-Control", "1")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w
+	}
+	// without a music source: no Musique tab, search refused
+	if s.Home().Media == nil || len(s.Home().Media.Radios) != 5 || s.Home().Media.Spotify {
+		t.Fatalf("médias sans Spotify : %+v", s.Home().Media)
+	}
+	if w := req("GET", "/api/media/search?q=daft", ""); w.Code != 404 {
+		t.Fatalf("recherche sans Spotify : %d", w.Code)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_spotify","params":{"uri":"spotify:track:demo2"}}`); w.Code != 404 {
+		t.Fatalf("lecture sans Spotify : %d", w.Code)
+	}
+	// radios
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_radio","params":{"id":"fip"}}`); w.Code != 202 {
+		t.Fatalf("radio : %d %s", w.Code, w.Body)
+	}
+	if e := src.Snapshot()["media_player.salon"]; e.Attributes["media_content_id"] != "https://icecast.radiofrance.fr/fip-hifi.aac?id=radiofrance" || e.Attributes["media_title"] != "FIP" {
+		t.Fatalf("radio dans HA : %+v", e.Attributes)
+	}
+	s.rebuild(nil)
+	if d := s.devices["salon.enceinte"]; d.State.Radio != "fip" || d.State.Title != "FIP" || d.State.App != "Radio" {
+		t.Fatalf("radio reconnue : %+v", d.State)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_radio","params":{"id":"nrj"}}`); w.Code != 400 {
+		t.Fatalf("radio inconnue : %d", w.Code)
+	}
+	// Spotify (catalogue de démo)
+	s.Music = demo.Music{}
+	s.rebuild(nil)
+	if !s.Home().Media.Spotify {
+		t.Fatal("Spotify absent du modèle")
+	}
+	w = req("GET", "/api/media/search?q=daft", "")
+	var res struct{ Tracks []model.Track }
+	if w.Code != 200 || json.Unmarshal(w.Body.Bytes(), &res) != nil || len(res.Tracks) != 5 {
+		t.Fatalf("recherche : %d %s", w.Code, w.Body)
+	}
+	if w := req("GET", "/api/media/search?q="+strings.Repeat("a", 101), ""); w.Code != 400 {
+		t.Fatalf("recherche trop longue : %d", w.Code)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_spotify","params":{"uri":"spotify:track:demo2","title":"Get Lucky","artists":"Daft Punk"}}`); w.Code != 202 {
+		t.Fatalf("lecture : %d %s", w.Code, w.Body)
+	}
+	s.rebuild(nil)
+	if d := s.devices["salon.enceinte"]; d.State.Title != "Get Lucky" || d.State.Artist != "Daft Punk" || d.State.App != "Spotify" || d.State.Radio != "" || d.State.Playing != "playing" {
+		t.Fatalf("lecture Spotify : %+v", d.State)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_spotify","params":{"uri":"spotify:track:inconnu"}}`); w.Code != 502 {
+		t.Fatalf("titre inconnu : %d", w.Code)
+	}
+	if w := req("POST", "/api/devices/salon.chauffage/actions", `{"action":"play_spotify","params":{"uri":"spotify:track:demo2"}}`); w.Code != 400 {
+		t.Fatalf("spotify sur un radiateur : %d", w.Code)
+	}
+}

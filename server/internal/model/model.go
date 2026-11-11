@@ -53,6 +53,9 @@ type State struct {
 	Volume       *int     `json:"volume,omitempty"`       // 0-100
 	Title        string   `json:"title,omitempty"`        // media
 	Artist       string   `json:"artist,omitempty"`       // media
+	Album        string   `json:"album,omitempty"`        // media
+	App          string   `json:"app,omitempty"`          // media: the app playing (Spotify, Radio…)
+	Radio        string   `json:"radio,omitempty"`        // media: id of the configured radio being played
 	Privacy      *bool    `json:"privacy,omitempty"`      // camera private mode
 	Smoke        *bool    `json:"smoke,omitempty"`        // smoke detector
 	CO           *bool    `json:"co,omitempty"`           // smoke detector
@@ -259,6 +262,7 @@ type Home struct {
 	Weather   *Weather  `json:"weather,omitempty"`
 	Air       *Air      `json:"air,omitempty"`
 	Agenda    *Agenda   `json:"agenda,omitempty"`
+	Media     *Media    `json:"media,omitempty"`
 	Presence  []Person  `json:"presence"`
 	Alerts    []Alert   `json:"alerts"`
 	Connected bool      `json:"connected"` // server ↔ Home Assistant
@@ -294,3 +298,28 @@ type Status struct {
 func F(v float64) *float64 { return &v }
 func B(v bool) *bool       { return &v }
 func I(v int) *int         { return &v }
+
+// Media is what the speakers can play: the configured radios and whether
+// Spotify search is available.
+type Media struct {
+	Radios  []Radio `json:"radios"`
+	Spotify bool    `json:"spotify"`
+}
+
+type Radio struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Genre string `json:"genre,omitempty"`
+	Short string `json:"short"`
+	Color string `json:"color,omitempty"`
+}
+
+// Track is one Spotify search result.
+type Track struct {
+	URI      string `json:"uri"`
+	Title    string `json:"title"`
+	Artists  string `json:"artists"`
+	Album    string `json:"album,omitempty"`
+	Duration int    `json:"durationMs"`
+	Cover    string `json:"cover,omitempty"` // https://i.scdn.co/…
+}

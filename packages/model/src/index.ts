@@ -37,6 +37,11 @@ export interface State {
   volume?: number;
   title?: string;
   artist?: string;
+  album?: string;
+  /** media: the app playing (Spotify, Radio…) */
+  app?: string;
+  /** media: id of the configured radio being played */
+  radio?: string;
   privacy?: boolean;
   smoke?: boolean;
   co?: boolean;
@@ -236,6 +241,7 @@ export interface Home {
   weather?: Weather;
   air?: Air;
   agenda?: Agenda;
+  media?: Media;
   presence: Person[];
   alerts: Alert[];
   connected: boolean;
@@ -259,6 +265,15 @@ export type Event =
   | { type: 'summary'; summary: Summary; at: string }
   | { type: 'status'; status: Status; at: string };
 
+/** What the speakers can play: configured radios, and whether Spotify search is offered. */
+export interface Media {
+  radios: Radio[];
+  spotify: boolean;
+}
+export interface Radio { id: string; name: string; genre?: string; short: string; color?: string }
+/** One Spotify search result (GET /api/media/search?q=…). */
+export interface Track { uri: string; title: string; artists: string; album?: string; durationMs: number; cover?: string }
+
 // Actions (étape 2) — the shapes the server will accept.
 export type DeviceAction =
   | { action: 'set_target'; params: { temperature: number } }
@@ -271,6 +286,8 @@ export type DeviceAction =
   | { action: 'set_position'; params: { pct: number } }
   | { action: 'play' | 'pause'; params?: undefined }
   | { action: 'set_volume'; params: { pct: number } }
+  | { action: 'play_radio'; params: { id: string } }
+  | { action: 'play_spotify'; params: { uri: string; title?: string; artists?: string } }
   | { action: 'set_privacy'; params: { on: boolean } }
   | { action: 'set_eco' | 'set_boost'; params: { on: boolean } };
 

@@ -50,3 +50,26 @@
   .wall-grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "cam" "lights" "heat" "agenda" "opens"; grid-template-rows: auto; }
   .wall-cam .hero { min-height: 240px; aspect-ratio: 16 / 9; height: auto; }
 }
+
+/* ---------- Veille (/veille) : horloge, météo, agenda ; un toucher ou un glissé ramène le tableau de bord ---------- */
+.sleep { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: var(--sp-6); overflow: hidden; background: var(--bg); color: var(--fg); cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none; isolation: isolate; outline: none; }
+.sleep::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: radial-gradient(50% 45% at 0% 0%, var(--bg-glow-1), transparent 70%), radial-gradient(45% 45% at 100% 100%, var(--bg-glow-2), transparent 70%); }
+.sleep.is-night { filter: brightness(.62); }
+.sleep * { pointer-events: none; }
+.sleep-top { position: absolute; top: max(var(--sp-5), env(safe-area-inset-top)); right: var(--sp-6); display: flex; align-items: center; gap: var(--sp-3); }
+.sleep-clock { display: grid; justify-items: center; gap: var(--sp-2); transform: translateY(-6%); }
+.sleep-time { font-family: var(--font-display); font-weight: 300; font-size: clamp(96px, 15vw, 220px); line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.sleep-time span { color: var(--fg-muted); animation: sleep-blink 2s steps(1) infinite; }
+@keyframes sleep-blink { 50% { opacity: .35; } }
+.sleep-date { font-size: clamp(20px, 2.3vw, 32px); color: var(--fg-muted); }
+.sleep-agenda { position: absolute; right: var(--sp-6); bottom: var(--sp-6); width: 360px; max-height: 45vh; overflow: hidden; }
+.sleep-hint { position: absolute; left: 50%; bottom: max(var(--sp-5), env(safe-area-inset-bottom)); transform: translateX(-50%); display: grid; justify-items: center; gap: 2px; font-size: var(--fs-s); color: var(--fg-faint); animation: sleep-bob 2.4s ease-in-out infinite; }
+.sleep-hint .ico { transform: rotate(-90deg); width: 32px; height: 32px; }
+@keyframes sleep-bob { 50% { transform: translate(-50%, -6px); } }
+@media (prefers-reduced-motion: reduce) { .sleep-time span, .sleep-hint { animation: none; } }
+@media (max-width: 860px) {
+  .sleep { align-content: center; gap: var(--sp-6); }
+  .sleep-top { left: var(--sp-4); right: var(--sp-4); justify-content: center; flex-wrap: wrap; }
+  .sleep-agenda { position: static; width: min(420px, 100%); max-height: none; }
+  .sleep-clock { transform: none; }
+}

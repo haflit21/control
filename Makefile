@@ -1,4 +1,4 @@
-.PHONY: dev dev-ha demo build build-ui build-server test check secrets-init secret-from-env secrets-keys secrets secret-random secret-set secret-get
+.PHONY: dev dev-ha demo build build-ui build-server test check secrets-init secret-from-env secrets-keys secrets secret-random secret-set secret-get spotify-login
 
 # Interface Vite (5173, proxy /api) + serveur Go en mode démo (8080)
 dev:
@@ -69,3 +69,11 @@ secret-set:
 # Copie une valeur dans le presse-papiers du Mac, sans l'afficher : make secret-get NAME=CONTROL_TOKEN
 secret-get:
 	@$(SOPS) decrypt --extract '["$(NAME)"]' $(SECRETS) | tr -d '\n' | pbcopy && echo "$(NAME) copié dans le presse-papiers"
+
+# Spotify (une fois) : autorise Control sur le compte Premium et chiffre le jeton de renouvellement,
+# sans jamais l'afficher. Avant : une appli sur developer.spotify.com (URI de redirection
+# http://127.0.0.1:8888/callback, ton compte dans « Users »), puis
+# make secret-set NAME=SPOTIFY_CLIENT_ID et make secret-set NAME=SPOTIFY_CLIENT_SECRET.
+spotify-login:
+	@v=$$(cd server && CONTROL_CONFIG=../control.yaml go run ./cmd/control spotify-login) && test -n "$$v" && \
+	 $(SOPS) set $(SECRETS) '["SPOTIFY_REFRESH_TOKEN"]' "\"$$v\"" && echo "SPOTIFY_REFRESH_TOKEN chiffré dans $(SECRETS)"

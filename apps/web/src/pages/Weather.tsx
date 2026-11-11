@@ -1,7 +1,12 @@
+import { Children, type CSSProperties, type ReactNode } from 'react';
 import type { Home } from '@control/model';
+import { useMedia } from '../lib/api';
 import { AirIndex, AirPollens, AirPollutants, Card, CardHead, Compass, InOut, Pict, Pressure, Section, Spark, SunArc, UV, WxDays, WxHero, WxHours, WxStat, cardinal, int, relative, temp0 } from '@control/ui';
 
 export function WeatherPage({ home, now }: { home: Home; now: Date }) {
+  const wide3 = useMedia('(min-width: 1280px)');
+  const wide2 = useMedia('(min-width: 861px)');
+  const cols = wide3 ? 3 : wide2 ? 2 : 1;
   const w = home.weather;
   if (!w) return <div className="state"><Pict icon="cloud" size="xl" /><h2>Pas de météo configurée</h2><p>Ajoute une entité <code>weather</code> dans control.yaml.</p></div>;
   const hours = w.hourly.slice(0, 12);
@@ -9,6 +14,7 @@ export function WeatherPage({ home, now }: { home: Home; now: Date }) {
   return (
     <div className="page -weather">
       <h1 className="sr-only">Météo et qualité de l’air</h1>
+      <Columns n={cols}>
       <Card hero><WxHero w={w} now={now} /></Card>
 
       <Card tight>
@@ -83,6 +89,15 @@ export function WeatherPage({ home, now }: { home: Home; now: Date }) {
           <InOut inside={home.globals.heating.average} outside={w.temperature} cond={w.condition} night={w.night} />
         </Card>
       )}
+      </Columns>
     </div>
   );
+}
+
+/** Cards dealt into n columns in reading order (1, 2, 3 on the first row…), each column as tall as its cards. */
+function Columns({ n, children }: { n: number; children: ReactNode }) {
+  const items = Children.toArray(children).filter(Boolean);
+  const cols: ReactNode[][] = Array.from({ length: n }, () => []);
+  items.forEach((it, i) => cols[i % n].push(it));
+  return <div className="wx-cols" style={{ ['--n' as string]: n } as CSSProperties}>{cols.map((col, i) => <div key={i} className="wx-col">{col}</div>)}</div>;
 }

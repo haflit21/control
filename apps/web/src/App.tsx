@@ -12,6 +12,7 @@ import { RoomPage } from './pages/Room';
 import { RoomsPage } from './pages/Rooms';
 import { AgendaPage } from './pages/Agenda';
 import { WallPage } from './pages/Wall';
+import { SleepPage } from './pages/Sleep';
 import { SecurityPage } from './pages/Security';
 import { WeatherPage } from './pages/Weather';
 
@@ -21,6 +22,7 @@ const NAV = [
   { id: 'security', label: 'Sécurité', icon: 'shield', to: '/securite' },
   { id: 'agenda', label: 'Agenda', icon: 'calendar', to: '/agenda' },
 ];
+const SLEEP = { id: 'sleep', label: 'Veille', icon: 'power', to: '/veille' };
 
 export function App() {
   const link = useEvents();
@@ -45,6 +47,18 @@ export function App() {
   const active = loc.pathname.startsWith('/pieces') ? 'rooms' : loc.pathname.startsWith('/securite') ? 'security' : loc.pathname.startsWith('/meteo') ? 'weather' : loc.pathname.startsWith('/agenda') ? 'agenda' : 'home';
   const stale = isStale(home.data, link, now);
   const wall = loc.pathname.startsWith('/mur');
+  const sleep = loc.pathname.startsWith('/veille');
+
+  if (sleep) {
+    return (
+      <>
+        <IconSprite />
+        {home.data && <main><SleepPage home={home.data} now={now} /></main>}
+        {home.isLoading && <Loading />}
+        {home.isError && <ErrorState status={home.error.status} message={home.error.body.error} detail={home.error.body.detail} />}
+      </>
+    );
+  }
 
   if (wall) {
     return (
@@ -69,6 +83,7 @@ export function App() {
               <Link to="/meteo" className={active === 'weather' ? 'is-active' : undefined} aria-label="Météo"><Icon name="cloud" size="l" /></Link>
             </nav>
             <div className="rail-bot">
+              <Link to="/veille" className="pict rail-sleep" aria-label="Mettre en veille" title="Veille"><Icon name="power" /></Link>
               <button type="button" className="pict" style={{ cursor: 'pointer', position: 'relative' }} aria-label={`Alertes : ${home.data?.alerts.length ?? 0}`} onClick={() => setBell(true)}><Icon name="bell" />{!!home.data?.alerts.length && <span className="pict-n">{home.data.alerts.length}</span>}</button>
               {home.data?.presence[0] && <span className={home.data.presence[0].home ? 'who is-home' : 'who is-away'}><span className="avatar" aria-label={home.data.presence[0].name}>{home.data.presence[0].name.charAt(0)}</span></span>}
             </div>
@@ -94,7 +109,7 @@ export function App() {
           </main>
         </div>
         <div className="nav-wrap">
-          <BottomNav items={NAV} active={active} renderLink={(it, cls, children) => <Link to={NAV.find((n) => n.id === it.id)!.to} className={cls}>{children}</Link>} />
+          <BottomNav items={[...NAV, SLEEP]} active={active} renderLink={(it, cls, children) => <Link to={[...NAV, SLEEP].find((n) => n.id === it.id)!.to} className={cls}>{children}</Link>} />
           <Toasts items={toasts} onDismiss={dismissToast} />
           {bell && home.data && (
             <Popover onClose={() => setBell(false)} label="Alertes">

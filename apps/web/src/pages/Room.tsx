@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import type { Device, Home, Room } from '@control/model';
-import { Card, CardHead, Chip, ChipRow, DevCard, Dots, Hero, LightPanel, Pair, Pict, Player, Popover, Row, Section, Seg, Slider, Status, Stepper, Tag, Thumb, TimeAgo, Toggle, Val, AC_MODE_LABEL, plural } from '@control/ui';
+import { Card, CardHead, Chip, ChipRow, DevCard, Dots, LightPanel, Pair, PhotoButton, Pict, Popover, Row, RoomBanner, Section, Seg, Slider, Status, Stepper, Tag, Thumb, TimeAgo, Toggle, Val, AC_MODE_LABEL, plural } from '@control/ui';
 import { byKind, deviceImage, deviceSub, heatingModeLabel, lightColor, ROOM_AMBIENCE, roomImage, roomStatus } from '../lib/derive';
 import { cx } from '@control/ui';
-import { snapshotURL, useTick } from '../lib/api';
+import { snapshotURL, streamURL, useTick } from '../lib/api';
+import { MediaCard } from './MediaCard';
 import { useActions, usePending } from '../lib/actions';
 import { useConfirm } from '../lib/confirm';
 
@@ -35,24 +36,9 @@ export function RoomPage({ home, now, stale }: { home: Home; now: Date; stale: b
       <Seg items={[{ id: '_all', label: 'Pièces' }, ...home.rooms.map((r) => ({ id: r.id, label: r.name, badge: r.summary.openingsOpen > 0 && r.summary.heating ? '!' : r.summary.lightsOn > 0 ? String(r.summary.lightsOn) : undefined }))]} active={room.id}
         renderLink={(it, cls, children) => <Link to={it.id === '_all' ? '/pieces' : `/pieces/${it.id}`} className={cls} role="tab" aria-selected={it.id === room.id}>{children}</Link>} />
 
-      <div className="room-main">
-      {cam ? (
-        <Hero wide
-          image={cam.available && !cam.state.privacy ? snapshotURL(cam.id, tick) : roomImage(room)}
-          ambience={ROOM_AMBIENCE[room.id]}
-          live={cam.available && !cam.state.privacy}
-          state={cam.state.privacy ? 'private' : !cam.available ? 'offline' : undefined}
-          center={cam.state.privacy ? { icon: 'eye-off', text: 'Mode privé' } : !cam.available ? { icon: 'wifi-off', text: 'Caméra injoignable' } : undefined}
-          chips={cam.state.motion != null ? <Chip size="s" onPhoto icon="motion">{cam.state.motion ? 'Mouvement' : 'Calme'}</Chip> : undefined}
-          pict="camera" title={room.name} sub={roomStatus(room, now)} />
-      ) : (
-        <Hero wide image={roomImage(room)} ambience={ROOM_AMBIENCE[room.id]} pict="home" title={room.name} sub={roomStatus(room, now)}
-          chips={<>
-            {room.summary.temperature != null && <Chip size="s" onPhoto tone={room.summary.heating ? 'heat' : undefined} icon="thermo">{room.summary.temperature.toLocaleString('fr-FR')}°</Chip>}
-            {room.summary.humidity != null && <Chip size="s" onPhoto icon="drop">{Math.round(room.summary.humidity)}&#8239;%</Chip>}
-          </>} />
-      )}
+      <RoomHero room={room} cam={cam} now={now} tick={tick} act={act} pending={!!(cam && pending[cam.id])} />
 
+      <div className="room-main">
       {heating.map((h) => <HeatingCard key={h.id} d={h} room={room} now={now} stale={stale} act={act} pending={!!pending[h.id]} ask={ask} />)}
 
       {acs.map((ac) => (
@@ -81,6 +67,14 @@ export function RoomPage({ home, now, stale }: { home: Home; now: Date; stale: b
       )}
       </div>
       <div className="room-side">
+      {medias.length > 0 && (
+        <Section title="Médias">
+          <div className="stack">
+            {medias.map((m) => <MediaCard key={m.id} d={m} media={home.media} act={act} pending={!!pending[m.id]} />)}
+          </div>
+        </Section>
+      )}
+
       {lights.length > 0 && (
         <Section title="Lumières" count={room.summary.lightsOn === 0 ? 'tout est éteint' : plural(room.summary.lightsOn, 'allumée', 'allumées')}
           right={<Toggle small on={room.summary.lightsOn > 0} label="Lumières de la pièce" onChange={(on) => { lights.filter((l) => l.available && l.kind === 'light' && !!l.state.on !== on).forEach((l) => act.device(l, { action: 'power', params: { on } }, { quiet: true }).catch(() => {})); }} />}>
@@ -118,15 +112,6 @@ export function RoomPage({ home, now, stale }: { home: Home; now: Date; stale: b
         </Section>
       )}
 
-      {medias.map((m) => (
-        <Section key={m.id} title="Médias">
-          <div className="stack">
-            <Player title={m.state.title || m.name} artist={[m.state.artist, m.name].filter(Boolean).join(' · ')} playing={m.state.playing === 'playing'} volume={m.state.volume} progress={m.state.playing === 'playing' ? 'live' : undefined} cover={deviceImage(m)}
-              pending={!!pending[m.id]} onToggle={() => act.device(m, { action: m.state.playing === 'playing' ? 'pause' : 'play' }, { quiet: true }).catch(() => {})} />
-            {m.available && m.state.volume != null && <Card tight><Slider label="Volume" value={m.state.volume} cool ends={['Muet', 'Fort']} pending={!!pending[m.id]} onCommit={(pct) => act.device(m, { action: 'set_volume', params: { pct } }, { quiet: true }).catch(() => {})} /></Card>}
-          </div>
-        </Section>
-      ))}
 
       </div>
       {confirmEl}
@@ -202,4 +187,32 @@ function SensorRow({ d, now }: { d: Device; now: Date }) {
     default:
       return null;
   }
+}
+
+/**
+ * Banner across both columns: the room photo, low, when the camera is off
+ * (private mode, unreachable, no camera); the live camera at 16:9 when it is on.
+ * The button toggles the private mode (it applies to every camera).
+ */
+function RoomHero({ room, cam, now, tick, act, pending }: { room: Room; cam?: Device; now: Date; tick: number; act: ReturnType<typeof useActions>; pending: boolean }) {
+  const live = !!cam && cam.available && !cam.state.privacy;
+  const t = room.summary.temperature;
+  const chips = (
+    <>
+      {cam && !live && <Chip size="s" onPhoto icon={cam.state.privacy ? 'eye-off' : 'wifi-off'}>{cam.state.privacy ? 'Caméra en mode privé' : 'Caméra injoignable'}</Chip>}
+      {live && cam.state.motion != null && <Chip size="s" onPhoto icon="motion">{cam.state.motion ? 'Mouvement' : 'Calme'}</Chip>}
+      {t != null && <Chip size="s" onPhoto tone={room.summary.heating ? 'heat' : undefined} icon="thermo">{t.toLocaleString('fr-FR')}°</Chip>}
+      {room.summary.humidity != null && <Chip size="s" onPhoto icon="drop">{Math.round(room.summary.humidity)}&#8239;%</Chip>}
+    </>
+  );
+  const action = cam && cam.available ? (
+    <PhotoButton icon={live ? 'eye-off' : 'camera'} pending={pending} label={live ? 'Activer le mode privé des caméras' : 'Allumer les caméras'}
+      onClick={() => act.device(cam, { action: 'set_privacy', params: { on: live } }).catch(() => {})}>
+      {live ? 'Mode privé' : 'Allumer la caméra'}
+    </PhotoButton>
+  ) : undefined;
+  return (
+    <RoomBanner title={room.name} sub={roomStatus(room, now)} ambience={ROOM_AMBIENCE[room.id]} image={roomImage(room)}
+      video={live ? streamURL(cam.id) : undefined} poster={cam ? snapshotURL(cam.id, tick) : undefined} live={live} chips={chips} action={action} />
+  );
 }

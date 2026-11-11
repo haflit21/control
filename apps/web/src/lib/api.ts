@@ -99,6 +99,11 @@ export function snapshotURL(deviceId: string, tick: number): string {
   return `/api/cameras/${encodeURIComponent(deviceId)}/snapshot?t=${tick}`;
 }
 
+/** Live camera (MJPEG relayed by the server), for an <img>. */
+export function streamURL(deviceId: string): string {
+  return `/api/cameras/${encodeURIComponent(deviceId)}/stream`;
+}
+
 /** A counter that increments every n seconds (snapshot refresh). */
 export function useTick(seconds: number): number {
   const [t, setT] = useState(0);

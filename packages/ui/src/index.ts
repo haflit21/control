@@ -3,5 +3,6 @@ export * from './composites';
 export * from './weather';
 export * from './agenda';
 export * from './light';
+export * from './media';
 export * from './format';
 export { ICONS, type IconName } from './sprite';

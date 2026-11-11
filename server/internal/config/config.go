@@ -21,6 +21,30 @@ type Config struct {
 	Ignore  []string `yaml:"ignore"` // entities never shown (documentation only)
 	Serve   Serve    `yaml:"serve"`
 	Agenda  Agenda   `yaml:"agenda"`
+	Media   Media    `yaml:"media"`
+}
+
+// Media: what the speakers can play besides their own app. Radios are plain
+// streams sent to the speaker by HA (media_player.play_media); Spotify is
+// searched and started through the Spotify Web API (credentials in the
+// secrets: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN).
+type Media struct {
+	Radios  []Radio `yaml:"radios"`
+	Spotify Spotify `yaml:"spotify"`
+}
+
+type Radio struct {
+	ID    string `yaml:"id"`
+	Name  string `yaml:"name"`
+	Genre string `yaml:"genre,omitempty"`
+	Short string `yaml:"short,omitempty"` // 1-4 letters on the tile (default: initials)
+	URL   string `yaml:"url"`
+	Color string `yaml:"color,omitempty"` // tile colour, CSS
+}
+
+type Spotify struct {
+	Enabled bool   `yaml:"enabled"`
+	Market  string `yaml:"market,omitempty"` // search market, ISO country (default FR)
 }
 
 // Agenda: the family calendar kept by the app itself (state_dir/agenda), and
@@ -108,6 +132,8 @@ type Device struct {
 	Hidden   bool              `yaml:"hidden,omitempty"`
 	Image    string            `yaml:"image,omitempty"`     // product photo, relative to media_dir; the UI has a default per kind
 	ImageOff string            `yaml:"image_off,omitempty"` // lights: photo when off (image is then the lit one)
+	// SpotifyDevice: media players, the speaker's name in Spotify Connect (default: the room name).
+	SpotifyDevice string `yaml:"spotify_device,omitempty"`
 }
 
 type Globals struct {
@@ -264,7 +290,44 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+	radioSeen := map[string]bool{}
+	for i := range c.Media.Radios {
+		rd := &c.Media.Radios[i]
+		if rd.ID == "" || strings.ContainsAny(rd.ID, " ./@") {
+			return fmt.Errorf("media.radios : radio %q : id manquant ou invalide", rd.Name)
+		}
+		if radioSeen[rd.ID] {
+			return fmt.Errorf("media.radios : radio %q en double", rd.ID)
+		}
+		radioSeen[rd.ID] = true
+		if !strings.HasPrefix(rd.URL, "https://") && !strings.HasPrefix(rd.URL, "http://") {
+			return fmt.Errorf("media.radios : radio %q : url http(s) requise", rd.ID)
+		}
+		if rd.Name == "" {
+			rd.Name = rd.ID
+		}
+		if rd.Short == "" {
+			for _, w := range strings.Fields(rd.Name) {
+				if r := []rune(w); len(r) > 0 && len([]rune(rd.Short)) < 3 {
+					rd.Short += strings.ToUpper(string(r[0]))
+				}
+			}
+		}
+	}
+	if c.Media.Spotify.Market == "" {
+		c.Media.Spotify.Market = "FR"
+	}
 	return nil
+}
+
+// Radio returns the configured radio with this id.
+func (c *Config) Radio(id string) (Radio, bool) {
+	for _, r := range c.Media.Radios {
+		if r.ID == id {
+			return r, true
+		}
+	}
+	return Radio{}, false
 }
 
 // Entities lists every HA entity the configuration refers to, so the HA

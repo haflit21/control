@@ -63,7 +63,9 @@ type Server struct {
 	// Transcriber / Understander: voice and typed quick entry (nil = not offered).
 	Transcriber  voice.Transcriber
 	Understander voice.Understander
-	agendaKick   chan struct{}
+	// Music: Spotify search and playback (nil = the Musique tab is not offered).
+	Music      Music
+	agendaKick chan struct{}
 
 	air    *model.Air
 	agenda *model.Agenda
@@ -177,7 +179,7 @@ func (s *Server) rebuild(emit func([]model.Event)) {
 	s.mu.RLock()
 	air, agenda := s.air, s.agenda
 	s.mu.RUnlock()
-	home := build.Build(build.Input{Config: s.Cfg, States: s.Src.Snapshot(), Forecasts: s.Src.Forecasts(weather), Now: now, Connected: s.Src.Connected(), Demo: s.Demo, Air: air, Agenda: agenda})
+	home := build.Build(build.Input{Config: s.Cfg, States: s.Src.Snapshot(), Forecasts: s.Src.Forecasts(weather), Now: now, Connected: s.Src.Connected(), Demo: s.Demo, Air: air, Agenda: agenda, Spotify: s.Music != nil})
 	s.mu.Lock()
 	prev := s.devices
 	prevHome := s.home
@@ -259,6 +261,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/security/alarm", s.auth(s.mutating(s.alarm)))
 	mux.HandleFunc("POST /api/security/alarm/ack", s.auth(s.mutating(s.alarmAck)))
 	mux.HandleFunc("GET /api/journal", s.auth(s.apiJournal))
+	mux.HandleFunc("GET /api/media/search", s.auth(s.mediaSearch))
 	mux.HandleFunc("GET /api/agenda/events/{id}", s.auth(s.agendaGet))
 	mux.HandleFunc("POST /api/agenda/events", s.auth(s.mutating(s.agendaCreate)))
 	mux.HandleFunc("PUT /api/agenda/events/{id}", s.auth(s.mutating(s.agendaUpdate)))
@@ -537,7 +540,7 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
 	}
 	if p == "index.html" {
-		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; manifest-src 'self'")
+		w.Header().Set("Content-Security-Policy", "default-src 'self'; img-src 'self' data: blob: https://i.scdn.co; style-src 'self' 'unsafe-inline'; font-src 'self'; connect-src 'self'; manifest-src 'self'")
 	}
 	rs, ok := f.(interface {
 		Read([]byte) (int, error)

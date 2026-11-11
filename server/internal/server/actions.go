@@ -103,13 +103,17 @@ func onOff(on bool) string {
 // deviceAction: POST /api/devices/{id}/actions {action, params}
 func (s *Server) deviceAction(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	_, dc, ok := s.findDevice(id)
+	rc, dc, ok := s.findDevice(id)
 	if !ok {
 		fail(w, http.StatusNotFound, "Appareil inconnu", id)
 		return
 	}
 	var body actionBody
 	if !s.decode(w, r, &body) {
+		return
+	}
+	if dc.Kind == model.KindMedia && body.Action == "play_spotify" {
+		s.playSpotify(w, r, id, rc, dc, body.Params)
 		return
 	}
 	calls, msg, err := s.planDevice(dc, body)
@@ -296,6 +300,16 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 				return nil, "", err
 			}
 			return []call{{"media_player", "volume_set", target(e, map[string]any{"volume_level": clamp(q.Pct, 0, 100) / 100})}}, fmt.Sprintf("%s · volume %.0f %%", dc.Name, q.Pct), nil
+		case "play_radio":
+			var q struct{ ID string }
+			if err := p(&q); err != nil {
+				return nil, "", err
+			}
+			rd, ok := s.Cfg.Radio(q.ID)
+			if !ok {
+				return nil, "", fmt.Errorf("radio inconnue : %q", q.ID)
+			}
+			return []call{radioCall(e, rd)}, dc.Name + " · " + rd.Name, nil
 		}
 	case model.KindCamera:
 		if body.Action == "set_privacy" {

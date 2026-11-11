@@ -13,6 +13,7 @@ import (
 	"io"
 	"math"
 	"math/rand"
+	"strings"
 	"time"
 
 	"ahomelab.io/control/internal/config"
@@ -183,7 +184,11 @@ func (s *Source) seed(now time.Time) {
 			case "camera":
 				add(ent(d.Entities["camera"], "recording", map[string]any{"friendly_name": d.Name}, now.Add(-8*time.Second)))
 			case "media":
-				add(ent(d.Entities["media_player"], "playing", map[string]any{"volume_level": 0.35, "media_title": "France Inter", "media_channel": "Radio", "media_content_type": "music"}, now.Add(-80*time.Minute)))
+				attrs := map[string]any{"volume_level": 0.35, "media_title": "France Inter", "media_channel": "Radio", "media_content_type": "music"}
+				if len(s.cfg.Media.Radios) > 0 {
+					attrs["media_title"], attrs["media_content_id"] = s.cfg.Media.Radios[0].Name, s.cfg.Media.Radios[0].URL
+				}
+				add(ent(d.Entities["media_player"], "playing", attrs, now.Add(-80*time.Minute)))
 			case "smoke":
 				add(ent(d.Entities["smoke"], "off", nil, now.Add(-200*time.Hour)))
 				if e := d.Entities["co"]; e != "" {
@@ -414,6 +419,16 @@ func (s *Source) CallService(ctx context.Context, domain, service string, data m
 			if v, ok := num(data["volume_level"]); ok {
 				e.Attributes["volume_level"] = v
 			}
+		case "media_player.play_media":
+			extra, _ := data["extra"].(map[string]any)
+			meta, _ := extra["metadata"].(map[string]any)
+			str := func(m map[string]any, k string) string { s, _ := m[k].(string); return s }
+			e.State = "playing"
+			e.Attributes["media_content_id"] = data["media_content_id"]
+			e.Attributes["media_title"] = str(extra, "title")
+			e.Attributes["media_artist"] = str(meta, "artist")
+			e.Attributes["app_name"] = str(extra, "app_name")
+			delete(e.Attributes, "media_channel")
 		case "script.turn_on", "button.press", "input_button.press":
 			changed = append(changed, s.applyScript(id, st, now)...)
 			continue
@@ -619,4 +634,42 @@ func SeedAgenda(st *agenda.Store, calendars []string, now time.Time) {
 			_, _ = st.Add(e, "Démo")
 		}
 	}
+}
+
+// Music is the demo Spotify: a small catalogue, searched on title and artist.
+// Nothing leaves the machine.
+type Music struct{}
+
+var catalogue = []model.Track{
+	{URI: "spotify:track:demo1", Title: "One More Time", Artists: "Daft Punk", Album: "Discovery", Duration: 320000},
+	{URI: "spotify:track:demo2", Title: "Get Lucky", Artists: "Daft Punk, Pharrell Williams", Album: "Random Access Memories", Duration: 369000},
+	{URI: "spotify:track:demo3", Title: "Harder, Better, Faster, Stronger", Artists: "Daft Punk", Album: "Discovery", Duration: 224000},
+	{URI: "spotify:track:demo4", Title: "Around the World", Artists: "Daft Punk", Album: "Homework", Duration: 429000},
+	{URI: "spotify:track:demo5", Title: "Instant Crush", Artists: "Daft Punk, Julian Casablancas", Album: "Random Access Memories", Duration: 337000},
+	{URI: "spotify:track:demo6", Title: "Alors on danse", Artists: "Stromae", Album: "Cheese", Duration: 206000},
+	{URI: "spotify:track:demo7", Title: "La Javanaise", Artists: "Serge Gainsbourg", Album: "Gainsbourg Confidentiel", Duration: 147000},
+	{URI: "spotify:track:demo8", Title: "Nightcall", Artists: "Kavinsky", Album: "OutRun", Duration: 258000},
+}
+
+func (Music) Search(ctx context.Context, q string, limit int) ([]model.Track, error) {
+	q = strings.ToLower(strings.TrimSpace(q))
+	out := []model.Track{}
+	if q == "" {
+		return out, nil
+	}
+	for _, t := range catalogue {
+		if strings.Contains(strings.ToLower(t.Title+" "+t.Artists+" "+t.Album), q) && len(out) < limit {
+			out = append(out, t)
+		}
+	}
+	return out, nil
+}
+
+func (Music) Play(ctx context.Context, deviceName, uri string) error {
+	for _, t := range catalogue {
+		if t.URI == uri {
+			return nil
+		}
+	}
+	return fmt.Errorf("mode démo : titre inconnu %s", uri)
 }

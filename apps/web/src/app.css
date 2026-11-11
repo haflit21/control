@@ -49,12 +49,10 @@ a { color: inherit; }
 @media (min-width: 861px) {
   .page.-wide { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: var(--sp-4); align-items: start; }
   .page.-wide > .span { grid-column: 1 / -1; }
-  .page.-weather { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .page.-wide > .card, .page.-wide > .stack { align-self: start; }
 }
 @media (min-width: 1280px) {
   .page.-wide { grid-template-columns: 320px minmax(0, 1fr) 320px; }
-  .page.-weather { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 /* home page: dashboard areas on wide screens, plain column on phone */
@@ -87,16 +85,16 @@ a { color: inherit; }
 @media (min-width: 861px) { .rooms-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); } .rooms-grid .room { min-height: 240px; } }
 @media (min-width: 1280px) { .rooms-grid .room { min-height: 280px; } }
 
-/* room page: two columns on wide screens */
+/* room page: banner across, then heating / AC / sensors | media / lights / covers / plugs */
 .room-main, .room-side { display: grid; gap: var(--sp-5); min-width: 0; align-content: start; }
 @media (min-width: 1100px) {
-  .page.-room { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sp-4) var(--sp-5); align-items: start; }
-  .page.-room > .seg { grid-column: 1 / -1; }
+  .page.-room { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-4) var(--sp-5); align-items: start; }
+  .page.-room > .seg, .page.-room > .rbanner { grid-column: 1 / -1; }
   .page.-room .dev-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 }
 
 /* security: alarm | cameras (2 per row) ; ouvrants | mouvement */
-.sec-cams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); align-content: start; }
+.sec-cams { display: grid; min-width: 0; align-content: start; }
 .list.-cols { display: grid; }
 @media (min-width: 861px) {
   .page.-security { display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-areas: "alarm cams" "opens motion" "journal journal"; gap: var(--sp-4); align-items: start; }
@@ -108,7 +106,6 @@ a { color: inherit; }
   .page.-security { grid-template-columns: 340px minmax(0, 1fr) 340px; grid-template-areas: "alarm cams cams" "opens opens motion" "journal journal journal"; }
   .sec-journal .list.-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
-@media (max-width: 600px) { .sec-cams { grid-template-columns: minmax(0, 1fr); } }
 
 /* agenda page */
 .agenda-head .agenda-nav { flex: none; }
@@ -123,3 +120,12 @@ a { color: inherit; }
 /* journal : une ligne par action, heure tabulaire à droite */
 .jr-time { font-variant-numeric: tabular-nums; color: var(--fg-muted); font-size: var(--fs-s); white-space: nowrap; }
 .jr-more { display: flex; justify-content: center; padding: var(--sp-2) 0 0; }
+
+/* weather: cards dealt into columns (Weather.tsx), each card as tall as its content */
+.wx-cols { display: grid; grid-template-columns: repeat(var(--n, 1), minmax(0, 1fr)); gap: var(--sp-4); align-items: start; }
+.wx-col { display: grid; gap: var(--sp-4); align-content: start; min-width: 0; }
+
+/* power button of the menu → sleep screen */
+.rail-sleep { color: var(--fg-muted); text-decoration: none; }
+@media (hover: hover) and (pointer: fine) { .rail-sleep:hover { color: var(--fg); background: var(--surface-2); } }
+@media (min-width: 1100px) { .page.-room:has(> .room-side:empty) > .room-main { grid-column: 1 / -1; } }

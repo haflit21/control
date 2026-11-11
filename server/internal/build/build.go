@@ -28,6 +28,7 @@ type Input struct {
 	Demo      bool
 	Air       *model.Air    // outdoor air quality, polled separately (nil = not yet)
 	Agenda    *model.Agenda // shared calendar, polled separately (nil = none configured)
+	Spotify   bool          // Spotify search and playback configured
 }
 
 // Build computes the whole house.
@@ -35,6 +36,12 @@ func Build(in Input) model.Home {
 	cfg := in.Config
 	st := in.States
 	h := model.Home{Name: cfg.Name, Connected: in.Connected, Demo: in.Demo, UpdatedAt: in.Now, Alerts: []model.Alert{}}
+	if len(cfg.Media.Radios) > 0 || in.Spotify {
+		h.Media = &model.Media{Radios: []model.Radio{}, Spotify: in.Spotify}
+		for _, r := range cfg.Media.Radios {
+			h.Media.Radios = append(h.Media.Radios, model.Radio{ID: r.ID, Name: r.Name, Genre: r.Genre, Short: r.Short, Color: r.Color})
+		}
+	}
 	var allAlerts []model.Alert
 	unavailable := []unav{}
 	for _, rc := range cfg.Rooms {
@@ -44,6 +51,9 @@ func Build(in Input) model.Home {
 		var heatingAny bool
 		for _, dc := range rc.Devices {
 			d := device(rc.ID, dc, st, in.Now)
+			if d.Kind == model.KindMedia {
+				mediaExtras(&d, cfg, st[dc.Entities["media_player"]])
+			}
 			if !d.Available {
 				since := in.Now
 				if e, ok := st[mainEntity(dc)]; ok && !e.LastChanged.IsZero() {
@@ -707,4 +717,34 @@ func mediaURL(rel string) string {
 		return ""
 	}
 	return "/media/" + rel
+}
+
+// mediaExtras adds what needs the configuration to a speaker's state: the
+// radio it plays (matched on the stream URL), the app and the album.
+func mediaExtras(d *model.Device, cfg *config.Config, e ha.Entity) {
+	if e.Attributes == nil {
+		return
+	}
+	d.State.App = str(e.Attributes["app_name"])
+	d.State.Album = str(e.Attributes["media_album_name"])
+	id := str(e.Attributes["media_content_id"])
+	if id == "" {
+		return
+	}
+	base := func(u string) string {
+		b, _, _ := strings.Cut(u, "?")
+		return strings.TrimPrefix(strings.TrimPrefix(b, "https://"), "http://")
+	}
+	for _, r := range cfg.Media.Radios {
+		if base(r.URL) == base(id) {
+			d.State.Radio = r.ID
+			if d.State.Title == "" || d.State.Title == id {
+				d.State.Title = r.Name
+			}
+			if d.State.App == "" {
+				d.State.App = "Radio"
+			}
+			return
+		}
+	}
 }

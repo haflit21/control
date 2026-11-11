@@ -3,10 +3,13 @@
 //
 //	control serve            start the server (default)
 //	control check            load control.yaml, connect to HA, print what is missing
+//	control spotify-login    authorize Control on the Spotify account once; prints
+//	                         the refresh token on stdout (make spotify-login stores it)
 //
 // Environment (decrypted from .cloud/secrets/secrets.enc.yaml next to
 // control.yaml, or a .env in development): HA_URL, HA_TOKEN,
-// CLAUDE_GATEWAY_TOKEN, STT_API_KEY, CONTROL_CONFIG
+// CLAUDE_GATEWAY_TOKEN, STT_API_KEY, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,
+// SPOTIFY_REFRESH_TOKEN, CONTROL_CONFIG
 // (control.yaml), CONTROL_DEMO=1, CONTROL_LISTEN, CONTROL_MEDIA, CONTROL_ALLOW_FROM (comma
 // separated, added to serve.allow_from), CONTROL_TOKEN (login token;
 // generated otherwise), CONTROL_STATE_DIR.
@@ -76,8 +79,10 @@ func main() {
 		serve(cfg, cfgPath)
 	case "check":
 		check(cfg)
+	case "spotify-login":
+		spotifyLogin()
 	default:
-		fmt.Fprintf(os.Stderr, "usage : control [serve|check]\n")
+		fmt.Fprintf(os.Stderr, "usage : control [serve|check|spotify-login]\n")
 		os.Exit(2)
 	}
 }
@@ -160,6 +165,7 @@ func serve(cfg *config.Config, cfgPath string) {
 		srv.Agenda.OnChange = srv.AgendaChanged
 	}
 	srv.Transcriber, srv.Understander = voiceFrom(cfg)
+	srv.Music = musicFrom(cfg, demoMode)
 	if js, err := journal.Open(filepath.Join(stateDir, "journal")); err != nil {
 		log.Printf("journal : désactivé (%v)", err)
 	} else {
@@ -250,10 +256,14 @@ func check(cfg *config.Config) {
 	rctx, rcancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer rcancel()
 	checkVoice(rctx, cfg)
+	checkMedia(rctx, cfg)
 	if svc, err := c.Services(rctx); err != nil {
 		fmt.Printf("\n(liste des services HA indisponible : %v)\n", err)
 	} else {
 		need := []string{"light.turn_on", "light.turn_off", "climate.set_temperature", "climate.set_hvac_mode", "cover.open_cover", "cover.close_cover", "cover.set_cover_position", "switch.turn_on", "media_player.media_play_pause", "media_player.volume_set", "script.turn_on"}
+		if len(cfg.Media.Radios) > 0 {
+			need = append(need, "media_player.play_media")
+		}
 		if cfgUsesTado(cfg) {
 			need = append(need, "tado.set_climate_timer")
 		}

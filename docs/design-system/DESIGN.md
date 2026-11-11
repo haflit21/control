@@ -178,6 +178,8 @@ Règles transversales inchangées : valeur absente = « — » + raison dans `ti
 
 - **2026-11-08 · v2.6** — photos : `media/` (6 pièces, 9 appareils), `/media/` côté serveur, `image:` dans `control.yaml`, `has-img` + `.thumb` dans `widgets.css`, catalogue et app passés sur les photos.
 
+- **2026-11-11 · maquettes Figma → app** — d'après le fichier Figma « Projects », page Control : bannière de pièce sur toute la largeur (`.rbanner` : photo basse 240 px caméra éteinte, vidéo 16:9 caméra allumée, bouton sur photo `.chip.-btn`), médias (`.stations` / `.station` avec barres `.eq`, résultats Spotify `.tracks` / `.track`, champ `.search`), mur de caméras (`.camwall`, vignettes `.camthumb`, « À l'écran »), Météo en colonnes à hauteur naturelle, écran de veille (`.sleep` dans `wall.css`). Icônes `search` et `radio` ajoutées au sprite.
+
 - **2026-11-08 · app étape 1** — portage React (`packages/ui`, `apps/web`) et serveur Go (`server/`) : accueil, pièces, sécurité, météo en lecture temps réel (SSE), mode démo, PWA. Captures vérifiées à 390 et 1440 px sans débordement ni erreur console. Section 6c ci-dessus ; le point 5 du « à faire » est fait (sans Storybook, le catalogue reste la doc vivante).
 
 - **2026-11-08 · v2.5** — qualité de l'air ajoutée à la page Météo (indice ATMO, polluants, pollens, pilules, tuile, alerte, états) ; icônes `air` et `flower`.

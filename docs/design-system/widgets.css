@@ -601,3 +601,84 @@ button.pwr::before, .stepper button::before { content: ""; position: absolute; i
 /* barre d'outils de l'agenda : ajouter + micro */
 .agenda-tools { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; justify-content: flex-end; }
 .agenda-tools .btn { height: 44px; display: inline-flex; align-items: center; gap: 8px; }
+
+/* ---------- 22. Bannière de pièce : photo basse, caméra en 16:9 ---------- */
+/* Caméra éteinte (mode privé, injoignable, pas de caméra) : la photo de la pièce, 240 px de haut.
+   Caméra allumée : la vidéo au format d'enregistrement (16:9), la bannière grandit. */
+.rbanner { position: relative; overflow: hidden; height: 240px; border-radius: var(--radius-l); background: var(--surface-solid); color: var(--fg-on-photo); box-shadow: var(--shadow-card); min-width: 0; isolation: isolate; }
+.rbanner.is-live { height: auto; aspect-ratio: 16 / 9; }
+.rbanner .hero-img, .rbanner .ph { z-index: -2; }
+.rbanner::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: linear-gradient(90deg, rgba(10, 12, 18, .78), rgba(10, 12, 18, .1) 70%); }
+.rbanner.is-live::before { background: linear-gradient(180deg, rgba(0, 0, 0, .3), transparent 22%, transparent 60%, rgba(10, 12, 18, .72)); }
+.rbanner-top { position: absolute; top: var(--sp-4); left: var(--sp-4); right: var(--sp-4); display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-2); }
+.rbanner-body { position: absolute; left: var(--sp-6); right: var(--sp-6); bottom: var(--sp-5); display: grid; gap: 4px; }
+.rbanner-t { margin: 0; font-family: var(--font-display); font-weight: 500; font-size: var(--fs-hero); line-height: 1; letter-spacing: -.02em; }
+.rbanner-s { font-size: var(--fs-m); color: rgba(255, 255, 255, .82); }
+.rbanner .hero-center { padding-bottom: var(--sp-7); }
+@media (max-width: 860px) {
+  .rbanner { height: 190px; }
+  .rbanner-body { left: var(--sp-4); right: var(--sp-4); bottom: var(--sp-4); }
+  .rbanner-t { font-size: var(--fs-2xl); }
+}
+/* bouton sur une photo : pastille de verre */
+.chip.-btn { cursor: pointer; -webkit-backdrop-filter: blur(var(--glass-blur)); backdrop-filter: blur(var(--glass-blur)); }
+@media (hover: hover) and (pointer: fine) { .chip.-on-photo.-btn:hover { background: rgba(20, 20, 28, .65); } }
+
+/* ---------- 23. Médias : stations, résultats Spotify, recherche ---------- */
+.stations { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: var(--sp-2); }
+.station { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: var(--sp-3); padding: 10px 12px; border-radius: var(--radius-s); background: var(--surface); border: 1px solid var(--border); color: var(--fg); font: inherit; text-align: left; cursor: pointer; min-height: 64px; }
+.station .ico { width: 18px; height: 18px; color: var(--fg-muted); }
+.station-logo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--station, var(--tile-peach)); color: #1c120c; font-family: var(--font-display); font-weight: 600; font-size: var(--fs-s); letter-spacing: .02em; }
+.station-body { display: grid; gap: 2px; min-width: 0; }
+.station-t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.station-s { font-size: var(--fs-s); color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.station.is-on { background: var(--accent-subtle); border-color: var(--accent); }
+.station.is-on .station-t { color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .station:hover, .track:hover { border-color: var(--border-strong); } }
+.eq { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; }
+.eq i { width: 3px; height: 100%; border-radius: 2px; background: var(--accent); animation: eq 1s ease-in-out infinite; transform-origin: bottom; }
+.eq i:nth-child(2) { animation-delay: -.3s; } .eq i:nth-child(3) { animation-delay: -.6s; } .eq i:nth-child(4) { animation-delay: -.15s; }
+@keyframes eq { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
+@media (prefers-reduced-motion: reduce) { .eq i { animation: none; transform: scaleY(.7); } }
+.tracks { display: grid; gap: 2px; }
+.track { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto 36px; align-items: center; gap: var(--sp-3); padding: 8px 10px; border-radius: var(--radius-s); border: 1px solid transparent; background: none; color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.track-cover { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; background: linear-gradient(135deg, #5c4d9e, #ec9b74); }
+.track-body { display: grid; gap: 2px; min-width: 0; }
+.track-t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-s { font-size: var(--fs-s); color: var(--fg-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-d { font-size: var(--fs-s); color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+.track-play { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border-strong); }
+.track-play .ico { width: 16px; height: 16px; }
+.track.is-on { background: var(--accent-subtle); }
+.track.is-on .track-t { color: var(--accent); }
+.track.is-on .track-play { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+.search { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 8px 0 16px; border-radius: var(--radius-pill); background: var(--surface-2); border: 1px solid var(--border); color: var(--fg-muted); }
+.search:focus-within { border-color: var(--accent); box-shadow: var(--ring, 0 0 0 3px var(--accent-subtle)); }
+.search .ico { width: 18px; height: 18px; flex: none; }
+.search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: none; color: var(--fg); font: inherit; font-size: var(--fs-m); }
+.search input::placeholder { color: var(--fg-faint); }
+.search input::-webkit-search-cancel-button { display: none; }
+.search-x { display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 50%; background: none; color: var(--fg-muted); cursor: pointer; }
+.search.is-busy .ico:first-child { animation: skel 1s ease-in-out infinite; }
+.media-sec { font-size: var(--fs-xs); color: var(--fg-muted); text-transform: uppercase; letter-spacing: .06em; }
+.media-empty { font-size: var(--fs-s); color: var(--fg-faint); padding: var(--sp-2) 0; }
+
+/* ---------- 24. Mur de caméras : la principale en grand, les autres en vignettes ---------- */
+.camwall { display: grid; grid-template-columns: minmax(0, 1fr) 184px; gap: var(--sp-4); align-items: start; padding: var(--sp-4); border-radius: var(--radius-l); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-card); min-width: 0; }
+.camwall.-single { grid-template-columns: minmax(0, 1fr); }
+.camwall-main { box-shadow: none; }
+.camwall-open { display: grid; place-items: center; color: rgba(255, 255, 255, .75); }
+.camwall-thumbs { display: grid; gap: 10px; align-content: start; }
+.camwall-h { font-size: var(--fs-xs); color: var(--fg-muted); text-transform: uppercase; letter-spacing: .06em; }
+.camthumb { position: relative; display: block; overflow: hidden; aspect-ratio: 16 / 9; padding: 0; border-radius: var(--radius-s); border: 1px solid var(--border); background: var(--surface-solid); color: var(--fg-on-photo); font: inherit; text-align: left; cursor: pointer; }
+.camthumb::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 40%, rgba(10, 12, 18, .75)); pointer-events: none; }
+.camthumb.is-on { border: 2px solid var(--accent); }
+.camthumb.is-private .hero-img, .camthumb.is-offline .hero-img { filter: saturate(0) brightness(.45); }
+.camthumb-n { position: absolute; left: 10px; right: 10px; bottom: 8px; z-index: 1; display: flex; align-items: center; gap: 6px; font-size: var(--fs-s); font-weight: 600; }
+.camthumb-n .dot { width: 6px; height: 6px; }
+.camthumb-tag { position: absolute; top: 8px; left: 8px; z-index: 1; padding: 3px 8px; border-radius: var(--radius-pill); background: var(--accent); color: var(--accent-fg); font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+@media (max-width: 860px) {
+  .camwall { grid-template-columns: minmax(0, 1fr); padding: var(--sp-3); }
+  .camwall-thumbs { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .camwall-h { grid-column: 1 / -1; }
+}
