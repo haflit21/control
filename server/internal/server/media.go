@@ -10,6 +10,7 @@ import (
 	"unicode/utf8"
 
 	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/ha"
 	"ahomelab.io/control/internal/journal"
 	"ahomelab.io/control/internal/model"
 	"ahomelab.io/control/internal/spotify"
@@ -59,6 +60,27 @@ func radioCall(entity string, rd config.Radio) call {
 		"media_content_type": "music",
 		"extra":              map[string]any{"title": rd.Name, "stream_type": "LIVE", "metadata": map[string]any{"metadataType": 3, "title": rd.Name, "artist": rd.Genre}},
 	})}
+}
+
+// resumeRadio picks what an idle speaker should play: the radio its last
+// session was on, else the last one Control started, else the first configured.
+func (s *Server) resumeRadio(entity string, st ha.Entity) (config.Radio, bool) {
+	if id, _ := st.Attributes["media_content_id"].(string); id != "" {
+		for _, r := range s.Cfg.Media.Radios {
+			if r.URL == id {
+				return r, true
+			}
+		}
+	}
+	if v, ok := s.lastRadio.Load(entity); ok {
+		if r, ok := s.Cfg.Radio(v.(string)); ok {
+			return r, true
+		}
+	}
+	if len(s.Cfg.Media.Radios) > 0 {
+		return s.Cfg.Media.Radios[0], true
+	}
+	return config.Radio{}, false
 }
 
 // playSpotify: action play_spotify {uri, title?, artists?} on a media player.

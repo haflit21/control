@@ -66,6 +66,8 @@ type Server struct {
 	// Music: Spotify search and playback (nil = the Musique tab is not offered).
 	Music      Music
 	agendaKick chan struct{}
+	// lastRadio: media_player entity → id of the radio last started (resume when idle)
+	lastRadio sync.Map
 
 	air    *model.Air
 	agenda *model.Agenda

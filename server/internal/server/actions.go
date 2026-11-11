@@ -291,6 +291,16 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 		e := ent["media_player"]
 		switch body.Action {
 		case "play":
+			// A Cast speaker can only resume a paused session; idle or off,
+			// media_play fails ("Failed to execute play"). Start the last radio instead.
+			if st, ok := s.Src.Snapshot()[e]; ok && st.State != "paused" && st.State != "playing" {
+				rd, ok := s.resumeRadio(e, st)
+				if !ok {
+					return nil, "", fmt.Errorf("rien à reprendre sur %s : choisir une radio ou un titre", dc.Name)
+				}
+				s.lastRadio.Store(e, rd.ID)
+				return []call{radioCall(e, rd)}, dc.Name + " · " + rd.Name, nil
+			}
 			return []call{{"media_player", "media_play", target(e, nil)}}, dc.Name + " · lecture", nil
 		case "pause":
 			return []call{{"media_player", "media_pause", target(e, nil)}}, dc.Name + " · pause", nil
@@ -309,6 +319,7 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 			if !ok {
 				return nil, "", fmt.Errorf("radio inconnue : %q", q.ID)
 			}
+			s.lastRadio.Store(e, rd.ID)
 			return []call{radioCall(e, rd)}, dc.Name + " · " + rd.Name, nil
 		}
 	case model.KindCamera:

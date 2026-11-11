@@ -607,3 +607,62 @@ func TestMusic(t *testing.T) {
 		t.Fatalf("spotify sur un radiateur : %d", w.Code)
 	}
 }
+
+// An idle Cast speaker cannot "play" (nothing to resume): Control starts a radio instead.
+func TestPlayIdleSpeaker(t *testing.T) {
+	s, src := newTestServer(t)
+	h := s.Handler()
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/login?token="+s.Token, nil))
+	c := w.Result().Cookies()[0]
+	post := func(body string) int {
+		r := httptest.NewRequest("POST", "/api/devices/salon.enceinte/actions", strings.NewReader(body))
+		r.AddCookie(c)
+		r.Header.Set("X-Control", "1")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w.Code
+	}
+	idle := func() {
+		e := src.Snapshot()["media_player.salon"]
+		e.State = "idle"
+		e.Attributes = map[string]any{"volume_level": 0.3}
+		src.Set(e)
+	}
+	settled := func(state string) ha.Entity { // the demo answers after 350 ms
+		for i := 0; i < 40; i++ {
+			if e := src.Snapshot()["media_player.salon"]; e.State == state {
+				return e
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		return src.Snapshot()["media_player.salon"]
+	}
+	idle()
+	if code := post(`{"action":"play"}`); code != 202 {
+		t.Fatalf("lecture à l'arrêt : %d", code)
+	}
+	if e := settled("playing"); e.State != "playing" || e.Attributes["media_title"] != "France Inter" {
+		t.Fatalf("première radio attendue : %s %+v", e.State, e.Attributes)
+	}
+	if code := post(`{"action":"play_radio","params":{"id":"fip"}}`); code != 202 {
+		t.Fatalf("radio : %d", code)
+	}
+	settled("playing")
+	time.Sleep(400 * time.Millisecond)
+	idle()
+	if code := post(`{"action":"play"}`); code != 202 {
+		t.Fatalf("reprise : %d", code)
+	}
+	if e := settled("playing"); e.Attributes["media_title"] != "FIP" {
+		t.Fatalf("dernière radio attendue : %+v", e.Attributes)
+	}
+	// paused: plain media_play
+	time.Sleep(400 * time.Millisecond)
+	e := src.Snapshot()["media_player.salon"]
+	e.State = "paused"
+	src.Set(e)
+	if code := post(`{"action":"play"}`); code != 202 || settled("playing").State != "playing" || settled("playing").Attributes["media_title"] != "FIP" {
+		t.Fatalf("reprise après pause : %d", code)
+	}
+}
