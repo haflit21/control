@@ -28,7 +28,7 @@ type Input struct {
 	Demo      bool
 	Air       *model.Air    // outdoor air quality, polled separately (nil = not yet)
 	Agenda    *model.Agenda // shared calendar, polled separately (nil = none configured)
-	Spotify   bool          // Spotify search and playback configured
+	Music     string        // music search source ("Music Assistant", "Spotify"), "" = none
 }
 
 // Build computes the whole house.
@@ -36,8 +36,8 @@ func Build(in Input) model.Home {
 	cfg := in.Config
 	st := in.States
 	h := model.Home{Name: cfg.Name, Connected: in.Connected, Demo: in.Demo, UpdatedAt: in.Now, Alerts: []model.Alert{}}
-	if len(cfg.Media.Radios) > 0 || in.Spotify {
-		h.Media = &model.Media{Radios: []model.Radio{}, Spotify: in.Spotify}
+	if len(cfg.Media.Radios) > 0 || in.Music != "" {
+		h.Media = &model.Media{Radios: []model.Radio{}, Music: in.Music != "", MusicSource: in.Music}
 		for _, r := range cfg.Media.Radios {
 			h.Media.Radios = append(h.Media.Radios, model.Radio{ID: r.ID, Name: r.Name, Genre: r.Genre, Short: r.Short, Color: r.Color})
 		}

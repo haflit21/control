@@ -299,11 +299,12 @@ func F(v float64) *float64 { return &v }
 func B(v bool) *bool       { return &v }
 func I(v int) *int         { return &v }
 
-// Media is what the speakers can play: the configured radios and whether
-// Spotify search is available.
+// Media is what the speakers can play: the configured radios, and whether a
+// music search is offered (and through what: "Music Assistant", "Spotify").
 type Media struct {
-	Radios  []Radio `json:"radios"`
-	Spotify bool    `json:"spotify"`
+	Radios      []Radio `json:"radios"`
+	Music       bool    `json:"music"`
+	MusicSource string  `json:"musicSource,omitempty"`
 }
 
 type Radio struct {
@@ -314,7 +315,7 @@ type Radio struct {
 	Color string `json:"color,omitempty"`
 }
 
-// Track is one Spotify search result.
+// Track is one music search result (Music Assistant or Spotify).
 type Track struct {
 	URI      string `json:"uri"`
 	Title    string `json:"title"`

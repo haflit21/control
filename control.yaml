@@ -87,7 +87,7 @@ rooms:
         name: Enceinte
         entities:
           media_player: media_player.salon
-        spotify_device: Salon   # nom de l'enceinte dans Spotify Connect (par défaut : la pièce)
+          music: media_player.salon_salon   # son lecteur Music Assistant (make check liste les lecteurs)
       - id: camera
         kind: camera
         name: Caméra
@@ -304,20 +304,22 @@ ignore:
   - switch.desk_pc
   - input_button.turn_on_pc
 
-# Médias : radios jouées sur les enceintes par Home Assistant (media_player.play_media,
-# flux HiFi AAC de Radio France), et musique Spotify : recherche et lecture par l'API Web de
-# Spotify (compte Premium ; SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET et SPOTIFY_REFRESH_TOKEN
-# dans les secrets, le dernier posé par make spotify-login). make check essaie chaque flux.
+# Médias : radios jouées sur les enceintes par Home Assistant (media_player.play_media, flux MP3
+# de Radio France, les plus sûrs sur une enceinte Cast) ; musique : recherche d'un titre et lecture
+# par Music Assistant (module de HA, compte Spotify Premium branché dans Music Assistant, qui envoie
+# lui-même le son à l'enceinte ; entities.music = le lecteur Music Assistant de l'enceinte).
+# Autre fournisseur possible : spotify (API Web de Spotify, secrets SPOTIFY_*, make spotify-login ;
+# l'enceinte doit être visible dans Spotify Connect, ce qu'une enceinte Cast n'est pas au repos).
+# make check essaie chaque flux et liste les lecteurs Music Assistant.
 media:
   radios:
-    - { id: inter, short: FI, name: France Inter, genre: Généraliste, color: "#f3c9b4", url: "https://icecast.radiofrance.fr/franceinter-hifi.aac?id=radiofrance" }
-    - { id: info, short: Fi, name: franceinfo, genre: Info en continu, color: "#c3d3f0", url: "https://icecast.radiofrance.fr/franceinfo-hifi.aac?id=radiofrance" }
-    - { id: culture, short: FC, name: France Culture, genre: Culture et idées, color: "#e5cdea", url: "https://icecast.radiofrance.fr/franceculture-hifi.aac?id=radiofrance" }
-    - { id: fip, short: FIP, name: FIP, genre: Éclectique, color: "#c6ead6", url: "https://icecast.radiofrance.fr/fip-hifi.aac?id=radiofrance" }
-    - { id: musique, short: FM, name: France Musique, genre: Classique et jazz, color: "#f2e1a8", url: "https://icecast.radiofrance.fr/francemusique-hifi.aac?id=radiofrance" }
-  spotify:
-    enabled: true
-    market: FR
+    - { id: inter, short: FI, name: France Inter, genre: Généraliste, color: "#f3c9b4", url: "https://icecast.radiofrance.fr/franceinter-midfi.mp3?id=radiofrance" }
+    - { id: info, short: Fi, name: franceinfo, genre: Info en continu, color: "#c3d3f0", url: "https://icecast.radiofrance.fr/franceinfo-midfi.mp3?id=radiofrance" }
+    - { id: culture, short: FC, name: France Culture, genre: Culture et idées, color: "#e5cdea", url: "https://icecast.radiofrance.fr/franceculture-midfi.mp3?id=radiofrance" }
+    - { id: fip, short: FIP, name: FIP, genre: Éclectique, color: "#c6ead6", url: "https://icecast.radiofrance.fr/fip-midfi.mp3?id=radiofrance" }
+    - { id: musique, short: FM, name: France Musique, genre: Classique et jazz, color: "#f2e1a8", url: "https://icecast.radiofrance.fr/francemusique-midfi.mp3?id=radiofrance" }
+  music:
+    provider: music_assistant
 
 # Agenda familial, tenu par l'app (state/agenda/events.json). Le premier calendrier est celui par défaut.
 agenda:

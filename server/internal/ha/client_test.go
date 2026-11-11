@@ -103,7 +103,17 @@ func (f *fakeHA) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			case "ping":
 				send(map[string]any{"id": int(id), "type": "pong"})
 			case "call_service":
+				if m["return_response"] == true && m["domain"] == "music_assistant" {
+					sd, _ := m["service_data"].(map[string]any)
+					send(map[string]any{"id": int(id), "type": "result", "success": true, "result": map[string]any{"context": map[string]any{}, "response": map[string]any{"tracks": []any{map[string]any{"name": sd["name"], "uri": "spotify://track/1"}}}}})
+					continue
+				}
 				send(map[string]any{"id": int(id), "type": "result", "success": true, "result": map[string]any{"context": map[string]any{}}})
+			case "config_entries/get":
+				send(map[string]any{"id": int(id), "type": "result", "success": true, "result": []any{
+					map[string]any{"entry_id": "e0", "domain": "music_assistant", "state": "setup_error"},
+					map[string]any{"entry_id": "e1", "domain": "music_assistant", "state": "loaded"},
+				}})
 			}
 		}
 	}
@@ -297,5 +307,26 @@ func TestCallServiceAcrossReconnect(t *testing.T) {
 	}
 	if err := c.CallService(ctx, "light", "turn_on", map[string]any{"entity_id": "light.a"}); err != nil {
 		t.Fatalf("commande pendant la reconnexion : %v", err)
+	}
+}
+
+func TestServiceResponseAndConfigEntry(t *testing.T) {
+	f := &fakeHA{t: t, token: "secret", push: make(chan Entity), kick: make(chan struct{}, 1)}
+	ts := httptest.NewServer(f)
+	defer ts.Close()
+	c := NewClient(ts.URL, "secret", nil, "")
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+	go c.Run(ctx)
+	id, err := c.ConfigEntryID(ctx, "music_assistant")
+	if err != nil || id != "e1" {
+		t.Fatalf("entrée : %q %v", id, err)
+	}
+	if _, err := c.ConfigEntryID(ctx, "spotify"); err == nil {
+		t.Fatal("intégration absente acceptée")
+	}
+	res, err := c.CallServiceResponse(ctx, "music_assistant", "search", map[string]any{"config_entry_id": id, "name": "golden"})
+	if err != nil || !strings.Contains(string(res), `"name":"golden"`) {
+		t.Fatalf("réponse : %s %v", res, err)
 	}
 }

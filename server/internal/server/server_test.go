@@ -556,20 +556,20 @@ func TestMusic(t *testing.T) {
 		return w
 	}
 	// without a music source: no Musique tab, search refused
-	if s.Home().Media == nil || len(s.Home().Media.Radios) != 5 || s.Home().Media.Spotify {
+	if s.Home().Media == nil || len(s.Home().Media.Radios) != 5 || s.Home().Media.Music {
 		t.Fatalf("médias sans Spotify : %+v", s.Home().Media)
 	}
 	if w := req("GET", "/api/media/search?q=daft", ""); w.Code != 404 {
 		t.Fatalf("recherche sans Spotify : %d", w.Code)
 	}
-	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_spotify","params":{"uri":"spotify:track:demo2"}}`); w.Code != 404 {
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_track","params":{"uri":"spotify:track:demo2"}}`); w.Code != 404 {
 		t.Fatalf("lecture sans Spotify : %d", w.Code)
 	}
 	// radios
 	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_radio","params":{"id":"fip"}}`); w.Code != 202 {
 		t.Fatalf("radio : %d %s", w.Code, w.Body)
 	}
-	if e := src.Snapshot()["media_player.salon"]; e.Attributes["media_content_id"] != "https://icecast.radiofrance.fr/fip-hifi.aac?id=radiofrance" || e.Attributes["media_title"] != "FIP" {
+	if e := src.Snapshot()["media_player.salon"]; e.Attributes["media_content_id"] != "https://icecast.radiofrance.fr/fip-midfi.mp3?id=radiofrance" || e.Attributes["media_title"] != "FIP" {
 		t.Fatalf("radio dans HA : %+v", e.Attributes)
 	}
 	s.rebuild(nil)
@@ -582,8 +582,8 @@ func TestMusic(t *testing.T) {
 	// Spotify (catalogue de démo)
 	s.Music = demo.Music{}
 	s.rebuild(nil)
-	if !s.Home().Media.Spotify {
-		t.Fatal("Spotify absent du modèle")
+	if !s.Home().Media.Music {
+		t.Fatal("musique absente du modèle")
 	}
 	w = req("GET", "/api/media/search?q=daft", "")
 	var res struct{ Tracks []model.Track }
@@ -593,17 +593,17 @@ func TestMusic(t *testing.T) {
 	if w := req("GET", "/api/media/search?q="+strings.Repeat("a", 101), ""); w.Code != 400 {
 		t.Fatalf("recherche trop longue : %d", w.Code)
 	}
-	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_spotify","params":{"uri":"spotify:track:demo2","title":"Get Lucky","artists":"Daft Punk"}}`); w.Code != 202 {
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_track","params":{"uri":"spotify:track:demo2","title":"Get Lucky","artists":"Daft Punk"}}`); w.Code != 202 {
 		t.Fatalf("lecture : %d %s", w.Code, w.Body)
 	}
 	s.rebuild(nil)
 	if d := s.devices["salon.enceinte"]; d.State.Title != "Get Lucky" || d.State.Artist != "Daft Punk" || d.State.App != "Spotify" || d.State.Radio != "" || d.State.Playing != "playing" {
 		t.Fatalf("lecture Spotify : %+v", d.State)
 	}
-	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_spotify","params":{"uri":"spotify:track:inconnu"}}`); w.Code != 502 {
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_track","params":{"uri":"spotify:track:inconnu"}}`); w.Code != 502 {
 		t.Fatalf("titre inconnu : %d", w.Code)
 	}
-	if w := req("POST", "/api/devices/salon.chauffage/actions", `{"action":"play_spotify","params":{"uri":"spotify:track:demo2"}}`); w.Code != 400 {
+	if w := req("POST", "/api/devices/salon.chauffage/actions", `{"action":"play_track","params":{"uri":"spotify:track:demo2"}}`); w.Code != 400 {
 		t.Fatalf("spotify sur un radiateur : %d", w.Code)
 	}
 }
@@ -664,5 +664,18 @@ func TestPlayIdleSpeaker(t *testing.T) {
 	src.Set(e)
 	if code := post(`{"action":"play"}`); code != 202 || settled("playing").State != "playing" || settled("playing").Attributes["media_title"] != "FIP" {
 		t.Fatalf("reprise après pause : %d", code)
+	}
+}
+
+func TestStreamType(t *testing.T) {
+	for u, want := range map[string]string{
+		"https://icecast.radiofrance.fr/fip-midfi.mp3?id=radiofrance": "audio/mpeg",
+		"https://icecast.radiofrance.fr/fip-hifi.aac?id=radiofrance":  "audio/aac",
+		"https://x/live.M3U8":          "application/vnd.apple.mpegurl",
+		"https://x/stream?format=.mp3": "music",
+	} {
+		if got := streamType(u); got != want {
+			t.Errorf("%s : %s, attendu %s", u, got, want)
+		}
 	}
 }

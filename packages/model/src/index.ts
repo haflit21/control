@@ -265,13 +265,15 @@ export type Event =
   | { type: 'summary'; summary: Summary; at: string }
   | { type: 'status'; status: Status; at: string };
 
-/** What the speakers can play: configured radios, and whether Spotify search is offered. */
+/** What the speakers can play: configured radios, and whether a music search is offered (and through what). */
 export interface Media {
   radios: Radio[];
-  spotify: boolean;
+  music: boolean;
+  /** "Music Assistant", "Spotify"… */
+  musicSource?: string;
 }
 export interface Radio { id: string; name: string; genre?: string; short: string; color?: string }
-/** One Spotify search result (GET /api/media/search?q=…). */
+/** One music search result (GET /api/media/search?q=…). */
 export interface Track { uri: string; title: string; artists: string; album?: string; durationMs: number; cover?: string }
 
 // Actions (étape 2) — the shapes the server will accept.
@@ -287,7 +289,7 @@ export type DeviceAction =
   | { action: 'play' | 'pause'; params?: undefined }
   | { action: 'set_volume'; params: { pct: number } }
   | { action: 'play_radio'; params: { id: string } }
-  | { action: 'play_spotify'; params: { uri: string; title?: string; artists?: string } }
+  | { action: 'play_track'; params: { uri: string; title?: string; artists?: string } }
   | { action: 'set_privacy'; params: { on: boolean } }
   | { action: 'set_eco' | 'set_boost'; params: { on: boolean } };
 

@@ -112,8 +112,8 @@ func (s *Server) deviceAction(w http.ResponseWriter, r *http.Request) {
 	if !s.decode(w, r, &body) {
 		return
 	}
-	if dc.Kind == model.KindMedia && body.Action == "play_spotify" {
-		s.playSpotify(w, r, id, rc, dc, body.Params)
+	if dc.Kind == model.KindMedia && body.Action == "play_track" {
+		s.playTrack(w, r, id, rc, dc, body.Params)
 		return
 	}
 	calls, msg, err := s.planDevice(dc, body)

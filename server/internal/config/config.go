@@ -25,12 +25,13 @@ type Config struct {
 }
 
 // Media: what the speakers can play besides their own app. Radios are plain
-// streams sent to the speaker by HA (media_player.play_media); Spotify is
-// searched and started through the Spotify Web API (credentials in the
-// secrets: SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET, SPOTIFY_REFRESH_TOKEN).
+// streams sent to the speaker by HA (media_player.play_media). Music (search a
+// track, play it) goes through Music Assistant in HA (provider music_assistant:
+// the speaker's MA player is entities.music) or the Spotify Web API (provider
+// spotify: SPOTIFY_* secrets, the speaker must be visible in Spotify Connect).
 type Media struct {
-	Radios  []Radio `yaml:"radios"`
-	Spotify Spotify `yaml:"spotify"`
+	Radios []Radio `yaml:"radios"`
+	Music  Music   `yaml:"music"`
 }
 
 type Radio struct {
@@ -42,9 +43,11 @@ type Radio struct {
 	Color string `yaml:"color,omitempty"` // tile colour, CSS
 }
 
-type Spotify struct {
-	Enabled bool   `yaml:"enabled"`
-	Market  string `yaml:"market,omitempty"` // search market, ISO country (default FR)
+type Music struct {
+	Provider string `yaml:"provider"` // music_assistant | spotify | "" (no Musique tab)
+	// music_assistant: the integration's config entry (found by itself when empty)
+	ConfigEntryID string `yaml:"config_entry_id,omitempty"`
+	Market        string `yaml:"market,omitempty"` // spotify: search market, ISO country (default FR)
 }
 
 // Agenda: the family calendar kept by the app itself (state_dir/agenda), and
@@ -132,7 +135,9 @@ type Device struct {
 	Hidden   bool              `yaml:"hidden,omitempty"`
 	Image    string            `yaml:"image,omitempty"`     // product photo, relative to media_dir; the UI has a default per kind
 	ImageOff string            `yaml:"image_off,omitempty"` // lights: photo when off (image is then the lit one)
-	// SpotifyDevice: media players, the speaker's name in Spotify Connect (default: the room name).
+	// SpotifyDevice: media players with the spotify provider, the speaker's name in
+	// Spotify Connect (default: the room name). With Music Assistant, entities.music
+	// is the speaker's MA player.
 	SpotifyDevice string `yaml:"spotify_device,omitempty"`
 }
 
@@ -314,8 +319,13 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
-	if c.Media.Spotify.Market == "" {
-		c.Media.Spotify.Market = "FR"
+	switch c.Media.Music.Provider {
+	case "", "music_assistant", "spotify":
+	default:
+		return fmt.Errorf("media.music.provider : %q inconnu (music_assistant ou spotify)", c.Media.Music.Provider)
+	}
+	if c.Media.Music.Market == "" {
+		c.Media.Music.Market = "FR"
 	}
 	return nil
 }

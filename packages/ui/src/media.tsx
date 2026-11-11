@@ -66,14 +66,14 @@ export function minSec(ms: number): string {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-/** One Spotify result: cover, title, artists · album, duration, play. */
+/** One music search result: cover, title, artists · album, duration, play. */
 export function TrackRow({ track, playing, pending, onPlay }: { track: Track; playing: boolean; pending?: boolean; onPlay: () => void }) {
   const [failed, setFailed] = useState(false);
   return (
     <button type="button" className={cx('track', playing && 'is-on', pending && 'is-pending')} aria-pressed={playing} onClick={onPlay}>
       {track.cover && !failed ? <img className="track-cover" src={track.cover} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className="track-cover" aria-hidden="true" />}
       <span className="track-body"><span className="track-t">{track.title}</span><span className="track-s">{[track.artists, track.album].filter(Boolean).join(' · ')}</span></span>
-      <span className="track-d">{minSec(track.durationMs)}</span>
+      <span className="track-d">{track.durationMs > 0 ? minSec(track.durationMs) : ''}</span>
       <span className="track-play" aria-hidden="true"><Icon name={playing ? 'pause' : 'play'} /></span>
     </button>
   );

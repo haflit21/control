@@ -636,7 +636,7 @@ func SeedAgenda(st *agenda.Store, calendars []string, now time.Time) {
 	}
 }
 
-// Music is the demo Spotify: a small catalogue, searched on title and artist.
+// Music is the demo music search: a small catalogue, searched on title and artist.
 // Nothing leaves the machine.
 type Music struct{}
 
@@ -665,7 +665,9 @@ func (Music) Search(ctx context.Context, q string, limit int) ([]model.Track, er
 	return out, nil
 }
 
-func (Music) Play(ctx context.Context, deviceName, uri string) error {
+func (Music) Source() string { return "Spotify (démo)" }
+
+func (Music) Play(ctx context.Context, room config.Room, dev config.Device, uri string) error {
 	for _, t := range catalogue {
 		if t.URI == uri {
 			return nil

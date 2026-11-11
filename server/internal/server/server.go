@@ -63,7 +63,7 @@ type Server struct {
 	// Transcriber / Understander: voice and typed quick entry (nil = not offered).
 	Transcriber  voice.Transcriber
 	Understander voice.Understander
-	// Music: Spotify search and playback (nil = the Musique tab is not offered).
+	// Music: track search and playback (nil = the Musique tab is not offered).
 	Music      Music
 	agendaKick chan struct{}
 	// lastRadio: media_player entity → id of the radio last started (resume when idle)
@@ -181,7 +181,7 @@ func (s *Server) rebuild(emit func([]model.Event)) {
 	s.mu.RLock()
 	air, agenda := s.air, s.agenda
 	s.mu.RUnlock()
-	home := build.Build(build.Input{Config: s.Cfg, States: s.Src.Snapshot(), Forecasts: s.Src.Forecasts(weather), Now: now, Connected: s.Src.Connected(), Demo: s.Demo, Air: air, Agenda: agenda, Spotify: s.Music != nil})
+	home := build.Build(build.Input{Config: s.Cfg, States: s.Src.Snapshot(), Forecasts: s.Src.Forecasts(weather), Now: now, Connected: s.Src.Connected(), Demo: s.Demo, Air: air, Agenda: agenda, Music: s.musicSource()})
 	s.mu.Lock()
 	prev := s.devices
 	prevHome := s.home

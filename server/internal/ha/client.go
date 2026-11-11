@@ -439,3 +439,92 @@ func (c *Client) Services(ctx context.Context) (map[string]bool, error) {
 	}
 	return out, nil
 }
+
+// CallServiceResponse runs a service that answers with data (return_response),
+// e.g. music_assistant.search, and returns that data.
+func (c *Client) CallServiceResponse(ctx context.Context, domain, service string, data map[string]any) (json.RawMessage, error) {
+	cmd := map[string]any{"type": "call_service", "domain": domain, "service": service, "return_response": true}
+	if target, ok := data["entity_id"]; ok {
+		cmd["target"] = map[string]any{"entity_id": target}
+		delete(data, "entity_id")
+	}
+	if len(data) > 0 {
+		cmd["service_data"] = data
+	}
+	if err := c.waitConnected(ctx, 8*time.Second); err != nil {
+		return nil, err
+	}
+	res, err := c.request(ctx, cmd)
+	if err != nil {
+		return nil, err
+	}
+	var r struct {
+		Response json.RawMessage `json:"response"`
+	}
+	if err := json.Unmarshal(res, &r); err != nil {
+		return nil, fmt.Errorf("réponse de %s.%s illisible", domain, service)
+	}
+	return r.Response, nil
+}
+
+// ConfigEntryID returns the id of the loaded config entry of an integration
+// (the first one), e.g. the Music Assistant server.
+func (c *Client) ConfigEntryID(ctx context.Context, domain string) (string, error) {
+	if err := c.waitConnected(ctx, 8*time.Second); err != nil {
+		return "", err
+	}
+	res, err := c.request(ctx, map[string]any{"type": "config_entries/get", "domain": domain})
+	if err != nil {
+		return "", err
+	}
+	var entries []struct {
+		EntryID string `json:"entry_id"`
+		Domain  string `json:"domain"`
+		State   string `json:"state"`
+	}
+	if err := json.Unmarshal(res, &entries); err != nil {
+		return "", fmt.Errorf("intégrations illisibles")
+	}
+	found := ""
+	for _, e := range entries {
+		if e.Domain != domain {
+			continue
+		}
+		if e.State == "loaded" {
+			return e.EntryID, nil
+		}
+		found = e.State
+	}
+	if found != "" {
+		return "", fmt.Errorf("intégration %s présente mais pas chargée (%s)", domain, found)
+	}
+	return "", fmt.Errorf("intégration %s absente de Home Assistant", domain)
+}
+
+// StatesWith returns the entities whose attributes contain key (REST
+// /api/states), e.g. the Music Assistant players (mass_player_type), for `control check`.
+func (c *Client) StatesWith(ctx context.Context, key string) (map[string]string, error) {
+	resp, err := c.rest(ctx, "/api/states")
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("états : HTTP %d", resp.StatusCode)
+	}
+	var raw []struct {
+		EntityID   string         `json:"entity_id"`
+		Attributes map[string]any `json:"attributes"`
+	}
+	if err := json.NewDecoder(io.LimitReader(resp.Body, 32<<20)).Decode(&raw); err != nil {
+		return nil, err
+	}
+	out := map[string]string{}
+	for _, s := range raw {
+		if _, ok := s.Attributes[key]; ok {
+			name, _ := s.Attributes["friendly_name"].(string)
+			out[s.EntityID] = name
+		}
+	}
+	return out, nil
+}

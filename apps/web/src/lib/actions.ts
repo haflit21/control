@@ -58,7 +58,7 @@ export function predict(d: Device, a: DeviceAction): Partial<State> {
     case 'pause': return { playing: 'paused' };
     case 'set_volume': return { volume: a.params.pct };
     case 'play_radio': return { playing: 'playing', radio: a.params.id };
-    case 'play_spotify': return { playing: 'playing', radio: undefined, app: 'Spotify', title: a.params.title ?? d.state.title, artist: a.params.artists ?? d.state.artist };
+    case 'play_track': return { playing: 'playing', radio: undefined, title: a.params.title ?? d.state.title, artist: a.params.artists ?? d.state.artist };
     case 'set_privacy': return { privacy: a.params.on };
     case 'set_eco': return { eco: a.params.on };
     case 'set_boost': return { boost: a.params.on };

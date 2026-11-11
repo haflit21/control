@@ -165,7 +165,7 @@ func serve(cfg *config.Config, cfgPath string) {
 		srv.Agenda.OnChange = srv.AgendaChanged
 	}
 	srv.Transcriber, srv.Understander = voiceFrom(cfg)
-	srv.Music = musicFrom(cfg, demoMode)
+	srv.Music = musicFrom(cfg, demoMode, src)
 	if js, err := journal.Open(filepath.Join(stateDir, "journal")); err != nil {
 		log.Printf("journal : désactivé (%v)", err)
 	} else {
@@ -256,13 +256,16 @@ func check(cfg *config.Config) {
 	rctx, rcancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer rcancel()
 	checkVoice(rctx, cfg)
-	checkMedia(rctx, cfg)
+	checkMedia(rctx, cfg, c)
 	if svc, err := c.Services(rctx); err != nil {
 		fmt.Printf("\n(liste des services HA indisponible : %v)\n", err)
 	} else {
 		need := []string{"light.turn_on", "light.turn_off", "climate.set_temperature", "climate.set_hvac_mode", "cover.open_cover", "cover.close_cover", "cover.set_cover_position", "switch.turn_on", "media_player.media_play_pause", "media_player.volume_set", "script.turn_on"}
 		if len(cfg.Media.Radios) > 0 {
 			need = append(need, "media_player.play_media")
+		}
+		if cfg.Media.Music.Provider == "music_assistant" {
+			need = append(need, "music_assistant.search", "music_assistant.play_media")
 		}
 		if cfgUsesTado(cfg) {
 			need = append(need, "tado.set_climate_timer")
