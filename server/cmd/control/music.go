@@ -41,7 +41,16 @@ func musicFrom(cfg *config.Config, demoMode bool, src ha.Source) server.Music {
 			return nil
 		}
 		log.Printf("musique : Music Assistant par Home Assistant")
-		return server.MassMusic{C: &mass.Client{HA: c, EntryID: cfg.Media.Music.ConfigEntryID}}
+		// a Music Assistant player to browse albums with: the first speaker's
+		player := ""
+		for _, r := range cfg.Rooms {
+			for _, d := range r.Devices {
+				if player == "" && d.Entities["music"] != "" {
+					player = d.Entities["music"]
+				}
+			}
+		}
+		return server.MassMusic{C: &mass.Client{HA: c, EntryID: cfg.Media.Music.ConfigEntryID}, Player: player}
 	case "spotify":
 		id, secret, rt := os.Getenv("SPOTIFY_CLIENT_ID"), os.Getenv("SPOTIFY_CLIENT_SECRET"), os.Getenv("SPOTIFY_REFRESH_TOKEN")
 		if id == "" || secret == "" || rt == "" {

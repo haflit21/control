@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -642,6 +643,18 @@ func TestMusic(t *testing.T) {
 	if w := req("POST", "/api/devices/salon.chauffage/actions", `{"action":"play_music","params":{"uri":"spotify://track/demo2"}}`); w.Code != 400 {
 		t.Fatalf("musique sur un radiateur : %d", w.Code)
 	}
+	// an album's tracks; one of them with the rest of the album after it
+	w = req("GET", "/api/media/album?uri="+url.QueryEscape("spotify://album/discovery"), "")
+	if json.Unmarshal(w.Body.Bytes(), &res) != nil || len(res.Tracks) != 2 || res.Tracks[1].Title != "Harder, Better, Faster, Stronger" {
+		t.Fatalf("pistes : %d %s", w.Code, w.Body)
+	}
+	if w := req("GET", "/api/media/album?uri=bad", ""); w.Code != 400 {
+		t.Fatalf("album invalide : %d", w.Code)
+	}
+	if w := req("POST", "/api/devices/salon.enceinte/actions", `{"action":"play_music","params":{"uri":"spotify://track/demo1","then":["spotify://track/demo3"]}}`); w.Code != 202 {
+		t.Fatalf("piste d'album : %d %s", w.Code, w.Body)
+	}
+	time.Sleep(450 * time.Millisecond)
 	// favourites
 	s.Favorites, _ = favorites.Open("")
 	w = req("POST", "/api/media/favorites", `{"kind":"album","item":{"uri":"spotify://album/ram","title":"Random Access Memories","artists":"Daft Punk"},"on":true}`)

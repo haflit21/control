@@ -83,14 +83,15 @@ export function FavButton({ on, onToggle, label }: { on: boolean; onToggle: () =
   );
 }
 
-/** One music search result: cover, title, artists · album, duration, favourite, play. */
-export function TrackRow({ track, playing, pending, onPlay, fav, onFav }: { track: Track; playing: boolean; pending?: boolean; onPlay: () => void; fav?: boolean; onFav?: () => void }) {
+/** One music result: cover (or its number in an album), title, artists · album, duration, favourite, play. */
+export function TrackRow({ track, playing, pending, onPlay, fav, onFav, index }: { track: Track; playing: boolean; pending?: boolean; onPlay: () => void; fav?: boolean; onFav?: () => void; index?: number }) {
   const [failed, setFailed] = useState(false);
   return (
-    <div className={cx('track', playing && 'is-on', pending && 'is-pending')}>
+    <div className={cx('track', playing && 'is-on', pending && 'is-pending', index != null && '-numbered')}>
       <button type="button" className="track-hit" aria-pressed={playing} aria-label={`${playing ? 'Mettre en pause' : 'Écouter'} ${track.title}`} onClick={onPlay}>
-        {track.cover && !failed ? <img className="track-cover" src={track.cover} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className="track-cover" aria-hidden="true" />}
-        <span className="track-body"><span className="track-t">{track.title}</span><span className="track-s">{[track.artists, track.album].filter(Boolean).join(' · ')}</span></span>
+        {index != null ? <span className="track-n" aria-hidden="true">{playing ? <span className="eq"><i /><i /><i /><i /></span> : index}</span>
+          : track.cover && !failed ? <img className="track-cover" src={track.cover} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className="track-cover" aria-hidden="true" />}
+        <span className="track-body"><span className="track-t">{track.title}</span><span className="track-s">{[track.artists, index != null ? '' : track.album].filter(Boolean).join(' · ')}</span></span>
         <span className="track-d">{track.durationMs > 0 ? minSec(track.durationMs) : ''}</span>
       </button>
       {onFav && <FavButton on={!!fav} onToggle={onFav} label={track.title} />}
@@ -99,20 +100,50 @@ export function TrackRow({ track, playing, pending, onPlay, fav, onFav }: { trac
   );
 }
 
-/** Album tile: cover, title, artists · year; a touch plays the album, the star keeps it. */
-export function AlbumTile({ album, playing, pending, onPlay, fav, onFav }: { album: Album; playing: boolean; pending?: boolean; onPlay: () => void; fav?: boolean; onFav?: () => void }) {
+function AlbumCover({ album, className }: { album: Album; className?: string }) {
   const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [album.cover]);
+  return album.cover && !failed ? <img className={className} src={album.cover} alt="" loading="lazy" onError={() => setFailed(true)} /> : <span className={cx(className, '-empty')} aria-hidden="true"><Icon name="disc" /></span>;
+}
+
+/** Album tile: a touch on the cover or the title shows its tracks, the round button plays it, the star keeps it. */
+export function AlbumTile({ album, playing, pending, onPlay, onOpen, fav, onFav }: { album: Album; playing: boolean; pending?: boolean; onPlay: () => void; onOpen: () => void; fav?: boolean; onFav?: () => void }) {
   return (
     <div className={cx('album', playing && 'is-on', pending && 'is-pending')}>
-      <button type="button" className="album-hit" aria-pressed={playing} aria-label={`Écouter l’album ${album.title}`} onClick={onPlay}>
-        <span className="album-cover">
-          {album.cover && !failed ? <img src={album.cover} alt="" loading="lazy" onError={() => setFailed(true)} /> : <Icon name="disc" />}
-          <span className="album-play" aria-hidden="true">{playing ? <span className="eq"><i /><i /><i /><i /></span> : <Icon name="play" />}</span>
-        </span>
+      <div className="album-art">
+        <button type="button" className="album-open" aria-label={`Voir les pistes de ${album.title}`} onClick={onOpen}><AlbumCover album={album} className="album-img" /></button>
+        <button type="button" className="album-play" aria-pressed={playing} aria-label={`Écouter l’album ${album.title}`} onClick={onPlay}>
+          {playing ? <span className="eq"><i /><i /><i /><i /></span> : <Icon name="play" />}
+        </button>
+        {onFav && <FavButton on={!!fav} onToggle={onFav} label={album.title} />}
+      </div>
+      <button type="button" className="album-hit" tabIndex={-1} aria-hidden="true" onClick={onOpen}>
         <span className="album-t">{album.title}</span>
         <span className="album-s">{[album.artists, album.year].filter(Boolean).join(' · ')}</span>
       </button>
-      {onFav && <FavButton on={!!fav} onToggle={onFav} label={album.title} />}
+    </div>
+  );
+}
+
+/** An album opened: back, cover, title, artists · year, play the whole album, favourite; then its tracks (children). */
+export function AlbumHead({ album, playing, pending, onBack, onPlay, fav, onFav, count }: { album: Album; playing: boolean; pending?: boolean; onBack: () => void; onPlay: () => void; fav?: boolean; onFav?: () => void; count?: number }) {
+  return (
+    <div className="album-head">
+      <button type="button" className="album-back" onClick={onBack}><Icon name="chevron-left" />Retour</button>
+      <div className="album-sum">
+        <AlbumCover album={album} className="album-head-img" />
+        <span className="album-sum-body">
+          <span className="media-sec">Album{count ? ` · ${count} titre${count > 1 ? 's' : ''}` : ''}</span>
+          <span className="album-head-t">{album.title}</span>
+          <span className="album-s">{[album.artists, album.year].filter(Boolean).join(' · ')}</span>
+          <span className="album-acts">
+            <button type="button" className={cx('album-go', playing && 'is-on', pending && 'is-pending')} aria-pressed={playing} onClick={onPlay}>
+              <Icon name={playing ? 'pause' : 'play'} />{playing ? 'En lecture' : 'Écouter l’album'}
+            </button>
+            {onFav && <FavButton on={!!fav} onToggle={onFav} label={album.title} />}
+          </span>
+        </span>
+      </div>
     </div>
   );
 }

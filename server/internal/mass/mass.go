@@ -19,6 +19,7 @@ type HA interface {
 	CallService(ctx context.Context, domain, service string, data map[string]any) error
 	CallServiceResponse(ctx context.Context, domain, service string, data map[string]any) (json.RawMessage, error)
 	ConfigEntryID(ctx context.Context, domain string) (string, error)
+	BrowseMedia(ctx context.Context, entity, contentID, contentType string) (json.RawMessage, error)
 }
 
 type Client struct {
@@ -74,8 +75,9 @@ func (c *Client) Search(ctx context.Context, q string, limit int) (model.Results
 }
 
 // Play starts a track or an album (its Music Assistant URI) on a Music
-// Assistant player entity, replacing the queue.
-func (c *Client) Play(ctx context.Context, player, uri, kind string) error {
+// Assistant player entity, replacing the queue; then: tracks queued after a
+// track (the rest of its album).
+func (c *Client) Play(ctx context.Context, player, uri, kind string, then []string) error {
 	if player == "" {
 		return errors.New("pas de lecteur Music Assistant pour cette enceinte (entities.music dans control.yaml)")
 	}
@@ -85,7 +87,82 @@ func (c *Client) Play(ctx context.Context, player, uri, kind string) error {
 	if !ValidURI(uri) {
 		return errors.New("titre invalide")
 	}
-	return c.HA.CallService(ctx, "music_assistant", "play_media", map[string]any{"entity_id": player, "media_id": uri, "media_type": kind, "enqueue": "replace"})
+	var id any = uri
+	if kind == "track" && len(then) > 0 {
+		ids := []string{uri}
+		for _, u := range then {
+			if ValidURI(u) && len(ids) < 100 {
+				ids = append(ids, u)
+			}
+		}
+		id = ids
+	}
+	return c.HA.CallService(ctx, "music_assistant", "play_media", map[string]any{"entity_id": player, "media_id": id, "media_type": kind, "enqueue": "replace"})
+}
+
+// AlbumTracks lists an album's tracks through the media browser of a Music
+// Assistant player (HA has no action for it).
+func (c *Client) AlbumTracks(ctx context.Context, player, uri string, a model.Album) ([]model.Track, error) {
+	if player == "" {
+		return nil, errors.New("pas de lecteur Music Assistant (entities.music dans control.yaml)")
+	}
+	if !ValidURI(uri) {
+		return nil, errors.New("album invalide")
+	}
+	raw, err := c.HA.BrowseMedia(ctx, player, uri, "album")
+	if err != nil {
+		return nil, errors.New("pistes de l'album introuvables : " + err.Error())
+	}
+	return BrowseTracks(raw, a.Artists)
+}
+
+// BrowseTracks reads the children of a browse_media answer. Music Assistant
+// titles them "Artist - Title": the artist is split off.
+func BrowseTracks(raw json.RawMessage, albumArtists string) ([]model.Track, error) {
+	var res struct {
+		Children []struct {
+			Title      string `json:"title"`
+			MediaClass string `json:"media_class"`
+			ContentID  string `json:"media_content_id"`
+			CanPlay    bool   `json:"can_play"`
+		} `json:"children"`
+	}
+	if err := json.Unmarshal(raw, &res); err != nil {
+		return nil, errors.New("réponse de Music Assistant illisible")
+	}
+	type kid struct{ title, uri string }
+	kids := []kid{}
+	prefixed := 0
+	for _, ch := range res.Children {
+		if ch.Title == "" || !ValidURI(ch.ContentID) || (ch.MediaClass != "" && ch.MediaClass != "track" && ch.MediaClass != "music") {
+			continue
+		}
+		if strings.Contains(ch.Title, " - ") {
+			prefixed++
+		}
+		kids = append(kids, kid{ch.Title, ch.ContentID})
+	}
+	known := map[string]bool{}
+	for _, a := range strings.Split(albumArtists, ",") {
+		if a = strings.TrimSpace(strings.ToLower(a)); a != "" {
+			known[a] = true
+		}
+	}
+	all := len(kids) > 0 && prefixed == len(kids)
+	out := []model.Track{}
+	seen := map[string]bool{}
+	for _, k := range kids {
+		if seen[k.uri] {
+			continue
+		}
+		seen[k.uri] = true
+		t := model.Track{URI: k.uri, Title: k.title, Artists: albumArtists}
+		if artist, title, ok := strings.Cut(k.title, " - "); ok && (all || known[strings.ToLower(artist)]) && title != "" {
+			t.Title, t.Artists = title, artist
+		}
+		out = append(out, t)
+	}
+	return out, nil
 }
 
 // ValidURI: provider://type/id or provider:type:id, no spaces.

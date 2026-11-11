@@ -487,6 +487,15 @@ func (c *Client) CallServiceResponse(ctx context.Context, domain, service string
 
 // ConfigEntryID returns the id of the loaded config entry of an integration
 // (the first one), e.g. the Music Assistant server.
+// BrowseMedia: the media browser of a media player (media_player/browse_media),
+// e.g. the tracks of an album on a Music Assistant player.
+func (c *Client) BrowseMedia(ctx context.Context, entity, contentID, contentType string) (json.RawMessage, error) {
+	if err := c.waitConnected(ctx, 8*time.Second); err != nil {
+		return nil, err
+	}
+	return c.request(ctx, map[string]any{"type": "media_player/browse_media", "entity_id": entity, "media_content_id": contentID, "media_content_type": contentType})
+}
+
 func (c *Client) ConfigEntryID(ctx context.Context, domain string) (string, error) {
 	if err := c.waitConnected(ctx, 8*time.Second); err != nil {
 		return "", err

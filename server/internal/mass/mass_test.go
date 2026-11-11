@@ -6,6 +6,8 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	"ahomelab.io/control/internal/model"
 )
 
 type fakeHA struct {
@@ -26,6 +28,15 @@ func (f *fakeHA) CallServiceResponse(ctx context.Context, domain, service string
 		return nil, f.fail
 	}
 	return json.RawMessage(f.response), nil
+}
+
+func (f *fakeHA) BrowseMedia(ctx context.Context, entity, contentID, contentType string) (json.RawMessage, error) {
+	f.calls = append(f.calls, map[string]any{"svc": "browse", "data": map[string]any{"entity_id": entity, "id": contentID, "type": contentType}})
+	return json.RawMessage(`{"title":"KPop Demon Hunters","children":[
+	 {"title":"HUNTR/X - Golden","media_class":"track","media_content_id":"spotify://track/1","can_play":true},
+	 {"title":"Saja Boys - Soda Pop","media_class":"track","media_content_id":"spotify://track/2","can_play":true},
+	 {"title":"HUNTR/X - Golden","media_class":"track","media_content_id":"spotify://track/1"},
+	 {"title":"cassé","media_class":"track","media_content_id":"bad uri"}]}`), nil
 }
 
 func (f *fakeHA) ConfigEntryID(ctx context.Context, domain string) (string, error) {
@@ -74,21 +85,44 @@ func TestSearchAndPlay(t *testing.T) {
 	if f.calls[0]["svc"] != "music_assistant.search" || d["config_entry_id"] != "e1" || d["name"] != "golden" || d["limit"] != 5 || len(d["media_type"].([]string)) != 2 {
 		t.Fatalf("appel : %+v", f.calls[0])
 	}
-	if err := c.Play(ctx, "media_player.salon_2", tr[0].URI, "track"); err != nil {
+	if err := c.Play(ctx, "media_player.salon_2", tr[0].URI, "track", nil); err != nil {
 		t.Fatal(err)
 	}
 	p := f.calls[1]["data"].(map[string]any)
 	if f.calls[1]["svc"] != "music_assistant.play_media" || p["entity_id"] != "media_player.salon_2" || p["media_id"] != "spotify://track/1" || p["enqueue"] != "replace" {
 		t.Fatalf("lecture : %+v", f.calls[1])
 	}
-	if err := c.Play(ctx, "media_player.salon_2", res.Albums[0].URI, "album"); err != nil || f.calls[2]["data"].(map[string]any)["media_type"] != "album" {
+	if err := c.Play(ctx, "media_player.salon_2", res.Albums[0].URI, "album", nil); err != nil || f.calls[2]["data"].(map[string]any)["media_type"] != "album" {
 		t.Fatalf("album : %v %+v", err, f.calls[2])
 	}
-	if err := c.Play(ctx, "", tr[0].URI, "track"); err == nil || !strings.Contains(err.Error(), "entities.music") {
+	if err := c.Play(ctx, "", tr[0].URI, "track", nil); err == nil || !strings.Contains(err.Error(), "entities.music") {
 		t.Fatalf("lecteur manquant : %v", err)
 	}
-	if err := c.Play(ctx, "media_player.x", "javascript:alert(1)", "track"); err == nil {
+	if err := c.Play(ctx, "media_player.x", "javascript:alert(1)", "track", nil); err == nil {
 		t.Fatal("URI invalide acceptée")
+	}
+}
+
+func TestAlbumTracks(t *testing.T) {
+	f := &fakeHA{entry: "e1"}
+	c := &Client{HA: f}
+	ctx := context.Background()
+	tr, err := c.AlbumTracks(ctx, "media_player.salon_salon", "spotify://album/k", model.Album{Artists: "Various Artists"})
+	if err != nil || len(tr) != 2 || tr[0].Title != "Golden" || tr[0].Artists != "HUNTR/X" || tr[1].Title != "Soda Pop" {
+		t.Fatalf("pistes : %v %+v", err, tr)
+	}
+	// a track and the rest of its album: one play_media with the list
+	if err := c.Play(ctx, "media_player.salon_salon", tr[0].URI, "track", []string{tr[1].URI, "bad uri"}); err != nil {
+		t.Fatal(err)
+	}
+	ids, _ := f.calls[1]["data"].(map[string]any)["media_id"].([]string)
+	if len(ids) != 2 || ids[1] != "spotify://track/2" {
+		t.Fatalf("file : %+v", f.calls[1])
+	}
+	// titles without the artist prefix stay whole
+	tr, _ = BrowseTracks(json.RawMessage(`{"children":[{"title":"Get Lucky - Radio Edit","media_class":"track","media_content_id":"spotify://track/9"},{"title":"Lose Yourself","media_class":"track","media_content_id":"spotify://track/8"}]}`), "Daft Punk")
+	if tr[0].Title != "Get Lucky - Radio Edit" || tr[0].Artists != "Daft Punk" {
+		t.Fatalf("titre avec tiret : %+v", tr)
 	}
 }
 

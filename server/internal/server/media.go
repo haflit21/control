@@ -22,8 +22,11 @@ import (
 // Assistant through HA, the Spotify Web API, or the demo catalogue.
 type Music interface {
 	Search(ctx context.Context, q string, limit int) (model.Results, error)
-	// Play starts uri, a track or an album (kind), replacing what the speaker plays.
-	Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string) error
+	// Play starts uri, a track or an album (kind), replacing what the speaker
+	// plays; then: the tracks to queue after a track (the rest of its album).
+	Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string, then []string) error
+	// AlbumTracks lists an album's tracks.
+	AlbumTracks(ctx context.Context, a model.Album) ([]model.Track, error)
 	// Source names the service for the interface ("Music Assistant", "Spotify").
 	Source() string
 }
@@ -35,14 +38,21 @@ func (s *Server) musicSource() string {
 	return s.Music.Source()
 }
 
-// MassMusic plays through Music Assistant: the speaker's MA player is entities.music.
-type MassMusic struct{ C *mass.Client }
+// MassMusic plays through Music Assistant: the speaker's MA player is
+// entities.music; Player (any MA player) browses albums.
+type MassMusic struct {
+	C      *mass.Client
+	Player string
+}
 
 func (m MassMusic) Search(ctx context.Context, q string, limit int) (model.Results, error) {
 	return m.C.Search(ctx, q, limit)
 }
-func (m MassMusic) Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string) error {
-	return m.C.Play(ctx, dev.Entities["music"], uri, kind)
+func (m MassMusic) Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string, then []string) error {
+	return m.C.Play(ctx, dev.Entities["music"], uri, kind, then)
+}
+func (m MassMusic) AlbumTracks(ctx context.Context, a model.Album) ([]model.Track, error) {
+	return m.C.AlbumTracks(ctx, m.Player, a.URI, a)
 }
 func (MassMusic) Source() string { return "Music Assistant" }
 
@@ -53,7 +63,10 @@ func (m SpotifyMusic) Search(ctx context.Context, q string, limit int) (model.Re
 	t, err := m.C.Search(ctx, q, limit)
 	return model.Results{Tracks: t, Albums: []model.Album{}}, err
 }
-func (m SpotifyMusic) Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string) error {
+func (SpotifyMusic) AlbumTracks(ctx context.Context, a model.Album) ([]model.Track, error) {
+	return nil, &spotify.Error{Status: http.StatusBadRequest, Message: "Albums : passer par Music Assistant"}
+}
+func (m SpotifyMusic) Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string, then []string) error {
 	if kind == "album" {
 		return &spotify.Error{Status: http.StatusBadRequest, Message: "Albums : passer par Music Assistant"}
 	}
@@ -148,14 +161,15 @@ func (s *Server) resumeRadio(entity string, st ha.Entity) (config.Radio, bool) {
 	return config.Radio{}, false
 }
 
-// playMusic: action play_music {uri, kind?: track|album, title?, artists?}
+// playMusic: action play_music {uri, kind?: track|album, title?, artists?, then?: [uri]}
 // (play_track: the same, a track) on a media player.
 func (s *Server) playMusic(w http.ResponseWriter, r *http.Request, id string, rc config.Room, dc config.Device, action string, raw json.RawMessage) {
 	var q struct {
-		URI     string `json:"uri"`
-		Kind    string `json:"kind"`
-		Title   string `json:"title"`
-		Artists string `json:"artists"`
+		URI     string   `json:"uri"`
+		Kind    string   `json:"kind"`
+		Title   string   `json:"title"`
+		Artists string   `json:"artists"`
+		Then    []string `json:"then"`
 	}
 	je := journal.Entry{Scope: "device", Target: id, Action: action, Params: journal.Compact(raw)}
 	if len(raw) == 0 || json.Unmarshal(raw, &q) != nil || q.URI == "" {
@@ -164,6 +178,9 @@ func (s *Server) playMusic(w http.ResponseWriter, r *http.Request, id string, rc
 	}
 	if q.Kind != "album" {
 		q.Kind = "track"
+	}
+	if len(q.Then) > 100 {
+		q.Then = q.Then[:100]
 	}
 	if s.Music == nil {
 		fail(w, http.StatusNotFound, "Recherche de musique non configurée", "")
@@ -176,7 +193,7 @@ func (s *Server) playMusic(w http.ResponseWriter, r *http.Request, id string, rc
 	je.Text = label
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
-	if err := s.Music.Play(ctx, rc, dc, q.URI, q.Kind); err != nil {
+	if err := s.Music.Play(ctx, rc, dc, q.URI, q.Kind, q.Then); err != nil {
 		je.Error = err.Error()
 		s.record(r, je)
 		fail(w, musicStatus(err), "Lecture impossible", err.Error())
@@ -185,6 +202,30 @@ func (s *Server) playMusic(w http.ResponseWriter, r *http.Request, id string, rc
 	je.OK = true
 	s.record(r, je)
 	writeJSON(w, http.StatusAccepted, map[string]any{"ok": true, "message": label})
+}
+
+// albumTracks: GET /api/media/album?uri=…&artists=… → {tracks}
+func (s *Server) albumTracks(w http.ResponseWriter, r *http.Request) {
+	if s.Music == nil {
+		fail(w, http.StatusNotFound, "Recherche de musique non configurée", "")
+		return
+	}
+	a := model.Album{URI: r.URL.Query().Get("uri"), Artists: r.URL.Query().Get("artists")}
+	if !mass.ValidURI(a.URI) || utf8.RuneCountInString(a.Artists) > 300 {
+		fail(w, http.StatusBadRequest, "Album invalide", "")
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
+	defer cancel()
+	tracks, err := s.Music.AlbumTracks(ctx, a)
+	if err != nil {
+		fail(w, musicStatus(err), "Pistes introuvables", err.Error())
+		return
+	}
+	if tracks == nil {
+		tracks = []model.Track{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"tracks": tracks})
 }
 
 // favorites: GET /api/media/favorites → {tracks, albums}

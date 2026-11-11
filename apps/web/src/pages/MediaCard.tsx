@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Album, Device, Media, MusicResults, Track } from '@control/model';
-import { AlbumTile, Card, MediaPlayer, SearchField, Seg, Station, TrackRow } from '@control/ui';
+import { AlbumHead, AlbumTile, Card, MediaPlayer, SearchField, Seg, Station, TrackRow } from '@control/ui';
 import { api, HttpError } from '../lib/api';
 import { useActions } from '../lib/actions';
 
@@ -14,7 +14,8 @@ const FAVS_KEY = ['music-favorites'];
  * A speaker: the player (artwork, progress, previous / play / next, volume),
  * then Radio (the stations of control.yaml), Musique (search through Music
  * Assistant: titles and albums) or Favoris (the household's starred titles
- * and albums). A touch on a result plays it on this speaker.
+ * and albums). A touch on a result plays it on this speaker; a touch on an
+ * album's cover shows its tracks.
  */
 export function MediaCard({ d, media, act, pending }: { d: Device; media?: Media; act: Act; pending: boolean }) {
   const radios = media?.radios ?? [];
@@ -26,6 +27,8 @@ export function MediaCard({ d, media, act, pending }: { d: Device; media?: Media
   const caps = new Set(d.capabilities ?? []);
   const send = (a: Parameters<Act['device']>[1]) => act.device(d, a, { quiet: true }).catch(() => {});
   const toggle = () => send({ action: playing ? 'pause' : 'play' });
+  const [open, setOpen] = useState<Album | null>(null);
+  const pick = (id: Tab) => { setTab(id); setOpen(null); };
   const tabs = [
     ...(radios.length > 0 ? [{ id: 'radio', label: 'Radio' }] : []),
     ...(music ? [{ id: 'music', label: 'Musique' }, { id: 'favs', label: 'Favoris' }] : []),
@@ -43,7 +46,7 @@ export function MediaCard({ d, media, act, pending }: { d: Device; media?: Media
           onToggle={toggle} onPrev={() => send({ action: 'previous' })} onNext={() => send({ action: 'next' })}
           onSeek={(position) => send({ action: 'seek', params: { position } })}
           onVolume={(pct) => send({ action: 'set_volume', params: { pct } })} />
-        {d.available && tabs.length > 1 && <Seg items={tabs} active={tab} onSelect={(id) => setTab(id as Tab)} />}
+        {d.available && tabs.length > 1 && <Seg items={tabs} active={tab} onSelect={(id) => pick(id as Tab)} />}
         {d.available && tab === 'radio' && radios.length > 0 && (
           <div className="stations" role="list" aria-label="Stations de radio">
             {radios.map((r) => (
@@ -52,8 +55,10 @@ export function MediaCard({ d, media, act, pending }: { d: Device; media?: Media
             ))}
           </div>
         )}
-        {d.available && music && tab === 'music' && <MusicSearch d={d} source={media?.musicSource} send={send} pending={pending} playing={playing} />}
-        {d.available && music && tab === 'favs' && <Favorites d={d} send={send} pending={pending} playing={playing} />}
+        {d.available && music && open && tab !== 'radio' && <AlbumView d={d} album={open} send={send} pending={pending} playing={playing} onBack={() => setOpen(null)} />}
+        {/* kept mounted while an album is open: the search comes back as it was */}
+        {d.available && music && tab === 'music' && <div className="stack" hidden={!!open}><MusicSearch d={d} source={media?.musicSource} send={send} pending={pending} playing={playing} onOpen={setOpen} /></div>}
+        {d.available && music && tab === 'favs' && !open && <Favorites d={d} send={send} pending={pending} playing={playing} onOpen={setOpen} />}
       </div>
     </Card>
   );
@@ -93,10 +98,20 @@ function useFavorites() {
   return { q, has: (uri: string) => keys.has(uri), set };
 }
 
-function Results({ d, res, send, pending, playing, favs }: { d: Device; res: MusicResults; send: Send; pending: boolean; playing: boolean; favs: ReturnType<typeof useFavorites> }) {
-  const cur = d.state.radio ? '' : uriKey(d.state.uri);
-  const isCurrent = (t: Track) => !d.state.radio && (cur ? uriKey(t.uri) === cur : !!d.state.title && d.state.title === t.title && (d.state.album ?? '') === (t.album ?? ''));
-  const albumCurrent = (a: Album) => !d.state.radio && !!d.state.album && d.state.album === a.title;
+function isCurrentTrack(d: Device, t: Track): boolean {
+  if (d.state.radio) return false;
+  const cur = uriKey(d.state.uri);
+  return cur ? uriKey(t.uri) === cur : !!d.state.title && d.state.title === t.title && (d.state.album ?? '') === (t.album ?? '');
+}
+const albumCurrent = (d: Device, a: Album) => !d.state.radio && !!d.state.album && d.state.album === a.title;
+
+/** A track: pause or resume it if it is the one playing, else play it (then: what follows it in its album). */
+function playTrack(d: Device, t: Track, send: Send, playing: boolean, then?: Track[]) {
+  if (isCurrentTrack(d, t)) send({ action: playing ? 'pause' : 'play' });
+  else send({ action: 'play_music', params: { uri: t.uri, kind: 'track', title: t.title, artists: t.artists, ...(then && then.length > 0 ? { then: then.map((x) => x.uri) } : {}) } });
+}
+
+function Results({ d, res, send, pending, playing, favs, onOpen }: { d: Device; res: MusicResults; send: Send; pending: boolean; playing: boolean; favs: ReturnType<typeof useFavorites>; onOpen: (a: Album) => void }) {
   return (
     <>
       {res.albums.length > 0 && (
@@ -104,7 +119,7 @@ function Results({ d, res, send, pending, playing, favs }: { d: Device; res: Mus
           <div className="media-sec">Albums</div>
           <div className="albums">
             {res.albums.map((a) => (
-              <AlbumTile key={a.uri} album={a} playing={playing && albumCurrent(a)} pending={pending}
+              <AlbumTile key={a.uri} album={a} playing={playing && albumCurrent(d, a)} pending={pending} onOpen={() => onOpen(a)}
                 fav={favs.has(a.uri)} onFav={() => favs.set('album', a, !favs.has(a.uri))}
                 onPlay={() => send({ action: 'play_music', params: { uri: a.uri, kind: 'album', title: a.title, artists: a.artists } })} />
             ))}
@@ -116,12 +131,9 @@ function Results({ d, res, send, pending, playing, favs }: { d: Device; res: Mus
           <div className="media-sec">Titres</div>
           <div className="tracks">
             {res.tracks.map((t) => (
-              <TrackRow key={t.uri} track={t} playing={playing && isCurrent(t)} pending={pending}
+              <TrackRow key={t.uri} track={t} playing={playing && isCurrentTrack(d, t)} pending={pending}
                 fav={favs.has(t.uri)} onFav={() => favs.set('track', t, !favs.has(t.uri))}
-                onPlay={() => {
-                  if (isCurrent(t)) send({ action: playing ? 'pause' : 'play' });
-                  else send({ action: 'play_music', params: { uri: t.uri, kind: 'track', title: t.title, artists: t.artists } });
-                }} />
+                onPlay={() => playTrack(d, t, send, playing)} />
             ))}
           </div>
         </>
@@ -130,7 +142,7 @@ function Results({ d, res, send, pending, playing, favs }: { d: Device; res: Mus
   );
 }
 
-function MusicSearch({ d, source, send, pending, playing }: { d: Device; source?: string; send: Send; pending: boolean; playing: boolean }) {
+function MusicSearch({ d, source, send, pending, playing, onOpen }: { d: Device; source?: string; send: Send; pending: boolean; playing: boolean; onOpen: (a: Album) => void }) {
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');
   useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 350); return () => clearTimeout(t); }, [q]);
@@ -153,19 +165,53 @@ function MusicSearch({ d, source, send, pending, playing }: { d: Device; source?
       ) : res.data ? (
         <>
           {source && <div className="media-src">Résultats · {source}</div>}
-          <Results d={d} res={res.data} send={send} pending={pending} playing={playing} favs={favs} />
+          <Results d={d} res={res.data} send={send} pending={pending} playing={playing} favs={favs} onOpen={onOpen} />
         </>
       ) : null}
     </>
   );
 }
 
-function Favorites({ d, send, pending, playing }: { d: Device; send: Send; pending: boolean; playing: boolean }) {
+function Favorites({ d, send, pending, playing, onOpen }: { d: Device; send: Send; pending: boolean; playing: boolean; onOpen: (a: Album) => void }) {
   const favs = useFavorites();
   if (favs.q.isError) return <div className="media-empty" role="alert">{favs.q.error.body.error}</div>;
   if (!favs.q.data) return null;
   if (favs.q.data.tracks.length === 0 && favs.q.data.albums.length === 0) {
     return <div className="media-empty">Aucun favori. Dans Musique, l’étoile d’un titre ou d’un album le garde ici.</div>;
   }
-  return <Results d={d} res={favs.q.data} send={send} pending={pending} playing={playing} favs={favs} />;
+  return <Results d={d} res={favs.q.data} send={send} pending={pending} playing={playing} favs={favs} onOpen={onOpen} />;
+}
+
+/** An album opened: its summary, then its tracks; a track plays with the rest of the album after it. */
+function AlbumView({ d, album, send, pending, playing, onBack }: { d: Device; album: Album; send: Send; pending: boolean; playing: boolean; onBack: () => void }) {
+  const favs = useFavorites();
+  const q = useQuery<{ tracks: Track[] }, HttpError>({
+    queryKey: ['album', album.uri],
+    queryFn: () => api(`/api/media/album?uri=${encodeURIComponent(album.uri)}&artists=${encodeURIComponent(album.artists)}`),
+    staleTime: 30 * 60_000, retry: 0,
+  });
+  const tracks = (q.data?.tracks ?? []).map((t) => ({ ...t, album: t.album || album.title }));
+  const on = playing && albumCurrent(d, album);
+  return (
+    <>
+      <AlbumHead album={album} playing={on} pending={pending} onBack={onBack} count={tracks.length || undefined}
+        fav={favs.has(album.uri)} onFav={() => favs.set('album', album, !favs.has(album.uri))}
+        onPlay={() => (on ? send({ action: 'pause' }) : send({ action: 'play_music', params: { uri: album.uri, kind: 'album', title: album.title, artists: album.artists } }))} />
+      {q.isError ? (
+        <div className="media-empty" role="alert">{q.error.body.error}{q.error.body.detail ? ` : ${q.error.body.detail}` : ''}</div>
+      ) : q.isLoading ? (
+        <div className="media-empty">Chargement des pistes…</div>
+      ) : tracks.length === 0 ? (
+        <div className="media-empty">Aucune piste trouvée pour cet album.</div>
+      ) : (
+        <div className="tracks">
+          {tracks.map((t, i) => (
+            <TrackRow key={t.uri} track={t} index={i + 1} playing={playing && isCurrentTrack(d, t)} pending={pending}
+              fav={favs.has(t.uri)} onFav={() => favs.set('track', t, !favs.has(t.uri))}
+              onPlay={() => playTrack(d, t, send, playing, tracks.slice(i + 1))} />
+          ))}
+        </div>
+      )}
+    </>
+  );
 }

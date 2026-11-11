@@ -303,7 +303,7 @@ export type DeviceAction =
   | { action: 'seek'; params: { position: number } }
   | { action: 'set_volume'; params: { pct: number } }
   | { action: 'play_radio'; params: { id: string } }
-  | { action: 'play_music'; params: { uri: string; kind?: 'track' | 'album'; title?: string; artists?: string } }
+  | { action: 'play_music'; params: { uri: string; kind?: 'track' | 'album'; title?: string; artists?: string; then?: string[] } }
   | { action: 'set_privacy'; params: { on: boolean } }
   | { action: 'set_eco' | 'set_boost'; params: { on: boolean } };
 

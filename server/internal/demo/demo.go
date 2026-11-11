@@ -774,7 +774,22 @@ func (Music) Search(ctx context.Context, q string, limit int) (model.Results, er
 
 func (Music) Source() string { return "Music Assistant (démo)" }
 
-func (m Music) Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string) error {
+func (Music) AlbumTracks(ctx context.Context, a model.Album) ([]model.Track, error) {
+	for _, x := range albums {
+		if x.URI == a.URI {
+			out := []model.Track{}
+			for _, t := range catalogue {
+				if t.Album == x.Title {
+					out = append(out, t)
+				}
+			}
+			return out, nil
+		}
+	}
+	return nil, fmt.Errorf("mode démo : album inconnu %s", a.URI)
+}
+
+func (m Music) Play(ctx context.Context, room config.Room, dev config.Device, uri, kind string, then []string) error {
 	i := -1
 	for j, t := range catalogue {
 		if t.URI == uri {

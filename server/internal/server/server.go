@@ -267,6 +267,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/security/alarm/ack", s.auth(s.mutating(s.alarmAck)))
 	mux.HandleFunc("GET /api/journal", s.auth(s.apiJournal))
 	mux.HandleFunc("GET /api/media/search", s.auth(s.mediaSearch))
+	mux.HandleFunc("GET /api/media/album", s.auth(s.albumTracks))
 	mux.HandleFunc("GET /api/media/favorites", s.auth(s.favoritesList))
 	mux.HandleFunc("POST /api/media/favorites", s.auth(s.mutating(s.favoritesSet)))
 	mux.HandleFunc("GET /api/media/{id}/cover", s.auth(s.mediaCover))
