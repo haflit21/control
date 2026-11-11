@@ -273,7 +273,7 @@ func check(cfg *config.Config) {
 	} else {
 		need := []string{"light.turn_on", "light.turn_off", "climate.set_temperature", "climate.set_hvac_mode", "cover.open_cover", "cover.close_cover", "cover.set_cover_position", "switch.turn_on", "media_player.media_play_pause", "media_player.volume_set", "script.turn_on"}
 		if len(cfg.Media.Radios) > 0 {
-			need = append(need, "media_player.play_media", "media_player.media_next_track", "media_player.media_previous_track", "media_player.media_seek", "media_player.turn_off")
+			need = append(need, "media_player.play_media", "media_player.media_next_track", "media_player.media_previous_track", "media_player.media_seek", "media_player.turn_off", "media_player.media_stop")
 		}
 		if cfg.Media.Music.Provider == "music_assistant" {
 			need = append(need, "music_assistant.search", "music_assistant.play_media")

@@ -12,6 +12,7 @@ import (
 
 	"ahomelab.io/control/internal/build"
 	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/ha"
 	"ahomelab.io/control/internal/journal"
 	"ahomelab.io/control/internal/model"
 )
@@ -319,11 +320,11 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 			// Music Assistant first (it stops streaming), then the speaker itself
 			calls := []call{}
 			if m := ent["music"]; m != "" {
-				if st, ok := snap[m]; ok && st.State != "off" && st.State != "unavailable" {
-					calls = append(calls, call{"media_player", "turn_off", target(m, nil)})
+				if st, ok := snap[m]; ok && st.State != "off" && st.State != "unavailable" && st.State != "idle" {
+					calls = append(calls, offCall(m, st))
 				}
 			}
-			return append(calls, call{"media_player", "turn_off", target(e, nil)}), dc.Name + " · éteinte", nil
+			return append(calls, offCall(e, snap[e])), dc.Name + " · éteinte", nil
 		case "next":
 			return []call{{"media_player", "media_next_track", target(act, nil)}}, dc.Name + " · titre suivant", nil
 		case "previous":
@@ -365,6 +366,19 @@ func (s *Server) planDevice(dc config.Device, body actionBody) ([]call, string, 
 		}
 	}
 	return nil, "", fmt.Errorf("action %q impossible sur %s", body.Action, dc.Name)
+}
+
+// offCall: turn_off when the player supports it (a Music Assistant player does
+// not: TURN_OFF missing from supported_features), else stop, else pause.
+func offCall(entity string, st ha.Entity) call {
+	f, ok := st.Attributes["supported_features"].(float64)
+	switch {
+	case !ok || int(f)&256 != 0:
+		return call{"media_player", "turn_off", target(entity, nil)}
+	case int(f)&4096 != 0:
+		return call{"media_player", "media_stop", target(entity, nil)}
+	}
+	return call{"media_player", "media_pause", target(entity, nil)}
 }
 
 func minSec(sec float64) string {
