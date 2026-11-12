@@ -217,7 +217,10 @@ export interface Agenda {
   /** quick entry: typed sentence (text) and voice (audio) */
   input: { text: boolean; audio: boolean };
 }
-export interface Calendar { id: string; name: string; color?: string }
+/** `owner`: the member whose personal calendar this is; absent for a shared calendar. */
+export interface Calendar { id: string; name: string; color?: string; owner?: string }
+/** One person of the household (control.yaml people:), with a personal calendar of the same id. */
+export interface Member { id: string; name: string; color?: string }
 /** One occurrence. `eventId` is the event to edit (the whole series when `repeats`). */
 export interface CalEvent { id: string; eventId: string; repeats?: boolean; calendar: string; title: string; start: string; end: string; allDay: boolean; location?: string }
 
@@ -252,6 +255,10 @@ export interface Home {
   agenda?: Agenda;
   media?: Media;
   presence: Person[];
+  /** the household (personal calendars, face recognition) */
+  people?: Member[];
+  /** face recognition configured: a device may recognise who wakes it */
+  face?: boolean;
   alerts: Alert[];
   connected: boolean;
   demo: boolean;

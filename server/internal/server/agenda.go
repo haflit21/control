@@ -72,7 +72,7 @@ func (s *Server) AgendaModel(now time.Time) model.Agenda {
 	ag := model.Agenda{Available: true, From: from, To: to, UpdatedAt: now, Calendars: []model.Calendar{}, Events: []model.CalEvent{},
 		Input: model.AgendaInput{Text: s.Understander != nil, Audio: s.Understander != nil && s.Transcriber != nil}}
 	for _, c := range s.Cfg.Agenda.Calendars {
-		ag.Calendars = append(ag.Calendars, model.Calendar{ID: c.ID, Name: c.Name, Color: c.Color})
+		ag.Calendars = append(ag.Calendars, model.Calendar{ID: c.ID, Name: c.Name, Color: c.Color, Owner: c.Owner})
 	}
 	for _, o := range s.Agenda.Between(from, to, s.Loc) {
 		ag.Events = append(ag.Events, model.CalEvent{ID: o.ID, EventID: o.Event.ID, Repeats: o.Repeats, Calendar: o.Event.Calendar, Title: o.Event.Title,
@@ -206,9 +206,17 @@ func (s *Server) voiceContext(now time.Time) (voice.Context, []string) {
 	for _, cal := range s.Cfg.Agenda.Calendars {
 		c.Calendars = append(c.Calendars, voice.CalendarInfo{ID: cal.ID, Name: cal.Name, Hint: cal.Hint})
 	}
+	seen := map[string]bool{}
 	for _, p := range s.Cfg.Globals.Presence {
-		if p.Name != "" {
+		if p.Name != "" && !seen[p.Name] {
+			seen[p.Name] = true
 			c.People = append(c.People, p.Name)
+		}
+	}
+	for _, m := range s.Cfg.People {
+		if !seen[m.Name] {
+			seen[m.Name] = true
+			c.People = append(c.People, m.Name)
 		}
 	}
 	return c, s.Cfg.Agenda.CalendarIDs()

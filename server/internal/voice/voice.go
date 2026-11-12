@@ -103,7 +103,7 @@ Règles :
 - allDay : true s'il n'y a aucune heure (anniversaires, poubelles, vacances, « toute la journée »). Alors start et end sont vides. Plusieurs jours (« du 20 au 23 ») : endDate = dernier jour inclus.
 - repeat : seulement si la phrase le dit (« tous les mardis », « chaque semaine » → weekly ; « une semaine sur deux », « toutes les deux semaines » → biweekly ; « tous les mois », « le 5 de chaque mois » → monthly ; « tous les ans », un anniversaire → yearly). until (AAAA-MM-JJ) seulement si une fin est dite. date = la première occurrence à venir.
 - location : seulement si un lieu est dit (« chez le Dr Martin », « à la piscine »).
-- calendar : l'identifiant qui convient le mieux ; à défaut le premier.
+- calendar : l'identifiant qui convient le mieux ; à défaut le premier. Un agenda personnel (indice « agenda personnel de … ») prend ce qui ne concerne que cette personne (« dentiste pour Marion », « le foot d’Idris ») ; ce qui concerne la famille, plusieurs personnes ou la maison va dans un calendrier commun.
 - Une phrase dictée sort de la reconnaissance vocale et peut contenir des erreurs : corrige celles qui sont évidentes d'après le sens (un mot qui se prononce comme un jour, une heure ou un mot courant de l'agenda : « Marty prochain » = mardi prochain), sans rien inventer. Un prénom proche d'une personne du foyer est cette personne.
 Si la phrase n'est pas un événement, mets quand même ton meilleur titre.
 `)

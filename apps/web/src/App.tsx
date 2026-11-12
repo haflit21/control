@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { IconSprite, Icon, BottomNav, Dot, Pict, Toasts, Popover, AlertRow, Row, Seg, Toggle, relative } from '@control/ui';
 import { usePush, sendTest } from './lib/push';
@@ -13,6 +13,7 @@ import { RoomsPage } from './pages/Rooms';
 import { AgendaPage } from './pages/Agenda';
 import { WallPage } from './pages/Wall';
 import { SleepPage } from './pages/Sleep';
+import { PeopleSheet } from './pages/PeopleSheet';
 import { SecurityPage } from './pages/Security';
 import { WeatherPage } from './pages/Weather';
 
@@ -32,6 +33,7 @@ export function App() {
   const navigate = useNavigate();
   const toasts = useToasts();
   const bell = useBell();
+  const [peopleOpen, setPeopleOpen] = useState(false);
   // plain <a href="/…"> links inside UI components navigate client-side
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
@@ -120,8 +122,19 @@ export function App() {
               <div className="sheet-sec">Cet appareil</div>
               <PushRow />
               <ThemeRow />
+              {!!home.data.people?.length && (
+                <>
+                  <div className="sheet-sec">Maison</div>
+                  <button type="button" className="row people-open" onClick={() => { setBell(false); setPeopleOpen(true); }}>
+                    <Pict icon="person" size="s" state={home.data.face ? 'on' : 'off'} />
+                    <span><span className="row-name">Personnes et visages</span><span className="row-sub">{home.data.face ? 'Photos, reconnaissance au réveil' : 'Reconnaissance non configurée'}</span></span>
+                    <Icon name="chevron" />
+                  </button>
+                </>
+              )}
             </Popover>
           )}
+          {peopleOpen && <PeopleSheet onClose={() => setPeopleOpen(false)} />}
         </div>
       </div>
     </>

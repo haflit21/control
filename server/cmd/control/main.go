@@ -8,7 +8,7 @@
 //
 // Environment (decrypted from .cloud/secrets/secrets.enc.yaml next to
 // control.yaml, or a .env in development): HA_URL, HA_TOKEN,
-// CLAUDE_GATEWAY_TOKEN, STT_API_KEY, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,
+// CLAUDE_GATEWAY_TOKEN, STT_API_KEY, FACE_API_KEY, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET,
 // SPOTIFY_REFRESH_TOKEN, CONTROL_CONFIG
 // (control.yaml), CONTROL_DEMO=1, CONTROL_LISTEN, CONTROL_MEDIA, CONTROL_ALLOW_FROM (comma
 // separated, added to serve.allow_from), CONTROL_TOKEN (login token;
@@ -36,6 +36,7 @@ import (
 	"ahomelab.io/control/internal/agenda"
 	"ahomelab.io/control/internal/config"
 	"ahomelab.io/control/internal/demo"
+	"ahomelab.io/control/internal/face"
 	"ahomelab.io/control/internal/favorites"
 	"ahomelab.io/control/internal/ha"
 	"ahomelab.io/control/internal/journal"
@@ -167,6 +168,9 @@ func serve(cfg *config.Config, cfgPath string) {
 	}
 	srv.Transcriber, srv.Understander = voiceFrom(cfg)
 	srv.Music = musicFrom(cfg, demoMode, src)
+	if fc := faceFrom(cfg); fc != nil {
+		srv.Face = fc
+	}
 	// favoris (titres, albums) : favorites.json dans state_dir ; en démo, en mémoire
 	favDir := filepath.Join(stateDir, "favorites")
 	if demoMode {
@@ -267,6 +271,7 @@ func check(cfg *config.Config) {
 	rctx, rcancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer rcancel()
 	checkVoice(rctx, cfg)
+	checkFace(rctx, cfg)
 	checkMedia(rctx, cfg, c)
 	if svc, err := c.Services(rctx); err != nil {
 		fmt.Printf("\n(liste des services HA indisponible : %v)\n", err)
@@ -402,6 +407,56 @@ func voiceFrom(cfg *config.Config) (voice.Transcriber, voice.Understander) {
 		log.Printf("agenda : voix transcrite par %s (%s)", v.Transcribe.URL, model)
 	}
 	return tr, un
+}
+
+// faceFrom: the face recognition service (face.url in control.yaml, FACE_API_KEY).
+// Returns nil when it is not configured: nobody is recognised, the interface hides it.
+func faceFrom(cfg *config.Config) *face.Client {
+	if cfg.Face.URL == "" {
+		return nil
+	}
+	if os.Getenv("FACE_API_KEY") == "" {
+		log.Printf("visages : reconnaissance désactivée, FACE_API_KEY absent des secrets")
+		return nil
+	}
+	log.Printf("visages : reconnaissance par %s, %d personne(s) du foyer", cfg.Face.URL, len(cfg.People))
+	return &face.Client{URL: cfg.Face.URL, Token: os.Getenv("FACE_API_KEY")}
+}
+
+// checkFace says whether recognition can work (never prints the token).
+func checkFace(ctx context.Context, cfg *config.Config) {
+	names := make([]string, 0, len(cfg.People))
+	for _, m := range cfg.People {
+		names = append(names, m.ID)
+	}
+	fmt.Printf("\nFoyer : %d personne(s) (%s), un agenda personnel chacune\n", len(cfg.People), strings.Join(names, ", "))
+	if cfg.Face.URL == "" {
+		fmt.Println("  visages : non configuré (face.url)")
+		return
+	}
+	if os.Getenv("FACE_API_KEY") == "" {
+		fmt.Printf("  visages : service %s, mais FACE_API_KEY manque dans les secrets\n", cfg.Face.URL)
+		return
+	}
+	c := &face.Client{URL: cfg.Face.URL, Token: os.Getenv("FACE_API_KEY")}
+	code, err := c.Health(ctx)
+	if err != nil {
+		fmt.Printf("  visages : service injoignable sur %s (%v)\n", cfg.Face.URL, err)
+		return
+	}
+	fmt.Printf("  visages : service sur %s : HTTP %d (200 = modèles prêts)\n", cfg.Face.URL, code)
+	ps, err := c.People(ctx)
+	if err != nil {
+		fmt.Printf("  visages : liste impossible (%v) : jeton ou adresse refusés ?\n", err)
+		return
+	}
+	counts := map[string]int{}
+	for _, p := range ps {
+		counts[p.ID] = p.Samples
+	}
+	for _, m := range cfg.People {
+		fmt.Printf("  %s : %d photo(s)\n", m.Name, counts[m.ID])
+	}
 }
 
 // checkVoice says whether the quick entry can work (never prints a key).

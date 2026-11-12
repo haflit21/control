@@ -246,6 +246,15 @@ type Calendar struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Color string `json:"color,omitempty"`
+	Owner string `json:"owner,omitempty"` // member id of a personal calendar; empty = shared
+}
+
+// Member is one person of the household (control.yaml people:), with a
+// personal calendar of the same id.
+type Member struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Color string `json:"color,omitempty"`
 }
 
 type CalEvent struct {
@@ -269,6 +278,8 @@ type Home struct {
 	Agenda    *Agenda   `json:"agenda,omitempty"`
 	Media     *Media    `json:"media,omitempty"`
 	Presence  []Person  `json:"presence"`
+	People    []Member  `json:"people"` // the household (personal calendars, face recognition)
+	Face      bool      `json:"face"`   // face recognition configured: a device may recognise who wakes it
 	Alerts    []Alert   `json:"alerts"`
 	Connected bool      `json:"connected"` // server ↔ Home Assistant
 	Demo      bool      `json:"demo"`

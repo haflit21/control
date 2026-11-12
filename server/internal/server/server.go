@@ -30,6 +30,7 @@ import (
 	"ahomelab.io/control/internal/agenda"
 	"ahomelab.io/control/internal/build"
 	"ahomelab.io/control/internal/config"
+	"ahomelab.io/control/internal/face"
 	"ahomelab.io/control/internal/favorites"
 	"ahomelab.io/control/internal/ha"
 	"ahomelab.io/control/internal/journal"
@@ -67,7 +68,9 @@ type Server struct {
 	Transcriber  voice.Transcriber
 	Understander voice.Understander
 	// Music: track search and playback (nil = the Musique tab is not offered).
-	Music      Music
+	Music Music
+	// Face: the homelab's face recognition service (nil = nobody is recognised).
+	Face       face.Recognizer
 	agendaKick chan struct{}
 	// lastRadio: media_player entity → id of the radio last started (resume when idle)
 	lastRadio sync.Map
@@ -185,6 +188,7 @@ func (s *Server) rebuild(emit func([]model.Event)) {
 	air, agenda := s.air, s.agenda
 	s.mu.RUnlock()
 	home := build.Build(build.Input{Config: s.Cfg, States: s.Src.Snapshot(), Forecasts: s.Src.Forecasts(weather), Now: now, Connected: s.Src.Connected(), Demo: s.Demo, Air: air, Agenda: agenda, Music: s.musicSource()})
+	home.People, home.Face = s.members(), s.Face != nil
 	s.mu.Lock()
 	prev := s.devices
 	prevHome := s.home
@@ -281,6 +285,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/push/subscribe", s.auth(s.mutating(s.pushSubscribe)))
 	mux.HandleFunc("POST /api/push/unsubscribe", s.auth(s.mutating(s.pushUnsubscribe)))
 	mux.HandleFunc("POST /api/push/test", s.auth(s.mutating(s.pushTest)))
+	mux.HandleFunc("POST /api/face/identify", s.auth(s.mutating(s.faceIdentify)))
+	mux.HandleFunc("GET /api/people", s.auth(s.peopleList))
+	mux.HandleFunc("POST /api/people/{id}/faces", s.auth(s.mutating(s.faceEnroll)))
+	mux.HandleFunc("DELETE /api/people/{id}/faces", s.auth(s.mutating(s.faceForget)))
 	mux.HandleFunc("/", s.static)
 	return mux
 }

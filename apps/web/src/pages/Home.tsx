@@ -6,6 +6,7 @@ import { cameras, heatingSubtitle, lightsOn, openings, primaryHeating, ROOM_AMBI
 import { snapshotURL, useTick } from '../lib/api';
 import { useActions, usePending } from '../lib/actions';
 import { useConfirm } from '../lib/confirm';
+import { agendaFor, clearProfile, profilePerson, useProfile } from '../lib/profile';
 
 export function HomePage({ home, now, stale }: { home: Home; now: Date; stale: boolean }) {
   const nav = useNavigate();
@@ -36,11 +37,21 @@ export function HomePage({ home, now, stale }: { home: Home; now: Date; stale: b
   const heatingDevices = home.rooms.map(primaryHeating).filter(Boolean);
   const power = heatingDevices.reduce<{ sum: number; n: number }>((acc, h) => (h?.state.heatingPower != null ? { sum: acc.sum + h.state.heatingPower, n: acc.n + 1 } : acc), { sum: 0, n: 0 });
   const avgPower = power.n ? Math.round(power.sum / power.n) : undefined;
+  // who woke the screen (recognised at the wall tablet): greeted, and the agenda is theirs
+  const profile = useProfile();
+  const me = profilePerson(profile);
+  const myAgenda = home.agenda && me ? agendaFor(home.agenda, me.id) : home.agenda;
 
   return (
     <div className="page">
       <header className="dash-top hrow">
-        <div className="greet"><h1>{greeting(now)} {home.presence.find((p) => p.home)?.name ?? ''}</h1><p>{dateLong(now)}</p></div>
+        <div className={cx('greet', profile.state === 'looking' && 'is-looking')}>
+          <h1>{greeting(now)} {me ? me.name : (home.presence.find((p) => p.home)?.name ?? '')}</h1>
+          <p>
+            {dateLong(now)}
+            {me && <> · <button type="button" className="me-not" onClick={clearProfile}>Pas {me.name} ?</button></>}
+          </p>
+        </div>
         <div className="dash-tools">
           <AirChip air={home.air} />
           {home.weather && <WxPill w={home.weather} now={now} href="/meteo" onClick={() => nav('/meteo')} />}
@@ -125,8 +136,9 @@ export function HomePage({ home, now, stale }: { home: Home; now: Date; stale: b
 
         {home.agenda && (
           <Card tight className="dash-agenda">
-            <CardHead small pict={<Pict icon="calendar" />} title="Agenda" sub={home.agenda.available ? 'Les prochains jours' : 'Calendriers injoignables'} right={<Link className="sec-link" to="/agenda">Semaine</Link>} />
-            {home.agenda.available && <AgendaGlance agenda={home.agenda} now={now} max={5} />}
+            <CardHead small pict={me ? <span className="avatar -s me-avatar" style={me.color ? { background: me.color, borderColor: me.color } : undefined} aria-hidden="true">{me.name.charAt(0)}</span> : <Pict icon="calendar" />}
+              title={me ? 'Ton agenda' : 'Agenda'} sub={!home.agenda.available ? 'Calendriers injoignables' : me ? 'Le tien et les calendriers communs' : 'Les prochains jours'} right={<Link className="sec-link" to="/agenda">Semaine</Link>} />
+            {home.agenda.available && myAgenda && <AgendaGlance agenda={myAgenda} now={now} max={5} />}
           </Card>
         )}
 

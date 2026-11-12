@@ -7,6 +7,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"github.com/goccy/go-yaml"
@@ -22,6 +23,38 @@ type Config struct {
 	Serve   Serve    `yaml:"serve"`
 	Agenda  Agenda   `yaml:"agenda"`
 	Media   Media    `yaml:"media"`
+	// People: the household. Each person gets a personal calendar next to the
+	// shared ones, and can be recognised at the wall tablet (faces enrolled from
+	// the app, stored by the face service).
+	People []Member `yaml:"people"`
+	Face   Face     `yaml:"face"`
+}
+
+// Member is one person of the household. ID is also the person's id in the
+// face service and the id of their personal calendar.
+type Member struct {
+	ID    string `yaml:"id"`
+	Name  string `yaml:"name"`
+	Color string `yaml:"color,omitempty"` // CSS colour of the personal calendar and avatar
+}
+
+// Face: the homelab's face recognition service (dépôt ahomelab/face), token in
+// FACE_API_KEY. Without url, nobody is recognised and no face can be enrolled.
+type Face struct {
+	URL string `yaml:"url"` // e.g. http://face.home.arpa
+}
+
+// memberID: the face service's identifier rule (lowercase, digits, - and _).
+var memberID = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,31}$`)
+
+// Member returns the household member with this id.
+func (c *Config) Member(id string) (Member, bool) {
+	for _, m := range c.People {
+		if m.ID == id {
+			return m, true
+		}
+	}
+	return Member{}, false
 }
 
 // Media: what the speakers can play besides their own app. Radios are plain
@@ -66,6 +99,9 @@ type Calendar struct {
 	Color string `yaml:"color"` // CSS colour, optional
 	// Hint helps the language model choose this calendar ("poubelles, tri, verre, encombrants").
 	Hint string `yaml:"hint"`
+	// Owner: the member whose personal calendar this is (added from people:, never written in
+	// control.yaml); empty for a shared calendar.
+	Owner string `yaml:"-"`
 }
 
 // Voice: speech → text (the homelab's stt service, or any OpenAI-compatible
@@ -222,6 +258,13 @@ func (c *Config) Validate() error {
 		c.Agenda.Calendars = []Calendar{{ID: "famille", Name: "Famille", Color: "#ec9b74"}}
 	}
 	calSeen := map[string]bool{}
+	shared := c.Agenda.Calendars[:0:0]
+	for _, cal := range c.Agenda.Calendars {
+		if cal.Owner == "" { // Validate may run twice: personal calendars are rebuilt below
+			shared = append(shared, cal)
+		}
+	}
+	c.Agenda.Calendars = shared
 	for i := range c.Agenda.Calendars {
 		cal := &c.Agenda.Calendars[i]
 		if cal.ID == "" || strings.ContainsAny(cal.ID, " ./@") {
@@ -234,6 +277,26 @@ func (c *Config) Validate() error {
 		if cal.Name == "" {
 			cal.Name = strings.ToUpper(cal.ID[:1]) + cal.ID[1:]
 		}
+	}
+	// the household: one personal calendar each, after the shared ones
+	for i := range c.People {
+		m := &c.People[i]
+		m.Name = strings.TrimSpace(m.Name)
+		if !memberID.MatchString(m.ID) {
+			return fmt.Errorf("people : %q : id invalide (minuscules, chiffres, - et _, 32 caractères au plus)", m.ID)
+		}
+		if calSeen[m.ID] {
+			return fmt.Errorf("people : %q est déjà l'id d'un calendrier ou d'une autre personne", m.ID)
+		}
+		calSeen[m.ID] = true
+		if m.Name == "" {
+			m.Name = strings.ToUpper(m.ID[:1]) + m.ID[1:]
+		}
+		c.Agenda.Calendars = append(c.Agenda.Calendars, Calendar{ID: m.ID, Name: m.Name, Color: m.Color, Owner: m.ID,
+			Hint: "agenda personnel de " + m.Name + " : ce qui ne concerne que " + m.Name})
+	}
+	if c.Face.URL != "" && !strings.HasPrefix(c.Face.URL, "http://") && !strings.HasPrefix(c.Face.URL, "https://") {
+		return fmt.Errorf("face.url : http(s) attendu")
 	}
 	v := &c.Agenda.Voice
 	if v.Transcribe.Language == "" {

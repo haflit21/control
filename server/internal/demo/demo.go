@@ -712,6 +712,24 @@ func SeedAgenda(st *agenda.Store, calendars []string, now time.Time) {
 	}
 	d := func(off int) string { return monday.AddDate(0, 0, off).Format("2006-01-02") }
 	weekly := &agenda.Repeat{Freq: agenda.Weekly}
+	// personal calendars (people: in control.yaml): one or two events each
+	personal := []agenda.Event{
+		{Title: "Course à pied", Location: "Parc de Parilly", Date: d(1), Start: "18:30", End: "19:30", Repeat: weekly},
+		{Title: "Dentiste", Location: "Cabinet du Dr Petit", Date: d(3), Start: "14:00", End: "14:45"},
+		{Title: "Éveil musical", Date: d(5), Start: "09:30", End: "10:30", Repeat: weekly},
+	}
+	n := 0
+	for _, c := range calendars {
+		if c == fam || c == bins || c == "famille" || c == "poubelles" {
+			continue
+		}
+		e := personal[n%len(personal)]
+		e.Calendar = c
+		if e.Validate(calendars) == nil {
+			_, _ = st.Add(e, "Démo")
+		}
+		n++
+	}
 	for _, e := range []agenda.Event{
 		{Calendar: fam, Title: "Crèche · dépôt", Location: "Crèche des Lilas", Date: d(0), Start: "08:15", End: "08:45", Repeat: weekly},
 		{Calendar: fam, Title: "Bébé nageur", Location: "Piscine de Vénissieux", Date: d(2), Start: "17:30", End: "18:15", Repeat: weekly},

@@ -323,6 +323,21 @@ media:
   music:
     provider: music_assistant
 
+# Personnes du foyer. Chacune a son agenda personnel (id = celui de la personne), en plus des
+# calendriers communs ci-dessous, et peut être reconnue au réveil de la tablette : visages
+# enrôlés depuis l'app (cloche › Personnes et visages), empreintes gardées par le service face.
+# L'id sert aussi dans le service face : minuscules, chiffres, - et _.
+people:
+  - { id: abdelhak, name: Abdelhak, color: "#7aa7e0" }
+  - { id: marion, name: Marion, color: "#c58fd6" }
+  - { id: idris, name: Idris, color: "#e2c264" }
+
+# Reconnaissance de visage : service face du homelab (dépôt ahomelab/face, YuNet + SFace sur le
+# CPU du NAS), jeton FACE_API_KEY dans les secrets (= CONTROL_TOKEN des secrets de face). Une
+# photo prise au réveil de l'écran de veille, jamais stockée. Personnalise l'accueil, n'autorise rien.
+face:
+  url: http://face.home.arpa
+
 # Agenda familial, tenu par l'app (state/agenda/events.json). Le premier calendrier est celui par défaut.
 agenda:
   calendars:
