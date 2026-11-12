@@ -58,11 +58,13 @@ export function ChipRow({ children, className }: { children: ReactNode; classNam
 }
 
 // ---------- Paire actuelle → consigne ----------
-export function Pair({ current, target, mode, heating, cooling, stale, size = 's', wide, sideLabel }: {
+export function Pair({ current, target, mode, heating, cooling, stale, size = 's', wide, sideLabel, tone }: {
   current: number | undefined; target: number | undefined; mode?: string; heating?: boolean; cooling?: boolean; stale?: boolean; size?: 'std' | 's' | 'meta'; wide?: boolean; sideLabel?: string;
+  /** target colour by the house mode: schedule (green), night (purple) */
+  tone?: 'schedule' | 'night';
 }) {
   const off = mode === 'off';
-  const cls = cx('pair', wide && '-wide', heating && 'is-heating', cooling && 'is-cooling', off && 'is-off');
+  const cls = cx('pair', wide && '-wide', heating && 'is-heating', cooling && 'is-cooling', off && 'is-off', tone && !off && `is-${tone}`);
   const targetEl = off ? <span className="pair-target">Arrêt</span> : target == null ? <span className="pair-target">—</span> : (
     <span className="pair-target">
       {wide && heating && <Icon name="flame" className="pair-flame" />}

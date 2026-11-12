@@ -125,13 +125,15 @@ type Person struct {
 }
 
 type HeatingGlobal struct {
-	Average   *float64 `json:"average,omitempty"`  // sensor.day_area_temperature
-	Humidity  *float64 `json:"humidity,omitempty"` // sensor.day_area_humidity
-	RoomsOn   int      `json:"roomsOn"`            // rooms heating right now
-	Mode      string   `json:"mode,omitempty"`     // schedule | night | off | mixed
-	Presence  string   `json:"presence,omitempty"` // tado presence: home | away | auto
-	APIQuota  *int     `json:"apiQuota,omitempty"` // tado remaining calls
-	Available bool     `json:"available"`
+	Average  *float64 `json:"average,omitempty"`  // sensor.day_area_temperature
+	Humidity *float64 `json:"humidity,omitempty"` // sensor.day_area_humidity
+	RoomsOn  int      `json:"roomsOn"`            // rooms heating right now
+	Mode     string   `json:"mode,omitempty"`     // schedule | manual | off | mixed (from the zones)
+	// Preset: the house mode last chosen in Control (schedule | night | boost | off), while the zones still follow it
+	Preset    string `json:"preset,omitempty"`
+	Presence  string `json:"presence,omitempty"` // tado presence: home | away | auto
+	APIQuota  *int   `json:"apiQuota,omitempty"` // tado remaining calls
+	Available bool   `json:"available"`
 }
 
 type Alarm struct {

@@ -39,6 +39,11 @@ globals:
   cameras:
     private: binary_sensor.camera_sensor_private
     toggle: script.1758277386339
+    # caméras UniFi Protect : activer = mode privé coupé et enregistrement (record_mode),
+    # désactiver = mode privé et enregistrement « never » (le script toggle ne sert plus)
+    privacy: [switch.g3_flex_privacy_mode_2, switch.g3_flex_privacy_mode]
+    recording: [select.g3_flex_recording_mode_2, select.g3_flex_recording_mode]
+    record_mode: always
 
 rooms:
   - id: salon
@@ -94,7 +99,7 @@ rooms:
         entities:
           camera: camera.g3_flex_high_2
           motion: binary_sensor.g3_flex_motion_2
-          privacy: binary_sensor.camera_sensor_private
+          privacy: switch.g3_flex_privacy_mode_2
 
   - id: cuisine
     name: Cuisine
@@ -252,7 +257,7 @@ rooms:
         entities:
           camera: camera.g3_flex_high
           motion: binary_sensor.g3_flex_motion
-          privacy: binary_sensor.camera_sensor_private
+          privacy: switch.g3_flex_privacy_mode
 
   - id: chambre
     name: Chambre

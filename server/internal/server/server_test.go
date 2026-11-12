@@ -141,8 +141,9 @@ func TestActions(t *testing.T) {
 	if e := st["input_boolean.alarm"]; e.State != "off" {
 		t.Errorf("alarme : %s", e.State)
 	}
-	if e := st["binary_sensor.camera_sensor_private"]; e.State != "on" {
-		t.Errorf("mode privé : %s", e.State)
+	// cameras off: privacy switches on, recording never
+	if a, b, r := st["switch.g3_flex_privacy_mode_2"], st["switch.g3_flex_privacy_mode"], st["select.g3_flex_recording_mode"]; a.State != "on" || b.State != "on" || r.State != "never" {
+		t.Errorf("mode privé : %s %s %s", a.State, b.State, r.State)
 	}
 	if t0, _ := st["climate.tado_smart_thermostat_ru0044248832"].Attributes["temperature"].(float64); t0 != 25 { // boost
 		t.Errorf("boost : %v", t0)
@@ -672,6 +673,38 @@ func TestMusic(t *testing.T) {
 	if w := req("GET", "/api/media/salon.enceinte/cover", ""); w.Code != 404 {
 		t.Fatalf("pochette : %d", w.Code)
 	}
+}
+
+// Cameras on: privacy off, recording back to record_mode; the house mode
+// chosen shows as preset while the zones follow it.
+func TestCamerasAndPreset(t *testing.T) {
+	s, src := newTestServer(t)
+	calls, _, err := s.privacyCalls(false)
+	if err != nil || len(calls) != 4 || calls[0].service != "turn_off" || calls[2].service != "select_option" || calls[2].data["option"] != "always" {
+		t.Fatalf("activer : %v %+v", err, calls)
+	}
+	calls, _, _ = s.privacyCalls(true)
+	if calls[0].data["option"] != "never" || calls[3].service != "turn_on" {
+		t.Fatalf("couper : %+v", calls)
+	}
+	h := s.Handler()
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", "/login?token="+s.Token, nil))
+	c := w.Result().Cookies()[0]
+	r := httptest.NewRequest("POST", "/api/home/heating", strings.NewReader(`{"mode":"night"}`))
+	r.AddCookie(c)
+	r.Header.Set("X-Control", "1")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, r)
+	if w.Code != 202 {
+		t.Fatalf("nuit : %d %s", w.Code, w.Body)
+	}
+	time.Sleep(450 * time.Millisecond)
+	s.rebuild(nil)
+	if p := s.Home().Globals.Heating.Preset; p != "night" {
+		t.Fatalf("préréglage : %q (mode %s)", p, s.Home().Globals.Heating.Mode)
+	}
+	_ = src
 }
 
 func hasCap(d model.Device, c string) bool {

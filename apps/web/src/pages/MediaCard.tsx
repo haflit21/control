@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Album, Device, Media, MusicResults, Track } from '@control/model';
 import { AlbumHead, AlbumTile, Card, MediaPlayer, SearchField, Seg, Station, TrackRow } from '@control/ui';
@@ -22,45 +23,75 @@ export function MediaCard({ d, media, act, pending }: { d: Device; media?: Media
   const music = !!media?.music;
   const [tab, setTab] = useState<Tab>(() => (music && ((!d.state.radio && d.state.playing === 'playing' && !!d.state.title) || radios.length === 0) ? 'music' : 'radio'));
   const playing = d.state.playing === 'playing';
-  const off = d.state.playing === 'off';
-  const radio = radios.find((r) => r.id === d.state.radio);
-  const caps = new Set(d.capabilities ?? []);
-  const send = (a: Parameters<Act['device']>[1]) => act.device(d, a, { quiet: true }).catch(() => {});
-  const toggle = () => send({ action: playing ? 'pause' : 'play' });
+  const send = useSend(d, act);
   const [open, setOpen] = useState<Album | null>(null);
   const pick = (id: Tab) => { setTab(id); setOpen(null); };
   const tabs = [
     ...(radios.length > 0 ? [{ id: 'radio', label: 'Radio' }] : []),
     ...(music ? [{ id: 'music', label: 'Musique' }, { id: 'favs', label: 'Favoris' }] : []),
   ];
-  const title = off ? d.name : radio ? radio.name : d.state.title || d.name;
-  const sub = off ? 'Éteinte' : radio ? [radio.genre, d.state.title && d.state.title !== radio.name ? d.state.title : ''].filter(Boolean).join(' · ')
-    : [d.state.artist, d.state.album].filter(Boolean).join(' · ');
   return (
     <Card tight unavailable={!d.available} className="media-card">
       <div className="stack">
-        <MediaPlayer title={title} sub={sub || undefined} app={off ? undefined : radio ? 'Radio' : appLabel(d.state.app)} cover={off || radio ? undefined : d.state.cover} radio={off ? undefined : radio}
-          playing={playing} off={off} pending={pending} elapsed={off ? undefined : d.state.elapsed} elapsedAt={d.state.elapsedAt} duration={off ? undefined : d.state.duration}
-          onPowerOff={d.available && caps.has('power') ? () => send({ action: 'power', params: { on: false } }) : undefined}
-          canPrev={caps.has('previous')} canNext={caps.has('next')} canSeek={caps.has('seek')} volume={d.available && !off ? d.state.volume : undefined}
-          onToggle={toggle} onPrev={() => send({ action: 'previous' })} onNext={() => send({ action: 'next' })}
-          onSeek={(position) => send({ action: 'seek', params: { position } })}
-          onVolume={(pct) => send({ action: 'set_volume', params: { pct } })} />
+        <SpeakerPlayer d={d} media={media} send={send} pending={pending} />
         {d.available && tabs.length > 1 && <Seg items={tabs} active={tab} onSelect={(id) => pick(id as Tab)} />}
-        {d.available && tab === 'radio' && radios.length > 0 && (
-          <div className="stations" role="list" aria-label="Stations de radio">
-            {radios.map((r) => (
-              <Station key={r.id} radio={r} playing={playing && d.state.radio === r.id} pending={pending}
-                onPlay={() => send({ action: 'play_radio', params: { id: r.id } })} />
-            ))}
-          </div>
-        )}
+        {d.available && tab === 'radio' && radios.length > 0 && <Stations d={d} media={media} send={send} pending={pending} />}
         {d.available && music && open && tab !== 'radio' && <AlbumView d={d} album={open} send={send} pending={pending} playing={playing} onBack={() => setOpen(null)} />}
         {/* kept mounted while an album is open: the search comes back as it was */}
         {d.available && music && tab === 'music' && <div className="stack" hidden={!!open}><MusicSearch d={d} source={media?.musicSource} send={send} pending={pending} playing={playing} onOpen={setOpen} /></div>}
         {d.available && music && tab === 'favs' && !open && <Favorites d={d} send={send} pending={pending} playing={playing} onOpen={setOpen} />}
       </div>
     </Card>
+  );
+}
+
+/** Sends an action to the speaker, quietly (the player shows the result). */
+export function useSend(d: Device, act: Act): Send {
+  return (a) => act.device(d, a, { quiet: true }).catch(() => {});
+}
+
+/** The speaker's player: artwork or the radio's logo, progress, previous / play / next, volume, off. */
+export function SpeakerPlayer({ d, media, send, pending }: { d: Device; media?: Media; send: Send; pending: boolean }) {
+  const playing = d.state.playing === 'playing';
+  const off = d.state.playing === 'off';
+  const radio = (media?.radios ?? []).find((r) => r.id === d.state.radio);
+  const caps = new Set(d.capabilities ?? []);
+  const title = off ? d.name : radio ? radio.name : d.state.title || d.name;
+  const sub = off ? 'Éteinte' : radio ? [radio.genre, d.state.title && d.state.title !== radio.name ? d.state.title : ''].filter(Boolean).join(' · ')
+    : [d.state.artist, d.state.album].filter(Boolean).join(' · ');
+  return (
+    <MediaPlayer title={title} sub={sub || undefined} app={off ? undefined : radio ? 'Radio' : appLabel(d.state.app)} cover={off || radio ? undefined : d.state.cover} radio={off ? undefined : radio}
+      playing={playing} off={off} pending={pending} elapsed={off ? undefined : d.state.elapsed} elapsedAt={d.state.elapsedAt} duration={off ? undefined : d.state.duration}
+      onPowerOff={d.available && caps.has('power') ? () => send({ action: 'power', params: { on: false } }) : undefined}
+      canPrev={caps.has('previous')} canNext={caps.has('next')} canSeek={caps.has('seek')} volume={d.available && !off ? d.state.volume : undefined}
+      onToggle={() => send({ action: playing ? 'pause' : 'play' })} onPrev={() => send({ action: 'previous' })} onNext={() => send({ action: 'next' })}
+      onSeek={(position) => send({ action: 'seek', params: { position } })}
+      onVolume={(pct) => send({ action: 'set_volume', params: { pct } })} />
+  );
+}
+
+/** The radio stations of control.yaml; a touch starts one on the speaker. */
+export function Stations({ d, media, send, pending, one }: { d: Device; media?: Media; send: Send; pending: boolean; one?: boolean }) {
+  const playing = d.state.playing === 'playing';
+  return (
+    <div className={one ? 'stations -one' : 'stations'} role="list" aria-label="Stations de radio">
+      {(media?.radios ?? []).map((r) => (
+        <Station key={r.id} radio={r} playing={playing && d.state.radio === r.id} pending={pending}
+          onPlay={() => send({ action: 'play_radio', params: { id: r.id } })} />
+      ))}
+    </div>
+  );
+}
+
+/** A column that can open an album in place (Médias page): the album, or the column (kept mounted). */
+export function WithAlbum({ d, send, pending, children }: { d: Device; send: Send; pending: boolean; children: (onOpen: (a: Album) => void) => ReactNode }) {
+  const [open, setOpen] = useState<Album | null>(null);
+  const playing = d.state.playing === 'playing';
+  return (
+    <>
+      {open && <AlbumView d={d} album={open} send={send} pending={pending} playing={playing} onBack={() => setOpen(null)} />}
+      <div className="stack" hidden={!!open}>{children(setOpen)}</div>
+    </>
   );
 }
 
@@ -78,7 +109,7 @@ function uriKey(uri?: string): string {
   return p.length >= 3 ? `${p[p.length - 2]}/${p[p.length - 1]}` : uri;
 }
 
-type Send = (a: Parameters<Act['device']>[1]) => Promise<unknown>;
+export type Send = (a: Parameters<Act['device']>[1]) => Promise<unknown>;
 
 function useFavorites() {
   const qc = useQueryClient();
@@ -142,7 +173,7 @@ function Results({ d, res, send, pending, playing, favs, onOpen }: { d: Device; 
   );
 }
 
-function MusicSearch({ d, source, send, pending, playing, onOpen }: { d: Device; source?: string; send: Send; pending: boolean; playing: boolean; onOpen: (a: Album) => void }) {
+export function MusicSearch({ d, source, send, pending, playing, onOpen }: { d: Device; source?: string; send: Send; pending: boolean; playing: boolean; onOpen: (a: Album) => void }) {
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');
   useEffect(() => { const t = setTimeout(() => setDq(q.trim()), 350); return () => clearTimeout(t); }, [q]);
@@ -172,7 +203,7 @@ function MusicSearch({ d, source, send, pending, playing, onOpen }: { d: Device;
   );
 }
 
-function Favorites({ d, send, pending, playing, onOpen }: { d: Device; send: Send; pending: boolean; playing: boolean; onOpen: (a: Album) => void }) {
+export function Favorites({ d, send, pending, playing, onOpen }: { d: Device; send: Send; pending: boolean; playing: boolean; onOpen: (a: Album) => void }) {
   const favs = useFavorites();
   if (favs.q.isError) return <div className="media-empty" role="alert">{favs.q.error.body.error}</div>;
   if (!favs.q.data) return null;

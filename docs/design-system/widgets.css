@@ -88,6 +88,20 @@
 .chip.-on-photo .ico { color: rgba(255, 255, 255, .8); }
 .chip.-on-photo.is-heat .ico { color: var(--accent-strong); }
 .chip-row { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+/* house heating modes: a pressed chip takes the mode's colour */
+button.chip { cursor: pointer; }
+button.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chip.-mode { transition: background var(--dur-hover, .15s) ease, color var(--dur-hover, .15s) ease; }
+.chip.-mode:active { transform: scale(.97); }
+.chip.-mode.is-on { border-color: transparent; }
+.chip.-mode.is-on .ico { color: inherit; }
+.chip.-mode.-schedule.is-on { background: var(--ok-fg); color: #0f1a12; }
+.chip.-mode.-night.is-on { background: var(--atmo-6, #9b5fd0); color: #fff; }
+.chip.-mode.-boost.is-on { background: var(--accent); color: var(--accent-fg); }
+.chip.-mode.-schedule .ico { color: var(--ok-fg); } .chip.-mode.-night .ico { color: var(--atmo-6, #9b5fd0); } .chip.-mode.-boost .ico { color: var(--accent); }
+/* a pict that is a button (the heating's power) */
+.pict-btn { display: inline-grid; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.pict-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* ---------- 3. Paire actuelle → consigne ---------- */
 .pair { display: inline-flex; align-items: baseline; gap: var(--sp-2); white-space: nowrap; }
@@ -98,6 +112,9 @@
 .pair.is-heating .pair-flame, .pair.is-heating .pair-target, .pair.is-heating .pair-target .val-u { color: var(--heat-fg); }
 .pair.is-heating .pair-flame { filter: drop-shadow(0 0 6px var(--heat-fg)); }
 .pair.is-cooling .pair-flame, .pair.is-cooling .pair-target, .pair.is-cooling .pair-target .val-u { color: var(--cool-fg); }
+/* house mode colours on the target: schedule green, night purple */
+.pair.is-schedule .pair-target, .pair.is-schedule .pair-target .val-u { color: var(--ok-fg); }
+.pair.is-night .pair-target, .pair.is-night .pair-target .val-u { color: var(--atmo-6, #9b5fd0); }
 .pair.is-off .pair-target { color: var(--fg-faint); font-family: var(--font); font-size: var(--fs-m); font-weight: 500; }
 .pair.-wide { display: grid; grid-template-columns: auto 1fr; align-items: end; column-gap: var(--sp-5); }
 .pair.-wide .pair-side { display: grid; gap: 4px; padding-bottom: 8px; }

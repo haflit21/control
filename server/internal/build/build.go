@@ -31,6 +31,9 @@ type Input struct {
 	Air       *model.Air    // outdoor air quality, polled separately (nil = not yet)
 	Agenda    *model.Agenda // shared calendar, polled separately (nil = none configured)
 	Music     string        // music search source ("Music Assistant", "Spotify"), "" = none
+	// HeatPreset: the house heating mode last chosen in Control, and when
+	HeatPreset   string
+	HeatPresetAt time.Time
 }
 
 // Build computes the whole house.
@@ -165,7 +168,7 @@ func Build(in Input) model.Home {
 	if !in.Connected && !in.Demo {
 		allAlerts = append(allAlerts, model.Alert{ID: "home.offline", Level: "info", Kind: "offline", Title: "Connexion à Home Assistant perdue", Detail: "Les valeurs affichées ne sont plus à jour", Since: in.Now})
 	}
-	h.Globals = globals(cfg, st, h.Rooms)
+	h.Globals = globals(cfg, st, h.Rooms, in)
 	h.Presence = presence(cfg, st)
 	h.Weather = weather(cfg, st, in.Forecasts, in.Now)
 	h.Air = in.Air
@@ -446,7 +449,7 @@ func acMode(state string) string {
 	return "off"
 }
 
-func globals(cfg *config.Config, st map[string]ha.Entity, rooms []model.Room) model.Globals {
+func globals(cfg *config.Config, st map[string]ha.Entity, rooms []model.Room, in Input) model.Globals {
 	var g model.Globals
 	g.Heating.Available = true
 	if e, ok := st[cfg.Globals.Average.Temperature]; ok && available(e) {
@@ -478,6 +481,7 @@ func globals(cfg *config.Config, st map[string]ha.Entity, rooms []model.Room) mo
 	default:
 		g.Heating.Mode = "mixed"
 	}
+	g.Heating.Preset = preset(in, modes)
 	if e, ok := st[cfg.Globals.Heating.Presence]; ok && available(e) {
 		v := strings.ToLower(e.State)
 		switch {
@@ -505,7 +509,19 @@ func globals(cfg *config.Config, st map[string]ha.Entity, rooms []model.Room) mo
 		g.Alarm.UnifiState = e.State
 		g.Alarm.Triggered = e.State == "triggered"
 	}
-	if e, ok := st[cfg.Globals.Cameras.Private]; ok && available(e) {
+	if sw := cfg.Globals.Cameras.Privacy; len(sw) > 0 {
+		// the cameras' own privacy switches: private as soon as one is on
+		known, on := false, false
+		for _, id := range sw {
+			if e, ok := st[id]; ok && available(e) {
+				known = true
+				on = on || e.State == "on"
+			}
+		}
+		if known {
+			g.CamerasPrivate = model.B(on)
+		}
+	} else if e, ok := st[cfg.Globals.Cameras.Private]; ok && available(e) {
 		g.CamerasPrivate = model.B(e.State == "on")
 	}
 	return g
@@ -729,6 +745,34 @@ func mediaURL(rel string) string {
 
 // mediaExtras adds what needs the configuration to a speaker's state: the
 // radio it plays (matched on the stream URL), the app and the album.
+// preset: the house mode last chosen in Control while the zones still show it
+// (night and boost leave the zones in manual; a boost lasts half an hour).
+func preset(in Input, modes map[string]int) string {
+	only := func(m string) bool { return len(modes) == 1 && modes[m] > 0 }
+	switch in.HeatPreset {
+	case "schedule":
+		if only("schedule") {
+			return "schedule"
+		}
+	case "off":
+		if only("off") {
+			return "off"
+		}
+	case "night":
+		if modes["manual"] > 0 {
+			return "night"
+		}
+	case "boost":
+		if modes["manual"] > 0 && in.Now.Sub(in.HeatPresetAt) < 45*time.Minute {
+			return "boost"
+		}
+	}
+	if only("schedule") {
+		return "schedule"
+	}
+	return ""
+}
+
 // ActiveMedia is the entity that holds what a speaker plays: its Music
 // Assistant player (entities.music) while Music Assistant streams to it (the
 // queue, the track, the artwork live there), else the speaker itself.

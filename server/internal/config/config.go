@@ -203,6 +203,12 @@ type Globals struct {
 	Cameras struct {
 		Private string `yaml:"private"` // binary_sensor: private mode active
 		Toggle  string `yaml:"toggle"`  // script: toggle private mode
+		// Privacy: the cameras' privacy switches; with them, Control turns the
+		// cameras on (privacy off, Recording to RecordMode) or off (privacy on,
+		// recording "never") itself instead of the toggle script.
+		Privacy    []string `yaml:"privacy,omitempty"`
+		Recording  []string `yaml:"recording,omitempty"`   // select: recording mode of each camera
+		RecordMode string   `yaml:"record_mode,omitempty"` // option when on (default always)
 	} `yaml:"cameras"`
 	Sun string `yaml:"sun"`
 	// Air: outdoor air quality from Open-Meteo. Coordinates default to HA's zone.home.
@@ -396,6 +402,19 @@ func (c *Config) Validate() error {
 	default:
 		return fmt.Errorf("media.music.provider : %q inconnu (music_assistant ou spotify)", c.Media.Music.Provider)
 	}
+	if c.Globals.Cameras.RecordMode == "" {
+		c.Globals.Cameras.RecordMode = "always"
+	}
+	for _, e := range c.Globals.Cameras.Privacy {
+		if !strings.HasPrefix(e, "switch.") {
+			return fmt.Errorf("globals.cameras.privacy : %q n'est pas un switch", e)
+		}
+	}
+	for _, e := range c.Globals.Cameras.Recording {
+		if !strings.HasPrefix(e, "select.") {
+			return fmt.Errorf("globals.cameras.recording : %q n'est pas un select", e)
+		}
+	}
 	if c.Media.Music.Market == "" {
 		c.Media.Music.Market = "FR"
 	}
@@ -450,6 +469,12 @@ func (c *Config) Entities() []string {
 	add(g.Alarm.Unifi)
 	add(g.Cameras.Private)
 	add(g.Cameras.Toggle)
+	for _, e := range g.Cameras.Privacy {
+		add(e)
+	}
+	for _, e := range g.Cameras.Recording {
+		add(e)
+	}
 	add(g.Sun)
 	out := make([]string, 0, len(set))
 	for e := range set {

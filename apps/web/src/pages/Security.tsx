@@ -1,5 +1,5 @@
 import type { Home } from '@control/model';
-import { CamWall, Card, CardHead, Chip, Pict, Row, Status, Tag, Toggle, Who, plural, relative } from '@control/ui';
+import { CamWall, Card, CardHead, Chip, Icon, Pict, Popover, Row, Status, Tag, Toggle, Who, plural, relative } from '@control/ui';
 import type { IconName } from '@control/ui';
 import { cameras, openings, ROOM_AMBIENCE, roomImage } from '../lib/derive';
 import { snapshotURL, streamURL, useJournal, useTick } from '../lib/api';
@@ -27,6 +27,7 @@ export function SecurityPage({ home, now, stale }: { home: Home; now: Date; stal
   };
   const firstCam = cams[0]?.device;
   const [camId, setCamId] = useState<string | undefined>(undefined);
+  const [journal, setJournal] = useState(false);
 
   return (
     <div className="page -security">
@@ -79,7 +80,10 @@ export function SecurityPage({ home, now, stale }: { home: Home; now: Date; stal
       </Card>
 
       {confirmEl}
-      <JournalCard home={home} now={now} />
+      <Card tight as="button" className="sec-journal sec-journal-btn" onClick={() => setJournal(true)}>
+        <CardHead small pict={<Pict icon="clock" />} title="Journal" sub="Qui a fait quoi, et quand" right={<Icon name="chevron" />} />
+      </Card>
+      {journal && <Popover onClose={() => setJournal(false)} label="Journal"><JournalCard home={home} now={now} /></Popover>}
       <Card tight className="sec-motion">
         <CardHead small pict={<Pict icon="motion" state={motions.some(({ d }) => d.state.motion) ? 'on' : 'off'} />} title="Mouvement" sub={motions.some(({ d }) => d.state.motion) ? 'Du mouvement quelque part' : 'Tout est calme'} />
         <div className="list">
@@ -127,7 +131,7 @@ function JournalCard({ home, now }: { home: Home; now: Date }) {
   const q = useJournal(limit);
   const entries = q.data?.entries ?? [];
   return (
-    <Card tight className="sec-journal">
+    <div className="stack">
       <CardHead small pict={<Pict icon="clock" />} title="Journal" sub={q.data && !q.data.enabled ? 'Désactivé sur ce serveur' : entries.length === 0 ? 'Aucune action pour l’instant' : `${plural(entries.length, 'dernière action', 'dernières actions')} · qui, quoi, quand`} />
       {entries.length > 0 && (
         <div className="list -cols">
@@ -139,6 +143,6 @@ function JournalCard({ home, now }: { home: Home; now: Date }) {
         </div>
       )}
       {entries.length >= limit && limit < 200 && <div className="jr-more"><button type="button" className="btn" style={{ height: 36 }} onClick={() => setLimit((l) => Math.min(200, l * 3))}>Voir plus</button></div>}
-    </Card>
+    </div>
   );
 }

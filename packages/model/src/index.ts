@@ -116,6 +116,8 @@ export interface HeatingGlobal {
   humidity?: number;
   roomsOn: number;
   mode?: 'schedule' | 'manual' | 'off' | 'mixed' | string;
+  /** the house mode last chosen in Control, while the zones still follow it */
+  preset?: 'schedule' | 'night' | 'boost' | 'off';
   presence?: 'home' | 'away' | 'auto';
   apiQuota?: number;
   available: boolean;

@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"ahomelab.io/control/internal/agenda"
@@ -74,6 +75,8 @@ type Server struct {
 	agendaKick chan struct{}
 	// lastRadio: media_player entity → id of the radio last started (resume when idle)
 	lastRadio sync.Map
+	// heatPreset: the house heating mode last chosen (heatPreset)
+	heatPreset atomic.Value
 
 	air    *model.Air
 	agenda *model.Agenda
@@ -187,7 +190,11 @@ func (s *Server) rebuild(emit func([]model.Event)) {
 	s.mu.RLock()
 	air, agenda := s.air, s.agenda
 	s.mu.RUnlock()
-	home := build.Build(build.Input{Config: s.Cfg, States: s.Src.Snapshot(), Forecasts: s.Src.Forecasts(weather), Now: now, Connected: s.Src.Connected(), Demo: s.Demo, Air: air, Agenda: agenda, Music: s.musicSource()})
+	in := build.Input{Config: s.Cfg, States: s.Src.Snapshot(), Forecasts: s.Src.Forecasts(weather), Now: now, Connected: s.Src.Connected(), Demo: s.Demo, Air: air, Agenda: agenda, Music: s.musicSource()}
+	if p, ok := s.heatPreset.Load().(heatPreset); ok {
+		in.HeatPreset, in.HeatPresetAt = p.mode, p.at
+	}
+	home := build.Build(in)
 	home.People, home.Face = s.members(), s.Face != nil
 	s.mu.Lock()
 	prev := s.devices
@@ -253,6 +260,11 @@ func (s *Server) Home() model.Home {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.home
+}
+
+type heatPreset struct {
+	mode string
+	at   time.Time
 }
 
 // Handler builds the mux: UI, API, SSE, cameras.

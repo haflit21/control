@@ -57,24 +57,23 @@ a { color: inherit; }
 
 /* home page: dashboard areas on wide screens, plain column on phone */
 .dash-tools { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; justify-content: flex-end; }
-.home-grid { grid-template-areas: "heat hero side" "heat devs side" "heat agenda side"; grid-template-rows: auto auto 1fr; }
+.home-grid { grid-template-areas: "heat devs devs" "heat agenda side"; grid-template-rows: auto 1fr; }
 .dash-agenda { grid-area: agenda; align-self: start; }
+.dash-agenda.is-link { display: grid; color: inherit; text-decoration: none; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .dash-agenda.is-link:hover, .dash-devs a .card:hover { border-color: var(--border-strong); } }
 .dash-top .chip.is-air-4, .dash-top .chip.is-air-5, .dash-top .chip.is-air-6 { border-color: var(--warn-bd); }
 @media (max-width: 860px) { .dash-top .chip[class*="is-air"] { display: none; } }
 .home-grid .dash-devs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); align-self: start; }
 .heat-avg { display: grid; gap: var(--sp-2); padding-top: var(--sp-3); border-top: 1px solid var(--border); }
-@media (min-width: 861px) {
-  .home-grid .dash-hero { aspect-ratio: 21 / 9; }
-}
 @media (max-width: 1280px) and (min-width: 861px) {
-  .home-grid { grid-template-areas: "hero hero" "heat devs" "heat agenda" "heat side"; grid-template-rows: auto auto auto 1fr; }
+  .home-grid { grid-template-areas: "heat devs" "heat agenda" "heat side"; grid-template-rows: auto auto 1fr; }
   .home-grid .dash-devs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 860px) {
   .home-grid { display: contents; }
-  .home-grid .dash-hero, .home-grid .dash-heat, .home-grid .dash-devs, .home-grid .dash-side, .home-grid .dash-agenda { grid-area: auto; }
+  .home-grid .dash-heat, .home-grid .dash-devs, .home-grid .dash-side, .home-grid .dash-agenda { grid-area: auto; }
   .home-grid .dash-devs { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-3); }
-  .home-grid .dash-devs > .card:last-child { display: none; } /* cameras: on the Sécurité tab on a phone */
+  .home-grid .dash-devs .card.dev-cams { display: none; } /* cameras: on the Sécurité tab on a phone */
   .dash-top .dash-tools { flex-wrap: nowrap; gap: var(--sp-2); }
   .dash-top .who-pill .who-s { display: none; }
   .dash-top .who-pill { padding: 4px 10px 4px 5px; }
@@ -93,18 +92,18 @@ a { color: inherit; }
   .page.-room .dev-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
 }
 
-/* security: alarm | cameras (2 per row) ; ouvrants | mouvement */
+/* security: the camera wall across ; alarm | ouvrants | mouvement ; journal */
 .sec-cams { display: grid; min-width: 0; align-content: start; }
 .list.-cols { display: grid; }
 @media (min-width: 861px) {
-  .page.-security { display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-areas: "alarm cams" "opens motion" "journal journal"; gap: var(--sp-4); align-items: start; }
+  .page.-security { display: grid; grid-template-columns: 340px minmax(0, 1fr); grid-template-areas: "cams cams" "alarm opens" "motion opens" "journal journal"; gap: var(--sp-4); align-items: start; }
   .sec-alarm { grid-area: alarm; } .sec-cams { grid-area: cams; } .sec-opens { grid-area: opens; } .sec-motion { grid-area: motion; } .sec-journal { grid-area: journal; }
-  .sec-journal .list.-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--sp-5); }
-  .sec-opens .list.-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--sp-5); }
 }
+.sec-journal-btn { width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.sec-journal-btn .card-head { margin: 0; }
+@media (hover: hover) and (pointer: fine) { .sec-journal-btn:hover { border-color: var(--border-strong); } }
 @media (min-width: 1280px) {
-  .page.-security { grid-template-columns: 340px minmax(0, 1fr) 340px; grid-template-areas: "alarm cams cams" "opens opens motion" "journal journal journal"; }
-  .sec-journal .list.-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .page.-security { grid-template-columns: 340px minmax(0, 1fr) 340px; grid-template-areas: "cams cams cams" "alarm opens motion" "journal journal journal"; }
 }
 
 /* agenda page */
@@ -158,3 +157,12 @@ a { color: inherit; }
 .cam-view { position: relative; aspect-ratio: 4 / 3; border-radius: var(--radius-m, 16px); overflow: hidden; background: #000; }
 .cam-view video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
 @media (max-width: 420px) { .people-act .btn:not(.-ghost) { width: 40px; padding: 0; font-size: 0; gap: 0; } }
+
+/* médias page: the player across, then radio | search | favourites */
+.media-page { display: grid; gap: var(--sp-4); }
+.media-page.is-unavailable { opacity: .6; }
+.media-cols { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-4); align-items: start; }
+.media-col { display: grid; gap: var(--sp-3); min-width: 0; }
+.stations.-one { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1100px) { .media-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .media-cols { grid-template-columns: minmax(0, 1fr); } }

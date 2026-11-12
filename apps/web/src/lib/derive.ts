@@ -59,7 +59,10 @@ export function heatingSubtitle(home: Home): string {
   const g = home.globals.heating;
   const parts: string[] = [];
   if (!g.available) return 'Chauffage indisponible';
-  parts.push(g.roomsOn === 0 ? 'Chauffage coupé' : plural(g.roomsOn, 'pièce en chauffe', 'pièces en chauffe'));
+  if (g.mode === 'off') parts.push('Chauffage coupé');
+  else if (g.preset === 'night') parts.push('Mode nuit');
+  else if (g.preset === 'boost') parts.push('Boost en cours');
+  else parts.push(g.roomsOn === 0 ? 'Au repos' : plural(g.roomsOn, 'pièce en chauffe', 'pièces en chauffe'));
   if (g.average != null) parts.push(`moyenne ${temp1(g.average)}°`);
   return parts.join(' · ');
 }

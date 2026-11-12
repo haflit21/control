@@ -248,6 +248,12 @@ func (s *Source) seed(now time.Time) {
 	add(ent(g.Alarm.Acked, "off", nil, now.Add(-2*time.Hour)))
 	add(ent(g.Alarm.Unifi, "armed_away", nil, now.Add(-2*time.Hour)))
 	add(ent(g.Cameras.Private, "off", nil, now.Add(-2*time.Hour)))
+	for _, e := range g.Cameras.Privacy {
+		add(ent(e, "off", nil, now.Add(-2*time.Hour)))
+	}
+	for _, e := range g.Cameras.Recording {
+		add(ent(e, g.Cameras.RecordMode, map[string]any{"options": []any{"always", "never", "detections"}}, now.Add(-2*time.Hour)))
+	}
 	add(ent(g.Sun, sunState(now), map[string]any{"next_rising": nextRise(now).Format(time.RFC3339), "next_setting": nextSet(now).Format(time.RFC3339)}, now.Add(-time.Minute)))
 	add(ent(g.Weather, "cloudy", map[string]any{"temperature": 9.0, "apparent_temperature": 6.0, "humidity": 82.0, "pressure": 1008.0, "wind_speed": 22.0, "wind_bearing": 225.0, "wind_gust_speed": 38.0, "cloud_coverage": 90.0, "visibility": 8.0, "dew_point": 6.0, "uv_index": 0.0, "friendly_name": "Vénissieux", "attribution": "Données Météo-France"}, now.Add(-4*time.Minute)))
 	s.Replace(out)
@@ -465,6 +471,10 @@ func (s *Source) CallService(ctx context.Context, domain, service string, data m
 				}
 			}
 			s.recomputeHeating(&e)
+		case "select.select_option":
+			if o, ok := data["option"].(string); ok {
+				e.State = o
+			}
 		case "media_player.turn_off":
 			e.State = "off"
 			delete(e.Attributes, "app_name")

@@ -1,10 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import type { Home } from '@control/model';
-import { Pict, Pictv, RoomTile, plural, relative } from '@control/ui';
+import { Pict, RoomTile, plural } from '@control/ui';
 import { primaryHeating, ROOM_AMBIENCE, roomImage } from '../lib/derive';
 
 /** /pieces — every room as a photo tile; the room page opens from here (and from the rail / bottom nav). */
-export function RoomsPage({ home, now, stale }: { home: Home; now: Date; stale: boolean }) {
+export function RoomsPage({ home, stale }: { home: Home; now: Date; stale: boolean }) {
   const nav = useNavigate();
   const heating = home.rooms.filter((r) => r.summary.heating).length;
   const lights = home.rooms.reduce((n, r) => n + r.summary.lightsOn, 0);
@@ -18,11 +18,9 @@ export function RoomsPage({ home, now, stale }: { home: Home; now: Date; stale: 
         {home.rooms.map((r) => {
           const h = primaryHeating(r);
           const unavailable = h ? !h.available : r.summary.unavailable === r.devices.length;
-          const openDev = r.devices.find((d) => d.kind === 'opening' && d.state.open);
           return (
             <RoomTile key={r.id} name={r.name} temperature={r.summary.temperature} ambience={ROOM_AMBIENCE[r.id]} image={roomImage(r)} stale={stale} unavailable={unavailable}
               pict={<Pict icon={unavailable ? 'wifi-off' : r.summary.heating ? 'flame' : r.summary.lightsOn > 0 ? 'bulb' : 'flame'} size="s" state={unavailable ? 'unknown' : r.summary.heating ? 'heat' : r.summary.lightsOn > 0 ? 'on' : 'off'} />}
-              right={openDev ? <Pictv icon="window-open" state="warn">{openDev.state.since ? relative(openDev.state.since, now, '') : 'Ouverte'}</Pictv> : r.summary.lightsOn > 0 ? <Pictv icon="bulb" state="on">{r.summary.lightsOn}</Pictv> : r.devices.some((d) => d.kind === 'opening') ? <Pictv icon="window" /> : undefined}
               onClick={() => nav(`/pieces/${r.id}`)}
             />
           );

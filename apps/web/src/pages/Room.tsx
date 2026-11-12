@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import type { Device, Home, Room } from '@control/model';
-import { Card, CardHead, Chip, ChipRow, DevCard, Dots, LightPanel, Pair, PhotoButton, Pict, Popover, Row, RoomBanner, Section, Seg, Slider, Status, Stepper, Tag, Thumb, TimeAgo, Toggle, Val, AC_MODE_LABEL, plural } from '@control/ui';
+import { Card, CardHead, Chip, ChipRow, DevCard, Dots, LightPanel, Pair, PhotoButton, Pict, Popover, Row, RoomBanner, Section, Seg, Slider, Status, Stepper, Tag, Thumb, Toggle, Val, AC_MODE_LABEL, plural } from '@control/ui';
 import { byKind, deviceImage, deviceSub, heatingModeLabel, lightColor, ROOM_AMBIENCE, roomImage, roomStatus } from '../lib/derive';
 import { cx } from '@control/ui';
 import { snapshotURL, streamURL, useTick } from '../lib/api';
@@ -166,7 +166,6 @@ function HeatingCard({ d, room, now, stale, act, pending, ask }: { d: Device; ro
         {open ? <Chip size="s" tone="warn" icon="window-open">{open.name} ouverte</Chip> : room.devices.some((x) => x.kind === 'opening' && x.available) ? <Chip size="s" icon="window">Fermée</Chip> : null}
         {d.battery === 'low' && <Chip size="s" tone="warn" icon="battery-low">Pile faible</Chip>}
       </ChipRow>
-      <div className="card-foot"><span>{s.mode === 'manual' ? (s.modeUntil ? `Retour au planning à ${new Date(s.modeUntil).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}` : 'Manuel · retour au planning au prochain bloc') : s.mode === 'schedule' ? 'Suit le planning tado' : 'Chauffage à l’arrêt'}</span><TimeAgo iso={d.updatedAt} now={now} /></div>
     </Card>
   );
 }

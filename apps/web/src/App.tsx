@@ -3,6 +3,7 @@ import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-r
 import { IconSprite, Icon, BottomNav, Dot, Pict, Toasts, Popover, AlertRow, Row, Seg, Toggle, relative } from '@control/ui';
 import { usePush, sendTest } from './lib/push';
 import { setBell, useBell } from './lib/bell';
+import { setSettings, useSettings } from './lib/settings';
 import { setTheme, useTheme, type ThemeChoice } from './lib/theme';
 import { pushToast } from './lib/actions';
 import { dismissToast, useToasts } from './lib/actions';
@@ -16,12 +17,14 @@ import { SleepPage } from './pages/Sleep';
 import { PeopleSheet } from './pages/PeopleSheet';
 import { SecurityPage } from './pages/Security';
 import { WeatherPage } from './pages/Weather';
+import { MediaPage } from './pages/Media';
 
 const NAV = [
   { id: 'home', label: 'Accueil', icon: 'home', to: '/' },
   { id: 'rooms', label: 'Pièces', icon: 'rooms', to: '/pieces' },
   { id: 'security', label: 'Sécurité', icon: 'shield', to: '/securite' },
   { id: 'agenda', label: 'Agenda', icon: 'calendar', to: '/agenda' },
+  { id: 'media', label: 'Médias', icon: 'music', to: '/medias' },
 ];
 const SLEEP = { id: 'sleep', label: 'Veille', icon: 'power', to: '/veille' };
 
@@ -33,6 +36,7 @@ export function App() {
   const navigate = useNavigate();
   const toasts = useToasts();
   const bell = useBell();
+  const settings = useSettings();
   const [peopleOpen, setPeopleOpen] = useState(false);
   // plain <a href="/…"> links inside UI components navigate client-side
   useEffect(() => {
@@ -46,7 +50,7 @@ export function App() {
     document.addEventListener('click', onClick);
     return () => document.removeEventListener('click', onClick);
   }, [navigate]);
-  const active = loc.pathname.startsWith('/pieces') ? 'rooms' : loc.pathname.startsWith('/securite') ? 'security' : loc.pathname.startsWith('/meteo') ? 'weather' : loc.pathname.startsWith('/agenda') ? 'agenda' : 'home';
+  const active = loc.pathname.startsWith('/pieces') ? 'rooms' : loc.pathname.startsWith('/securite') ? 'security' : loc.pathname.startsWith('/meteo') ? 'weather' : loc.pathname.startsWith('/agenda') ? 'agenda' : loc.pathname.startsWith('/medias') ? 'media' : 'home';
   const stale = isStale(home.data, link, now);
   const wall = loc.pathname.startsWith('/mur');
   const sleep = loc.pathname.startsWith('/veille');
@@ -85,8 +89,9 @@ export function App() {
               <Link to="/meteo" className={active === 'weather' ? 'is-active' : undefined} aria-label="Météo"><Icon name="cloud" size="l" /></Link>
             </nav>
             <div className="rail-bot">
-              <Link to="/veille" className="pict rail-sleep" aria-label="Mettre en veille" title="Veille"><Icon name="power" /></Link>
+              <button type="button" className="pict" style={{ cursor: 'pointer' }} aria-label="Réglages" title="Réglages" onClick={() => setSettings(true)}><Icon name="settings" /></button>
               <button type="button" className="pict" style={{ cursor: 'pointer', position: 'relative' }} aria-label={`Alertes : ${home.data?.alerts.length ?? 0}`} onClick={() => setBell(true)}><Icon name="bell" />{!!home.data?.alerts.length && <span className="pict-n">{home.data.alerts.length}</span>}</button>
+              <Link to="/veille" className="pict rail-sleep" aria-label="Mettre en veille" title="Veille"><Icon name="power" /></Link>
               {home.data?.presence[0] && <span className={home.data.presence[0].home ? 'who is-home' : 'who is-away'}><span className="avatar" aria-label={home.data.presence[0].name}>{home.data.presence[0].name.charAt(0)}</span></span>}
             </div>
           </aside>
@@ -104,6 +109,7 @@ export function App() {
                 <Route path="/securite" element={<SecurityPage home={home.data} now={now} stale={stale} />} />
                 <Route path="/meteo" element={<WeatherPage home={home.data} now={now} />} />
                 <Route path="/agenda" element={<AgendaPage home={home.data} now={now} />} />
+                <Route path="/medias" element={<MediaPage home={home.data} />} />
                 <Route path="/mur" element={<WallPage home={home.data} now={now} stale={stale} />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
@@ -119,13 +125,18 @@ export function App() {
               <div className="stack">
                 {home.data.alerts.map((a) => <AlertRow key={a.id} alert={a} detail={[a.detail, a.since && a.kind !== 'battery' ? `depuis ${relative(a.since, now, '')}` : ''].filter(Boolean).join(' · ')} onClick={a.roomId ? () => { setBell(false); navigate(`/pieces/${a.roomId}`); } : undefined} />)}
               </div>
+            </Popover>
+          )}
+          {settings && home.data && (
+            <Popover onClose={() => setSettings(false)} label="Réglages">
+              <div className="sheet-head"><Pict icon="settings" size="l" state="off" /><div><div className="sheet-t">Réglages</div><div className="sheet-d">Cet appareil et la maison</div></div></div>
               <div className="sheet-sec">Cet appareil</div>
               <PushRow />
               <ThemeRow />
               {!!home.data.people?.length && (
                 <>
                   <div className="sheet-sec">Maison</div>
-                  <button type="button" className="row people-open" onClick={() => { setBell(false); setPeopleOpen(true); }}>
+                  <button type="button" className="row people-open" onClick={() => { setSettings(false); setPeopleOpen(true); }}>
                     <Pict icon="person" size="s" state={home.data.face ? 'on' : 'off'} />
                     <span><span className="row-name">Personnes et visages</span><span className="row-sub">{home.data.face ? 'Photos, reconnaissance au réveil' : 'Reconnaissance non configurée'}</span></span>
                     <Icon name="chevron" />

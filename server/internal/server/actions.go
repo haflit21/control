@@ -390,6 +390,27 @@ func minSec(sec float64) string {
 // (the script toggles, so only call it when the state differs).
 func (s *Server) privacyCalls(on bool) ([]call, string, error) {
 	g := s.Cfg.Globals.Cameras
+	if len(g.Privacy) > 0 {
+		// private: recording stops, then privacy on; active: privacy off, then recording
+		calls := []call{}
+		rec := func(option string) {
+			for _, e := range g.Recording {
+				calls = append(calls, call{"select", "select_option", target(e, map[string]any{"option": option})})
+			}
+		}
+		if on {
+			rec("never")
+		}
+		svc := map[bool]string{true: "turn_on", false: "turn_off"}[on]
+		for _, e := range g.Privacy {
+			calls = append(calls, call{"switch", svc, target(e, nil)})
+		}
+		if !on {
+			rec(g.RecordMode)
+		}
+		msg := map[bool]string{true: "Caméras coupées · mode privé, sans enregistrement", false: "Caméras actives · enregistrement en cours"}[on]
+		return calls, msg, nil
+	}
 	if g.Toggle == "" {
 		return nil, "", fmt.Errorf("pas de script de mode privé configuré")
 	}
@@ -444,6 +465,8 @@ func (s *Server) houseHeating(w http.ResponseWriter, r *http.Request) {
 	if domain == "button" || domain == "input_button" {
 		service = "press"
 	}
+	// the chosen mode shows at once (chip, target colours), until the zones say otherwise
+	s.heatPreset.Store(heatPreset{q.Mode, time.Now()})
 	s.run(w, r, []call{{domain, service, target(e, nil)}}, msg, journal.Entry{Scope: "house", Action: "heating", Params: journal.Compact(map[string]string{"mode": q.Mode})})
 }
 
