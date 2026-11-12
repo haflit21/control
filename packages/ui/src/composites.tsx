@@ -205,7 +205,7 @@ export function Toasts({ items, onDismiss }: { items: Array<{ id: number; title:
 
 
 /** A floating panel (same glass sheet as the confirmation) holding arbitrary controls; closes on scrim click or Escape. */
-export function Popover({ onClose, children, label }: { onClose: () => void; children: ReactNode; label: string }) {
+export function Popover({ onClose, children, label, wide }: { onClose: () => void; children: ReactNode; label: string; wide?: boolean }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
@@ -213,7 +213,7 @@ export function Popover({ onClose, children, label }: { onClose: () => void; chi
   }, [onClose]);
   const node = (
     <div className="scrim" onClick={onClose} role="presentation">
-      <div className="sheet -panel" role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>{children}</div>
+      <div className={cx('sheet -panel', wide && '-wide')} role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>{children}</div>
     </div>
   );
   return typeof document !== 'undefined' ? createPortal(node, document.body) : node;

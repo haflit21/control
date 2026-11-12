@@ -369,6 +369,34 @@ func (s *Store) Delete(id string) (Event, error) {
 	return *old, err
 }
 
+// DeleteCalendar removes every event of a calendar (a person leaving the house)
+// and returns how many there were.
+func (s *Store) DeleteCalendar(cal string) (int, error) {
+	s.mu.Lock()
+	gone := map[string]*Event{}
+	for id, e := range s.events {
+		if e.Calendar == cal {
+			gone[id] = e
+			delete(s.events, id)
+		}
+	}
+	if len(gone) == 0 {
+		s.mu.Unlock()
+		return 0, nil
+	}
+	err := s.save()
+	if err != nil {
+		for id, e := range gone {
+			s.events[id] = e
+		}
+	}
+	s.mu.Unlock()
+	if err == nil && s.OnChange != nil {
+		s.OnChange()
+	}
+	return len(gone), err
+}
+
 func (s *Store) Get(id string) (Event, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()

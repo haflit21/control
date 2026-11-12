@@ -2,6 +2,7 @@ package build
 
 import (
 	"testing"
+	"time"
 
 	"ahomelab.io/control/internal/config"
 	"ahomelab.io/control/internal/ha"
@@ -43,5 +44,44 @@ func TestActiveMedia(t *testing.T) {
 	mediaExtras(&d, cfg, dc, st)
 	if d.State.Radio != "inter" || d.State.App != "Radio" || d.State.Duration != nil || len(d.Capabilities) != 0 {
 		t.Fatalf("radio : %+v %v", d.State, d.Capabilities)
+	}
+}
+
+// A house mode chosen in Control shows on the zones until tado confirms it.
+func TestExpectHeating(t *testing.T) {
+	cfg := &config.Config{}
+	cfg.Globals.Heating.NightRooms = []string{"chambre"}
+	cfg.Globals.Heating.NightTarget = 19
+	at := time.Date(2026, 11, 12, 13, 0, 0, 0, time.UTC)
+	dc := config.Device{Entities: map[string]string{"zone_mode": "sensor.z"}}
+	st := map[string]ha.Entity{"sensor.z": {State: "smart_schedule", LastChanged: at.Add(-time.Hour)}}
+	in := Input{HeatPreset: "night", HeatPresetAt: at, Now: at.Add(time.Minute)}
+	mk := func() model.Device {
+		return model.Device{Available: true, State: model.State{Mode: "schedule", Target: model.F(21)}}
+	}
+	d := mk()
+	expectHeating(&d, cfg, "chambre", dc, st, in)
+	if d.State.Mode != "manual" || *d.State.Target != 19 {
+		t.Fatalf("chambre : %+v", d.State)
+	}
+	d = mk()
+	expectHeating(&d, cfg, "salon", dc, st, in)
+	if d.State.Mode != "off" || d.State.Target != nil {
+		t.Fatalf("salon : %+v", d.State)
+	}
+	// tado answered after the command: its mode stands
+	st["sensor.z"] = ha.Entity{State: "smart_schedule", LastChanged: at.Add(30 * time.Second)}
+	d = mk()
+	expectHeating(&d, cfg, "salon", dc, st, in)
+	if d.State.Mode != "schedule" {
+		t.Fatalf("confirmé : %+v", d.State)
+	}
+	// too old
+	in.Now = at.Add(10 * time.Minute)
+	st["sensor.z"] = ha.Entity{State: "smart_schedule", LastChanged: at.Add(-time.Hour)}
+	d = mk()
+	expectHeating(&d, cfg, "salon", dc, st, in)
+	if d.State.Mode != "schedule" {
+		t.Fatalf("expiré : %+v", d.State)
 	}
 }

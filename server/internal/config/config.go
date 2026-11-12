@@ -25,7 +25,8 @@ type Config struct {
 	Media   Media    `yaml:"media"`
 	// People: the household. Each person gets a personal calendar next to the
 	// shared ones, and can be recognised at the wall tablet (faces enrolled from
-	// the app, stored by the face service).
+	// the app, stored by the face service). Only the starting list: once someone
+	// is added or removed from the app, state/people/people.json takes over.
 	People []Member `yaml:"people"`
 	Face   Face     `yaml:"face"`
 }
@@ -46,6 +47,23 @@ type Face struct {
 
 // memberID: the face service's identifier rule (lowercase, digits, - and _).
 var memberID = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,31}$`)
+
+// PersonalCalendar: the calendar each person gets, after the shared ones.
+func PersonalCalendar(m Member) Calendar {
+	return Calendar{ID: m.ID, Name: m.Name, Color: m.Color, Owner: m.ID,
+		Hint: "agenda personnel de " + m.Name + " : ce qui ne concerne que " + m.Name}
+}
+
+// Shared lists the calendars that belong to no one (control.yaml agenda.calendars).
+func (a Agenda) Shared() []Calendar {
+	out := []Calendar{}
+	for _, c := range a.Calendars {
+		if c.Owner == "" {
+			out = append(out, c)
+		}
+	}
+	return out
+}
 
 // Member returns the household member with this id.
 func (c *Config) Member(id string) (Member, bool) {
@@ -189,10 +207,14 @@ type Globals struct {
 	Heating struct {
 		Schedule string `yaml:"schedule"`
 		Night    string `yaml:"night"`
-		Off      string `yaml:"off"`
-		Boost    string `yaml:"boost"`
-		Presence string `yaml:"presence"`
-		Quota    string `yaml:"quota"`
+		// NightRooms / NightTarget: what the night script does (those rooms heat
+		// to NightTarget, the others stop), so the app shows it at once
+		NightRooms  []string `yaml:"night_rooms,omitempty"`
+		NightTarget float64  `yaml:"night_target,omitempty"`
+		Off         string   `yaml:"off"`
+		Boost       string   `yaml:"boost"`
+		Presence    string   `yaml:"presence"`
+		Quota       string   `yaml:"quota"`
 	} `yaml:"heating"`
 	Alarm struct {
 		Armed string `yaml:"armed"`
@@ -298,8 +320,7 @@ func (c *Config) Validate() error {
 		if m.Name == "" {
 			m.Name = strings.ToUpper(m.ID[:1]) + m.ID[1:]
 		}
-		c.Agenda.Calendars = append(c.Agenda.Calendars, Calendar{ID: m.ID, Name: m.Name, Color: m.Color, Owner: m.ID,
-			Hint: "agenda personnel de " + m.Name + " : ce qui ne concerne que " + m.Name})
+		c.Agenda.Calendars = append(c.Agenda.Calendars, PersonalCalendar(*m))
 	}
 	if c.Face.URL != "" && !strings.HasPrefix(c.Face.URL, "http://") && !strings.HasPrefix(c.Face.URL, "https://") {
 		return fmt.Errorf("face.url : http(s) attendu")
@@ -401,6 +422,15 @@ func (c *Config) Validate() error {
 	case "", "music_assistant", "spotify":
 	default:
 		return fmt.Errorf("media.music.provider : %q inconnu (music_assistant ou spotify)", c.Media.Music.Provider)
+	}
+	for _, id := range c.Globals.Heating.NightRooms {
+		found := false
+		for _, r := range c.Rooms {
+			found = found || r.ID == id
+		}
+		if !found {
+			return fmt.Errorf("globals.heating.night_rooms : pièce %q inconnue", id)
+		}
 	}
 	if c.Globals.Cameras.RecordMode == "" {
 		c.Globals.Cameras.RecordMode = "always"

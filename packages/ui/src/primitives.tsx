@@ -65,7 +65,9 @@ export function Pair({ current, target, mode, heating, cooling, stale, size = 's
 }) {
   const off = mode === 'off';
   const cls = cx('pair', wide && '-wide', heating && 'is-heating', cooling && 'is-cooling', off && 'is-off', tone && !off && `is-${tone}`);
-  const targetEl = off ? <span className="pair-target">Arrêt</span> : target == null ? <span className="pair-target">—</span> : (
+  // no target while the zone's heating is stopped (a schedule block at off, for instance)
+  const stopped = !off && target == null && (mode === 'schedule' || mode === 'manual');
+  const targetEl = off || stopped ? <span className="pair-target -stop">Arrêt</span> : target == null ? <span className="pair-target">—</span> : (
     <span className="pair-target">
       {wide && heating && <Icon name="flame" className="pair-flame" />}
       <span className="val-n">{temp1(target)}</span><span className="val-u">°</span>

@@ -643,7 +643,37 @@ func (s *Source) applyScript(id string, st map[string]ha.Entity, now time.Time) 
 	case g.Heating.Schedule:
 		setAll("auto", "smart_schedule", 0)
 	case g.Heating.Night:
-		setAll("heat", "manual", 17)
+		if len(g.Heating.NightRooms) == 0 {
+			setAll("heat", "manual", 17)
+			break
+		}
+		// like the real script: the night rooms heat, the others stop
+		night := map[string]bool{}
+		for _, r := range g.Heating.NightRooms {
+			night[r] = true
+		}
+		for _, r := range s.cfg.Rooms {
+			for _, d := range r.Devices {
+				e, ok := st[d.Entities["climate"]]
+				if d.Kind != "heating" || !ok || e.State == "unavailable" {
+					continue
+				}
+				z, hasZ := st[d.Entities["zone_mode"]]
+				if night[r.ID] {
+					e.State, z.State = "heat", "manual"
+					e.Attributes["temperature"] = g.Heating.NightTarget
+				} else {
+					e.State, z.State = "off", "off"
+				}
+				s.recomputeHeating(&e)
+				e.LastChanged, e.LastUpdated = now, now
+				out = append(out, e)
+				if hasZ {
+					z.LastChanged = now
+					out = append(out, z)
+				}
+			}
+		}
 	case g.Heating.Off:
 		setAll("off", "off", 0)
 	case g.Heating.Boost:

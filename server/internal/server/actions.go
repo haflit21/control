@@ -468,6 +468,8 @@ func (s *Server) houseHeating(w http.ResponseWriter, r *http.Request) {
 	// the chosen mode shows at once (chip, target colours), until the zones say otherwise
 	s.heatPreset.Store(heatPreset{q.Mode, time.Now()})
 	s.run(w, r, []call{{domain, service, target(e, nil)}}, msg, journal.Entry{Scope: "house", Action: "heating", Params: journal.Compact(map[string]string{"mode": q.Mode})})
+	// every screen shows the new mode now, without waiting for tado
+	s.rebuild(s.publish)
 }
 
 // lightsOff: POST /api/home/lights/off — every configured light.

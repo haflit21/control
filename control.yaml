@@ -27,6 +27,9 @@ globals:
   heating:
     schedule: script.thermometer_auto
     night: script.thermometer_night
+    # ce que fait le script nuit (chambres à 19 °C, le reste coupé) : l'app l'affiche tout de suite
+    night_rooms: [chambre, bebe]
+    night_target: 19
     off: script.thermometer_off
     boost: button.tado_home_boost_all_zones
     presence: select.tado_home_presence_mode
@@ -328,10 +331,12 @@ media:
   music:
     provider: music_assistant
 
-# Personnes du foyer. Chacune a son agenda personnel (id = celui de la personne), en plus des
-# calendriers communs ci-dessous, et peut être reconnue au réveil de la tablette : visages
-# enrôlés depuis l'app (cloche › Personnes et visages), empreintes gardées par le service face.
-# L'id sert aussi dans le service face : minuscules, chiffres, - et _.
+# Personnes du foyer : liste de départ seulement. On en ajoute et on en retire depuis l'app
+# (Réglages › Personnes et visages) ; dès le premier changement, state/people/people.json fait
+# foi et cette liste n'est plus lue. Chacune a son agenda personnel (id = celui de la personne),
+# en plus des calendriers communs ci-dessous, et peut être reconnue au réveil de la tablette :
+# empreintes gardées par le service face. L'id sert aussi dans le service face : minuscules,
+# chiffres, - et _.
 people:
   - { id: abdelhak, name: Abdelhak, color: "#7aa7e0" }
   - { id: marion, name: Marion, color: "#c58fd6" }

@@ -15,8 +15,8 @@ import (
 	"ahomelab.io/control/internal/model"
 )
 
-// The household and its faces. The people are in control.yaml (people:), each
-// with a personal calendar; their face prints are kept by the homelab's face
+// The household and its faces. The people (people.go) each have a personal
+// calendar; their face prints are kept by the homelab's face
 // service, filled from the app (one photo at a time, taken by the device that
 // will recognise them). Waking the wall tablet sends one photo to
 // /api/face/identify: the screen greets the person and shows their agenda.
@@ -31,13 +31,6 @@ func de(name string) string {
 	return "de " + name
 }
 
-func (s *Server) members() []model.Member {
-	out := make([]model.Member, 0, len(s.Cfg.People))
-	for _, m := range s.Cfg.People {
-		out = append(out, model.Member{ID: m.ID, Name: m.Name, Color: m.Color})
-	}
-	return out
-}
 
 // readPhoto reads a JPEG or PNG body (face.MaxPhoto at most).
 func readPhoto(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
@@ -110,8 +103,8 @@ func (s *Server) faceIdentify(w http.ResponseWriter, r *http.Request) {
 	who := "personne"
 	if res.Match != nil {
 		// an id the service knows but control.yaml does not (person removed from the household) stays unknown
-		if m, ok := s.Cfg.Member(res.Match.ID); ok {
-			out.Person = &model.Member{ID: m.ID, Name: m.Name, Color: m.Color}
+		if m, ok := s.member(res.Match.ID); ok {
+			out.Person = &m
 			who = m.ID
 		}
 	} else if res.Faces == 0 {
@@ -160,12 +153,12 @@ func (s *Server) peopleList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) memberOr404(w http.ResponseWriter, r *http.Request) (model.Member, bool) {
-	m, ok := s.Cfg.Member(r.PathValue("id"))
+	m, ok := s.member(r.PathValue("id"))
 	if !ok {
-		fail(w, http.StatusNotFound, "Personne inconnue", "les personnes du foyer sont dans control.yaml (people)")
+		fail(w, http.StatusNotFound, "Personne inconnue", "elle a peut-être été retirée du foyer")
 		return model.Member{}, false
 	}
-	return model.Member{ID: m.ID, Name: m.Name, Color: m.Color}, true
+	return m, true
 }
 
 // faceEnroll: POST /api/people/{id}/faces (body = one photo) → one more print.

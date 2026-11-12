@@ -83,7 +83,7 @@ export function SecurityPage({ home, now, stale }: { home: Home; now: Date; stal
       <Card tight as="button" className="sec-journal sec-journal-btn" onClick={() => setJournal(true)}>
         <CardHead small pict={<Pict icon="clock" />} title="Journal" sub="Qui a fait quoi, et quand" right={<Icon name="chevron" />} />
       </Card>
-      {journal && <Popover onClose={() => setJournal(false)} label="Journal"><JournalCard home={home} now={now} /></Popover>}
+      {journal && <Popover wide onClose={() => setJournal(false)} label="Journal"><JournalCard home={home} now={now} /></Popover>}
       <Card tight className="sec-motion">
         <CardHead small pict={<Pict icon="motion" state={motions.some(({ d }) => d.state.motion) ? 'on' : 'off'} />} title="Mouvement" sub={motions.some(({ d }) => d.state.motion) ? 'Du mouvement quelque part' : 'Tout est calme'} />
         <div className="list">

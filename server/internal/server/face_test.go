@@ -209,3 +209,64 @@ func TestVoiceKnowsPersonalCalendars(t *testing.T) {
 		t.Fatalf("indice : %+v", last)
 	}
 }
+
+func TestPeopleAddRemove(t *testing.T) {
+	s, _ := newTestServer(t)
+	h := s.Handler()
+	call := func(method, path string, body string) (int, map[string]any) {
+		t.Helper()
+		req := httptest.NewRequest(method, path, strings.NewReader(body))
+		req.AddCookie(&http.Cookie{Name: cookieName, Value: s.Token})
+		req.Header.Set("X-Control", "1")
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		var out map[string]any
+		_ = json.Unmarshal(w.Body.Bytes(), &out)
+		return w.Code, out
+	}
+	var err error
+	if s.Agenda, err = agenda.Open(""); err != nil {
+		t.Fatal(err)
+	}
+	fake := &fakeFaces{prints: map[string]int{"idris": 2}}
+	s.Face = fake
+
+	code, out := call("POST", "/api/people", `{"name":" Zoé ","color":"#6fcf9a"}`)
+	if code != 200 || out["person"].(map[string]any)["id"] != "zoe" {
+		t.Fatalf("ajout : %d %v", code, out)
+	}
+	if code, _ := call("POST", "/api/people", `{"name":""}`); code != 400 {
+		t.Fatalf("prénom vide : %d", code)
+	}
+	if home := s.Home(); len(home.People) != 4 || home.People[3].Name != "Zoé" {
+		t.Fatalf("home.people : %+v", home.People)
+	}
+	found := false
+	for _, c := range s.Home().Agenda.Calendars {
+		found = found || (c.ID == "zoe" && c.Owner == "zoe")
+	}
+	if !found {
+		t.Fatal("pas d'agenda personnel pour Zoé")
+	}
+
+	// Idris leaves: his events and his face prints go too
+	if _, err := s.Agenda.Add(agenda.Event{Calendar: "idris", Title: "Judo", Date: "2026-11-12", AllDay: true}, ""); err != nil {
+		t.Fatal(err)
+	}
+	code, out = call("DELETE", "/api/people/idris", "")
+	if code != 200 || !strings.Contains(out["message"].(string), "1 événement") {
+		t.Fatalf("retrait : %d %v", code, out)
+	}
+	if fake.prints["idris"] != 0 || s.Agenda.Count() != 0 {
+		t.Fatalf("restes : photos %d, événements %d", fake.prints["idris"], s.Agenda.Count())
+	}
+	if _, ok := s.member("idris"); ok {
+		t.Fatal("Idris toujours là")
+	}
+	if code, _ := call("POST", "/api/people/idris/faces", string(photoOf("idris"))); code != 404 {
+		t.Fatalf("photo d'une personne retirée : %d", code)
+	}
+	if code, _ := call("DELETE", "/api/people/idris", ""); code != 404 {
+		t.Fatalf("double retrait : %d", code)
+	}
+}

@@ -221,7 +221,7 @@ export interface Agenda {
 }
 /** `owner`: the member whose personal calendar this is; absent for a shared calendar. */
 export interface Calendar { id: string; name: string; color?: string; owner?: string }
-/** One person of the household (control.yaml people:), with a personal calendar of the same id. */
+/** One person of the household (added from Réglages; control.yaml people: is the starting list), with a personal calendar of the same id. */
 export interface Member { id: string; name: string; color?: string }
 /** One occurrence. `eventId` is the event to edit (the whole series when `repeats`). */
 export interface CalEvent { id: string; eventId: string; repeats?: boolean; calendar: string; title: string; start: string; end: string; allDay: boolean; location?: string }

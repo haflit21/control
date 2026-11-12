@@ -71,10 +71,15 @@ func (s *Server) AgendaModel(now time.Time) model.Agenda {
 	to := from.AddDate(0, 0, 7*agendaWeeks)
 	ag := model.Agenda{Available: true, From: from, To: to, UpdatedAt: now, Calendars: []model.Calendar{}, Events: []model.CalEvent{},
 		Input: model.AgendaInput{Text: s.Understander != nil, Audio: s.Understander != nil && s.Transcriber != nil}}
-	for _, c := range s.Cfg.Agenda.Calendars {
+	known := map[string]bool{}
+	for _, c := range s.calendars() {
+		known[c.ID] = true
 		ag.Calendars = append(ag.Calendars, model.Calendar{ID: c.ID, Name: c.Name, Color: c.Color, Owner: c.Owner})
 	}
 	for _, o := range s.Agenda.Between(from, to, s.Loc) {
+		if !known[o.Event.Calendar] {
+			continue
+		}
 		ag.Events = append(ag.Events, model.CalEvent{ID: o.ID, EventID: o.Event.ID, Repeats: o.Repeats, Calendar: o.Event.Calendar, Title: o.Event.Title,
 			Start: o.Start, End: o.End, AllDay: o.AllDay, Location: o.Event.Location})
 	}
@@ -84,7 +89,7 @@ func (s *Server) AgendaModel(now time.Time) model.Agenda {
 func (s *Server) refreshAgenda() {
 	ag := s.AgendaModel(time.Now().In(s.Loc))
 	s.mu.Lock()
-	changed := s.agenda == nil || !reflect.DeepEqual(s.agenda.Events, ag.Events) || s.agenda.From != ag.From || s.agenda.Input != ag.Input
+	changed := s.agenda == nil || !reflect.DeepEqual(s.agenda.Events, ag.Events) || !reflect.DeepEqual(s.agenda.Calendars, ag.Calendars) || s.agenda.From != ag.From || s.agenda.Input != ag.Input
 	if changed {
 		s.agenda = &ag
 	}
@@ -123,7 +128,7 @@ func (s *Server) readEvent(w http.ResponseWriter, r *http.Request) (agenda.Event
 		fail(w, http.StatusBadRequest, "Requête illisible", err.Error())
 		return e, false
 	}
-	if err := e.Validate(s.Cfg.Agenda.CalendarIDs()); err != nil {
+	if err := e.Validate(s.calendarIDs()); err != nil {
 		fail(w, http.StatusBadRequest, capitalize(err.Error()), "")
 		return e, false
 	}
@@ -203,7 +208,7 @@ func (s *Server) recordAgenda(r *http.Request, action string, e agenda.Event, pr
 
 func (s *Server) voiceContext(now time.Time) (voice.Context, []string) {
 	c := voice.Context{Now: now}
-	for _, cal := range s.Cfg.Agenda.Calendars {
+	for _, cal := range s.calendars() {
 		c.Calendars = append(c.Calendars, voice.CalendarInfo{ID: cal.ID, Name: cal.Name, Hint: cal.Hint})
 	}
 	seen := map[string]bool{}
@@ -213,13 +218,13 @@ func (s *Server) voiceContext(now time.Time) (voice.Context, []string) {
 			c.People = append(c.People, p.Name)
 		}
 	}
-	for _, m := range s.Cfg.People {
+	for _, m := range s.People.List() {
 		if !seen[m.Name] {
 			seen[m.Name] = true
 			c.People = append(c.People, m.Name)
 		}
 	}
-	return c, s.Cfg.Agenda.CalendarIDs()
+	return c, s.calendarIDs()
 }
 
 func (s *Server) understand(ctx context.Context, text string) (voice.Draft, error) {
@@ -303,7 +308,7 @@ func (s *Server) agendaVoice(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("agenda : compréhension impossible : %v", err)
 		// the transcript is still useful: the form opens with it as the title
-		writeJSON(w, http.StatusOK, map[string]any{"draft": voice.Normalize(voice.Draft{Transcript: text}, mustCtx(s), s.Cfg.Agenda.CalendarIDs()), "warning": "Phrase entendue mais pas comprise : " + err.Error()})
+		writeJSON(w, http.StatusOK, map[string]any{"draft": voice.Normalize(voice.Draft{Transcript: text}, mustCtx(s), s.calendarIDs()), "warning": "Phrase entendue mais pas comprise : " + err.Error()})
 		return
 	}
 	log.Printf("agenda : voix transcrite en %s, comprise en %s", t1.Sub(t0).Round(100*time.Millisecond), time.Since(t1).Round(100*time.Millisecond))

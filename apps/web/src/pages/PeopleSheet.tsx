@@ -1,8 +1,8 @@
-// « Personnes et visages » : the household (control.yaml people:) and the photos
-// the face service keeps for each. Photos are taken here, by the device that
+// « Personnes et visages » : the household (added and removed here; control.yaml
+// people: is only the starting list) and the photos the face service keeps for each. Photos are taken here, by the device that
 // will recognise them (the wall tablet, at its place): 3 to 5 each, facing the
 // camera then slightly turned. Only face prints are kept, never the photos.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import type { Member } from '@control/model';
 import { Icon, Pict, Popover, Toggle, cx } from '@control/ui';
 import { api } from '../lib/api';
@@ -25,6 +25,9 @@ function de(name: string): string {
   return /^[aeiouyhàâéèêëîïôûü]/i.test(name) ? `d’${name}` : `de ${name}`;
 }
 
+/** Colours offered for a new person (avatar and personal calendar). */
+const COLORS = ['#7aa7e0', '#c58fd6', '#e2c264', '#e07a8f', '#5fc4c9', '#a3b86c', '#f0a35e', '#9aa5b1'];
+
 export function Avatar({ m, size }: { m: Member; size?: 's' }) {
   return <span className={cx('avatar', size === 's' && '-s')} style={m.color ? { background: m.color, borderColor: m.color, color: '#15171c' } : undefined} aria-hidden="true">{m.name.charAt(0)}</span>;
 }
@@ -32,7 +35,8 @@ export function Avatar({ m, size }: { m: Member; size?: 's' }) {
 export function PeopleSheet({ onClose }: { onClose: () => void }) {
   const [data, setData] = useState<People | null>(null);
   const [mode, setMode] = useState<Mode>({ kind: 'list' });
-  const [forget, setForget] = useState<string | null>(null);
+  const [ask, setAsk] = useState<string | null>(null); // person whose removal is being confirmed
+  const [busy, setBusy] = useState(false);
   const onWake = useFaceOnWake();
 
   const load = useCallback(() => {
@@ -41,13 +45,28 @@ export function PeopleSheet({ onClose }: { onClose: () => void }) {
   useEffect(load, [load]);
 
   const doForget = async (p: PersonFaces) => {
+    setBusy(true);
     try {
       const r = await api<{ message: string }>(`/api/people/${encodeURIComponent(p.id)}/faces`, { method: 'DELETE' });
       pushToast({ title: r.message, tone: 'ok' });
     } catch (e) {
       pushToast({ title: 'Oubli impossible', detail: cameraError(e), tone: 'error' });
     }
-    setForget(null);
+    setBusy(false);
+    setAsk(null);
+    load();
+  };
+
+  const doRemove = async (p: PersonFaces) => {
+    setBusy(true);
+    try {
+      const r = await api<{ message: string }>(`/api/people/${encodeURIComponent(p.id)}`, { method: 'DELETE' });
+      pushToast({ title: r.message, tone: 'ok' });
+    } catch (e) {
+      pushToast({ title: 'Suppression impossible', detail: cameraError(e), tone: 'error' });
+    }
+    setBusy(false);
+    setAsk(null);
     load();
   };
 
@@ -66,24 +85,30 @@ export function PeopleSheet({ onClose }: { onClose: () => void }) {
         <>
           <div className="list people">
             {data.people.map((p) => (
-              <div key={p.id} className="row people-row">
-                <Avatar m={p} />
-                <div className="row-main"><div className="row-name">{p.name}</div><div className="row-sub">{photos(p.samples)}</div></div>
-                {data.face && (forget === p.id ? (
+              <div key={p.id} className="people-item">
+                <div className="row people-row">
+                  <Avatar m={p} />
+                  <div className="row-main"><div className="row-name">{p.name}</div><div className="row-sub">{data.face ? photos(p.samples) : 'Agenda personnel'}</div></div>
                   <span className="people-act">
-                    <button type="button" className="btn -ghost" onClick={() => setForget(null)}>Annuler</button>
-                    <button type="button" className="btn -danger" onClick={() => void doForget(p)}>Oublier</button>
+                    <button type="button" className={cx('btn -ghost', ask === p.id && 'is-on')} onClick={() => setAsk(ask === p.id ? null : p.id)} aria-expanded={ask === p.id} aria-label={`Retirer ${p.name}`}><Icon name="trash" /></button>
+                    {data.face && <button type="button" className="btn" onClick={() => setMode({ kind: 'enrol', person: p })} aria-label={`Ajouter des photos ${de(p.name)}`}><Icon name="camera" />Photos</button>}
                   </span>
-                ) : (
-                  <span className="people-act">
-                    {!!p.samples && <button type="button" className="btn -ghost" onClick={() => setForget(p.id)} aria-label={`Oublier le visage ${de(p.name)}`}><Icon name="trash" /></button>}
-                    <button type="button" className="btn" onClick={() => setMode({ kind: 'enrol', person: p })} aria-label={`Ajouter des photos ${de(p.name)}`}><Icon name="camera" />Photos</button>
-                  </span>
-                ))}
+                </div>
+                {ask === p.id && (
+                  <div className="people-confirm" role="group" aria-label={`Retirer ${p.name}`}>
+                    <p>Retirer {p.name} du foyer ? {data.face ? 'Son agenda personnel et ses photos seront supprimés.' : 'Son agenda personnel sera supprimé.'}</p>
+                    <span className="people-act">
+                      <button type="button" className="btn -ghost" onClick={() => setAsk(null)}>Annuler</button>
+                      {data.face && !!p.samples && <button type="button" className="btn" disabled={busy} onClick={() => void doForget(p)}>Oublier le visage seulement</button>}
+                      <button type="button" className="btn -danger" disabled={busy} onClick={() => void doRemove(p)}>Retirer</button>
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
-            {data.people.length === 0 && <div className="people-note">Aucune personne : ajoute-les dans <code>people:</code> de control.yaml.</div>}
+            {data.people.length === 0 && <div className="people-note">Personne pour l’instant : ajoute les membres du foyer ci-dessous.</div>}
           </div>
+          <AddPerson used={data.people.map((p) => p.color ?? '')} onAdded={load} />
           {data.face && (
             <>
               <div className="sheet-sec">Cet appareil</div>
@@ -102,6 +127,48 @@ export function PeopleSheet({ onClose }: { onClose: () => void }) {
 
       {data && mode.kind !== 'list' && <CameraPane mode={mode} onDone={() => { setMode({ kind: 'list' }); load(); }} />}
     </Popover>
+  );
+}
+
+/** « Ajouter une personne » : a first name and a colour. */
+function AddPerson({ used, onAdded }: { used: string[]; onAdded: () => void }) {
+  const free = COLORS.find((c) => !used.includes(c)) ?? COLORS[0];
+  const [name, setName] = useState('');
+  const [color, setColor] = useState(free);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => setColor(free), [free]);
+
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || busy) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await api<{ message: string }>('/api/people', { method: 'POST', body: JSON.stringify({ name: name.trim(), color }), headers: { 'Content-Type': 'application/json' } });
+      pushToast({ title: r.message, tone: 'ok' });
+      setName('');
+      onAdded();
+    } catch (x) {
+      setErr(cameraError(x));
+    }
+    setBusy(false);
+  };
+
+  return (
+    <form className="people-add" onSubmit={(e) => void submit(e)}>
+      <div className="sheet-sec">Ajouter une personne</div>
+      <div className="people-add-row">
+        <input className="input" value={name} maxLength={40} placeholder="Prénom" aria-label="Prénom" aria-invalid={!!err} autoComplete="off" enterKeyHint="done" onChange={(e) => { setName(e.target.value); setErr(null); }} />
+        <button type="submit" className="btn -primary" disabled={!name.trim() || busy}><Icon name="plus" />Ajouter</button>
+      </div>
+      <div className="swatches" role="radiogroup" aria-label="Couleur">
+        {COLORS.map((c) => (
+          <button key={c} type="button" role="radio" aria-checked={color === c} className={cx('swatch', color === c && 'is-on')} style={{ ['--c' as string]: c } as CSSProperties} aria-label={`Couleur ${c}`} onClick={() => setColor(c)} />
+        ))}
+      </div>
+      {err && <p className="people-note -err" role="alert">{err}</p>}
+    </form>
   );
 }
 

@@ -22,7 +22,8 @@ export function HomePage({ home, now, stale }: { home: Home; now: Date; stale: b
     const run = () => act.house('/api/home/heating', { mode }, (h) => ({
       ...h,
       globals: { ...h.globals, heating: { ...h.globals.heating, mode: zone, preset: mode } },
-      rooms: h.rooms.map((r) => ({ ...r, devices: r.devices.map((d) => (d.kind === 'heating' && d.available ? { ...d, state: { ...d.state, mode: zone } } : d)) })),
+      // night: which rooms heat comes from the server (night_rooms), at once
+      rooms: mode === 'night' ? h.rooms : h.rooms.map((r) => ({ ...r, devices: r.devices.map((d) => (d.kind === 'heating' && d.available ? { ...d, state: { ...d.state, mode: zone, ...(mode === 'off' ? { target: undefined, heating: false } : {}) } } : d)) })),
     }));
     if (mode === 'off') ask({ icon: 'power', tone: 'warn', title: 'Couper tout le chauffage ?', detail: 'Toutes les pièces passent à l’arrêt jusqu’à ce que tu relances le planning.', confirmLabel: 'Couper', danger: true, run });
     else if (mode === 'boost') ask({ icon: 'bolt', tone: 'heat', title: 'Lancer un boost ?', detail: 'Toutes les pièces chauffent à fond pendant une demi-heure, puis reviennent au planning.', confirmLabel: 'Booster', run });
@@ -49,7 +50,7 @@ export function HomePage({ home, now, stale }: { home: Home; now: Date; stale: b
     <div className="page">
       <header className="dash-top hrow">
         <div className={cx('greet', profile.state === 'looking' && 'is-looking')}>
-          <h1>{greeting(now)} {me ? me.name : (home.presence.find((p) => p.home)?.name ?? '')}</h1>
+          <h1>{greeting(now)}{me ? ` ${me.name}` : ''}</h1>
           <p>
             {dateLong(now)} - {now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
             {me && <> · <button type="button" className="me-not" onClick={clearProfile}>Pas {me.name} ?</button></>}

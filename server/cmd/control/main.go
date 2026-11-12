@@ -38,6 +38,7 @@ import (
 	"ahomelab.io/control/internal/demo"
 	"ahomelab.io/control/internal/face"
 	"ahomelab.io/control/internal/favorites"
+	"ahomelab.io/control/internal/household"
 	"ahomelab.io/control/internal/ha"
 	"ahomelab.io/control/internal/journal"
 	"ahomelab.io/control/internal/push"
@@ -80,7 +81,7 @@ func main() {
 	case "serve":
 		serve(cfg, cfgPath)
 	case "check":
-		check(cfg)
+		check(cfg, cfgPath)
 	case "spotify-login":
 		spotifyLogin()
 	default:
@@ -142,10 +143,7 @@ func serve(cfg *config.Config, cfgPath string) {
 		log.Printf("photos : %s", srv.MediaDir)
 	}
 	// notifications push : clés VAPID + abonnements dans state_dir (relatif à control.yaml)
-	stateDir := env("CONTROL_STATE_DIR", cfg.Serve.StateDir)
-	if !filepath.IsAbs(stateDir) && os.Getenv("CONTROL_STATE_DIR") == "" {
-		stateDir = filepath.Join(filepath.Dir(cfgPath), stateDir)
-	}
+	stateDir := stateDirOf(cfg, cfgPath)
 	if ps, err := push.Open(filepath.Join(stateDir, "push"), "mailto:control@localhost"); err != nil {
 		log.Printf("notifications : désactivées (%v)", err)
 	} else {
@@ -170,6 +168,20 @@ func serve(cfg *config.Config, cfgPath string) {
 	srv.Music = musicFrom(cfg, demoMode, src)
 	if fc := faceFrom(cfg); fc != nil {
 		srv.Face = fc
+	}
+	// foyer : people.json dans state_dir dès qu'on ajoute ou retire quelqu'un depuis l'app
+	// (control.yaml people: n'est que la liste de départ) ; en démo, en mémoire
+	peopleDir := filepath.Join(stateDir, "people")
+	if demoMode {
+		peopleDir = ""
+	}
+	if hs, err := household.Open(peopleDir, server.SeedPeople(cfg)); err != nil {
+		log.Printf("foyer : people.json illisible, liste de control.yaml en lecture seule (%v)", err)
+	} else {
+		srv.People = hs
+		if hs.Stored() {
+			log.Printf("foyer : %d personne(s), state/people/people.json (people: de control.yaml ignoré)", len(hs.List()))
+		}
 	}
 	// favoris (titres, albums) : favorites.json dans state_dir ; en démo, en mémoire
 	favDir := filepath.Join(stateDir, "favorites")
@@ -219,7 +231,16 @@ func serve(cfg *config.Config, cfgPath string) {
 }
 
 // check connects to HA once and lists the configured entities HA does not know.
-func check(cfg *config.Config) {
+// stateDirOf: state_dir of control.yaml (relative to it) or CONTROL_STATE_DIR.
+func stateDirOf(cfg *config.Config, cfgPath string) string {
+	stateDir := env("CONTROL_STATE_DIR", cfg.Serve.StateDir)
+	if !filepath.IsAbs(stateDir) && os.Getenv("CONTROL_STATE_DIR") == "" {
+		stateDir = filepath.Join(filepath.Dir(cfgPath), stateDir)
+	}
+	return stateDir
+}
+
+func check(cfg *config.Config, cfgPath string) {
 	url, token := os.Getenv("HA_URL"), os.Getenv("HA_TOKEN")
 	if url == "" || token == "" {
 		log.Fatalf("HA_URL et HA_TOKEN sont requis")
@@ -271,7 +292,7 @@ func check(cfg *config.Config) {
 	rctx, rcancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer rcancel()
 	checkVoice(rctx, cfg)
-	checkFace(rctx, cfg)
+	checkFace(rctx, cfg, stateDirOf(cfg, cfgPath))
 	checkMedia(rctx, cfg, c)
 	if svc, err := c.Services(rctx); err != nil {
 		fmt.Printf("\n(liste des services HA indisponible : %v)\n", err)
@@ -419,17 +440,22 @@ func faceFrom(cfg *config.Config) *face.Client {
 		log.Printf("visages : reconnaissance désactivée, FACE_API_KEY absent des secrets")
 		return nil
 	}
-	log.Printf("visages : reconnaissance par %s, %d personne(s) du foyer", cfg.Face.URL, len(cfg.People))
+	log.Printf("visages : reconnaissance par %s", cfg.Face.URL)
 	return &face.Client{URL: cfg.Face.URL, Token: os.Getenv("FACE_API_KEY")}
 }
 
 // checkFace says whether recognition can work (never prints the token).
-func checkFace(ctx context.Context, cfg *config.Config) {
-	names := make([]string, 0, len(cfg.People))
-	for _, m := range cfg.People {
+func checkFace(ctx context.Context, cfg *config.Config, stateDir string) {
+	people := server.SeedPeople(cfg)
+	from := "control.yaml"
+	if hs, err := household.Open(filepath.Join(stateDir, "people"), people); err == nil && hs.Stored() {
+		people, from = hs.List(), "state/people/people.json, modifié depuis l'app"
+	}
+	names := make([]string, 0, len(people))
+	for _, m := range people {
 		names = append(names, m.ID)
 	}
-	fmt.Printf("\nFoyer : %d personne(s) (%s), un agenda personnel chacune\n", len(cfg.People), strings.Join(names, ", "))
+	fmt.Printf("\nFoyer (%s) : %d personne(s) (%s), un agenda personnel chacune\n", from, len(people), strings.Join(names, ", "))
 	if cfg.Face.URL == "" {
 		fmt.Println("  visages : non configuré (face.url)")
 		return
@@ -454,7 +480,7 @@ func checkFace(ctx context.Context, cfg *config.Config) {
 	for _, p := range ps {
 		counts[p.ID] = p.Samples
 	}
-	for _, m := range cfg.People {
+	for _, m := range people {
 		fmt.Printf("  %s : %d photo(s)\n", m.Name, counts[m.ID])
 	}
 }

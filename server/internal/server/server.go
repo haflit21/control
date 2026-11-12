@@ -34,6 +34,7 @@ import (
 	"ahomelab.io/control/internal/face"
 	"ahomelab.io/control/internal/favorites"
 	"ahomelab.io/control/internal/ha"
+	"ahomelab.io/control/internal/household"
 	"ahomelab.io/control/internal/journal"
 	"ahomelab.io/control/internal/model"
 	"ahomelab.io/control/internal/push"
@@ -63,6 +64,8 @@ type Server struct {
 	Journal *journal.Store
 	// Favorites: the household's favourite tracks and albums (nil disables).
 	Favorites *favorites.Store
+	// People: the household (never nil: New starts it from control.yaml, in memory).
+	People *household.Store
 	// Agenda is the family calendar (nil disables the Agenda tab's data).
 	Agenda *agenda.Store
 	// Transcriber / Understander: voice and typed quick entry (nil = not offered).
@@ -91,6 +94,7 @@ type Server struct {
 
 func New(cfg *config.Config, src ha.Source, token string, demo bool) *Server {
 	s := &Server{Cfg: cfg, Src: src, Token: token, Demo: demo, Loc: time.Local, Debounce: 150 * time.Millisecond, clients: map[chan model.Event]struct{}{}}
+	s.People, _ = household.Open("", seedPeople(cfg))
 	if sub, err := fs.Sub(uiFS, "ui/dist"); err == nil {
 		s.ui = sub
 	}
@@ -299,6 +303,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/push/test", s.auth(s.mutating(s.pushTest)))
 	mux.HandleFunc("POST /api/face/identify", s.auth(s.mutating(s.faceIdentify)))
 	mux.HandleFunc("GET /api/people", s.auth(s.peopleList))
+	mux.HandleFunc("POST /api/people", s.auth(s.mutating(s.peopleAdd)))
+	mux.HandleFunc("DELETE /api/people/{id}", s.auth(s.mutating(s.peopleRemove)))
 	mux.HandleFunc("POST /api/people/{id}/faces", s.auth(s.mutating(s.faceEnroll)))
 	mux.HandleFunc("DELETE /api/people/{id}/faces", s.auth(s.mutating(s.faceForget)))
 	mux.HandleFunc("/", s.static)

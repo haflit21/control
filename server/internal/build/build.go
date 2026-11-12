@@ -60,6 +60,9 @@ func Build(in Input) model.Home {
 		var heatingAny bool
 		for _, dc := range rc.Devices {
 			d := device(rc.ID, dc, st, in.Now)
+			if d.Kind == model.KindHeating {
+				expectHeating(&d, cfg, rc.ID, dc, st, in)
+			}
 			if d.Kind == model.KindMedia {
 				mediaExtras(&d, cfg, dc, st)
 			}
@@ -415,6 +418,46 @@ func roleOf(k model.DeviceKind) string {
 		return "motion"
 	}
 	return "temperature"
+}
+
+// expectSpan: how long a house mode chosen in Control is shown before Tado
+// confirms it (the zone modes come from the tado cloud, a few minutes late).
+const expectSpan = 4 * time.Minute
+
+// expectHeating shows the house mode just chosen in Control on a zone until
+// tado confirms it: the zone mode sensor has not changed since the command.
+func expectHeating(d *model.Device, cfg *config.Config, roomID string, dc config.Device, st map[string]ha.Entity, in Input) {
+	if in.HeatPreset == "" || in.Now.Sub(in.HeatPresetAt) > expectSpan || !d.Available {
+		return
+	}
+	if zm, ok := st[dc.Entities["zone_mode"]]; ok && zm.LastChanged.After(in.HeatPresetAt) {
+		return // tado answered: its mode is the truth
+	}
+	s := &d.State
+	switch in.HeatPreset {
+	case "off":
+		s.Mode, s.Target, s.Heating = "off", nil, model.B(false)
+	case "schedule":
+		s.Mode = "schedule"
+	case "boost":
+		s.Mode, s.Target = "manual", model.F(25)
+	case "night":
+		h := cfg.Globals.Heating
+		if len(h.NightRooms) == 0 {
+			s.Mode = "manual"
+			return
+		}
+		for _, r := range h.NightRooms {
+			if r == roomID {
+				s.Mode = "manual"
+				if h.NightTarget > 0 {
+					s.Target = model.F(h.NightTarget)
+				}
+				return
+			}
+		}
+		s.Mode, s.Target, s.Heating = "off", nil, model.B(false)
+	}
 }
 
 // heatingMode: Tado Hijack zone mode when present, else the climate state.

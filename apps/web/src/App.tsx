@@ -133,16 +133,12 @@ export function App() {
               <div className="sheet-sec">Cet appareil</div>
               <PushRow />
               <ThemeRow />
-              {!!home.data.people?.length && (
-                <>
-                  <div className="sheet-sec">Maison</div>
-                  <button type="button" className="row people-open" onClick={() => { setSettings(false); setPeopleOpen(true); }}>
-                    <Pict icon="person" size="s" state={home.data.face ? 'on' : 'off'} />
-                    <span><span className="row-name">Personnes et visages</span><span className="row-sub">{home.data.face ? 'Photos, reconnaissance au réveil' : 'Reconnaissance non configurée'}</span></span>
-                    <Icon name="chevron" />
-                  </button>
-                </>
-              )}
+              <div className="sheet-sec">Maison</div>
+              <button type="button" className="row people-open" onClick={() => { setSettings(false); setPeopleOpen(true); }}>
+                <Pict icon="person" size="s" state={home.data.people?.length ? 'on' : 'off'} />
+                <span><span className="row-name">Personnes et visages</span><span className="row-sub">{peopleSub(home.data.people?.length ?? 0, !!home.data.face)}</span></span>
+                <Icon name="chevron" />
+              </button>
             </Popover>
           )}
           {peopleOpen && <PeopleSheet onClose={() => setPeopleOpen(false)} />}
@@ -153,6 +149,11 @@ export function App() {
 }
 
 /** « Recevoir les alertes sur cet appareil » : abonnement push de ce navigateur. */
+function peopleSub(n: number, face: boolean): string {
+  const who = n === 0 ? 'Personne pour l’instant' : n === 1 ? '1 personne' : `${n} personnes`;
+  return face ? `${who} · photos, reconnaissance au réveil` : who;
+}
+
 function PushRow() {
   const [state, set, error] = usePush();
   const sub = state === 'unsupported' ? 'Indisponible ici (HTTPS ou app installée requis)'
